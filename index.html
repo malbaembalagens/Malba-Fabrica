@@ -347,6 +347,8 @@ tbody tr:hover{background:var(--surface-2)}
 .stb-rec{background:var(--green-soft);color:var(--green)}
 .stb-pend{background:var(--amber-soft);color:var(--amber)}
 .stb-atr{background:var(--red-soft);color:var(--red)}
+.stb-parc{background:#e2effb;color:#1c66c2}
+.rechint{font-size:13px;color:var(--muted);line-height:1.5;margin:-6px 0 16px}
 .ic-btn.ok{background:var(--green-soft);color:var(--green);border-color:transparent}
 /* calendário agenda */
 .calhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
@@ -417,6 +419,14 @@ tbody tr:hover{background:var(--surface-2)}
 .pcp-empty{padding:16px 15px;color:var(--muted-2);font-size:13px;text-align:center}
 .delbtn{width:34px;height:34px;border-radius:9px;border:1px solid #f3c2c2;background:#fdeaea;color:#c0392b;font-size:15px;font-weight:800;cursor:pointer;display:inline-grid;place-items:center}
 .ficbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);font-size:15px;cursor:pointer;display:inline-grid;place-items:center}
+.obsbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);font-size:14px;cursor:pointer;display:inline-grid;place-items:center}
+.obsbtn.has{border-color:var(--amber);background:#fff7e0}
+.lampbtn{width:34px;height:34px;border-radius:9px;border:1px solid #f0c000;background:#fff3b0;font-size:15px;cursor:pointer;display:inline-grid;place-items:center}
+.lampsku{border:none;background:transparent;font-size:15px;cursor:pointer;padding:0;margin-left:6px;vertical-align:-1px;line-height:1}
+.lampsku:active{filter:brightness(.9)}
+.lampbtn:active,.obsbtn:active{filter:brightness(.95)}
+.obs-ta{width:100%;border:1px solid var(--border);border-radius:12px;padding:12px;font:inherit;font-size:14px;resize:vertical;box-sizing:border-box;background:var(--surface)}
+.obs-view{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:14px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
 .ficbtn:active{filter:brightness(.95)}
 .delbtn:active{filter:brightness(.95)}
 .tercbtn{padding:0 14px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap}
@@ -628,7 +638,7 @@ tbody tr:hover{background:var(--surface-2)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v70 · dados salvos neste aparelho</div>
+    <div class="foot">v73 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -1948,22 +1958,61 @@ function fichaTecnica(key){
 
 // ---------- Ordem de compra ----------
 function ocPrevista(o){ return o.dataPrevista||o.data||""; }
-function ocStatus(o){ if(o.recebida) return "recebido"; const p=ocPrevista(o); if(p && p<hojeStr()) return "atrasado"; return "pendente"; }
-const OC_ST={recebido:["Recebido","stb-rec"],pendente:["Pendente","stb-pend"],atrasado:["Atrasado","stb-atr"]};
+function ocRecebidoTotal(o){ return (o.itens||[]).reduce((s,i)=>s+(+i.recebido||0),0); }
+function ocStatus(o){ if(o.recebida) return "recebido"; if(ocRecebidoTotal(o)>0) return "parcial"; const p=ocPrevista(o); if(p && p<hojeStr()) return "atrasado"; return "pendente"; }
+const OC_ST={recebido:["Recebido","stb-rec"],parcial:["Parcial","stb-parc"],pendente:["Pendente","stb-pend"],atrasado:["Atrasado","stb-atr"]};
 function setOCTab(t,el){ ocTab=t; ocPage=1; document.querySelectorAll("#gview-prod-ordem .tab").forEach(c=>c.classList.remove("on")); el.classList.add("on"); renderOC(); }
 function ocNovoId(data){ const [y,m,d]=data.split("-"); const base=d+m+y; const n=ordens.filter(o=>String(o.id).startsWith(base)).length+1; return base+String(n).padStart(3,"0"); }
 function ocRefresh(){ const ag=document.getElementById("gview-dash-agenda"), oc=document.getElementById("gview-prod-ordem"); if(ag&&ag.style.display!=="none") renderAgenda(); if(oc&&oc.style.display!=="none") renderOC(); }
-function ocReceber(id){ const o=ordens.find(x=>x.id===id); if(!o)return; o.recebida=!o.recebida; salvar(LS.oc,ordens);
-  if(o.recebida) criarProducaoDaOC(o);
-  else { producao=producao.filter(p=> !(p.ocId===id && p.imp.feito===0 && p.acab.feito===0)); salvar(LS.prodflow,producao); }
-  ocRefresh(); }
-function criarProducaoDaOC(o){
-  (o.itens||[]).forEach((i,idx)=>{ const pid=o.id+":"+idx; if(producao.some(p=>p.id===pid)) return;
-    producao.push({ id:pid, ocId:o.id, prev:ocPrevista(o), sku:i.sku, produto:i.produto, c:i.c,l:i.l,a:i.a,
+function abrirReceber(id){
+  const o=ordens.find(x=>x.id===id); if(!o)return;
+  if(o.recebida){ ocReabrir(id); return; }
+  _recOC=id; renderReceberModal();
+}
+let _recOC=null;
+function renderReceberModal(){
+  const o=ordens.find(x=>x.id===_recOC); if(!o){ closeOcModal(); return; }
+  const rows=(o.itens||[]).map((i,idx)=>{ const rec=+i.recebido||0, tot=+i.qtd||0, rest=tot-rec;
+    return `<tr>
+      <td><b>${esc(i.sku||"—")}</b></td>
+      <td class="num">${tot.toLocaleString("pt-BR")}</td>
+      <td class="num">${rec.toLocaleString("pt-BR")}</td>
+      <td class="num">${rest.toLocaleString("pt-BR")}</td>
+      <td><input type="number" id="rec-${idx}" min="0" max="${rest}" value="${rest>0?rest:0}" ${rest<=0?"disabled":""} style="width:96px"></td>
+    </tr>`;}).join("");
+  $("ocmodal").innerHTML=`<div class="modal-card" style="max-width:600px">
+    <h3 class="modal-h">Receber ordem ${esc(o.id)}</h3>
+    <p class="rechint">Informe quanto <b>chegou agora</b> de cada item. Dá pra receber em partes — se vier em dois carregamentos, dê entrada do primeiro e depois do segundo. Só o que você receber vai pra Impressão.</p>
+    <div class="tablewrap"><table class="htab"><thead><tr><th>SKU</th><th class="num">Total</th><th class="num">Já recebido</th><th class="num">Falta</th><th>Receber agora</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="modal-foot"><button class="btnlink" onclick="closeOcModal()">Cancelar</button><button class="btnprim" onclick="aplicarReceber()">Dar entrada</button></div>
+  </div>`;
+  $("ocmodal").style.display="flex";
+}
+function aplicarReceber(){
+  const o=ordens.find(x=>x.id===_recOC); if(!o){ closeOcModal(); return; }
+  let algum=false;
+  (o.itens||[]).forEach((i,idx)=>{ const inp=$("rec-"+idx); if(!inp)return; let x=parseInt(inp.value)||0;
+    const rec=+i.recebido||0, rest=(+i.qtd||0)-rec; if(x>rest)x=rest; if(x<=0)return;
+    i.recebido=rec+x; algum=true;
+    const pid=o.id+":"+idx; let p=producao.find(pp=>pp.id===pid);
+    if(p){ p.qtd=(+p.qtd||0)+x; }
+    else { producao.push({ id:pid, ocId:o.id, prev:ocPrevista(o), sku:i.sku, produto:i.produto, c:i.c,l:i.l,a:i.a,
       chapaComp:i.chapaComp, chapaLarg:i.chapaLarg, gram:i.gram, ondaNome:i.ondaNome, vincos:(i.vincos||[]).slice(),
-      pesoUnit:i.pesoUnit, qtd:+i.qtd||0, imp:{feito:0,desp:0,done:false}, acab:{feito:0,desp:0,done:false} });
+      pesoUnit:i.pesoUnit, qtd:x, imp:{feito:0,desp:0,done:false}, acab:{feito:0,desp:0,done:false} }); }
   });
-  salvar(LS.prodflow,producao);
+  if(!algum){ alert("Informe ao menos uma quantidade para receber."); return; }
+  o.recebida = (o.itens||[]).every(i=> (+i.recebido||0) >= (+i.qtd||0));
+  salvar(LS.oc,ordens); salvar(LS.prodflow,producao);
+  closeOcModal(); ocRefresh();
+}
+function ocReabrir(id){ const o=ordens.find(x=>x.id===id); if(!o)return;
+  if(!confirm("Reabrir o recebimento desta OC?\n\nOs itens que ainda não entraram em produção voltam para 'a receber'. O que já foi pra produção permanece.")) return;
+  (o.itens||[]).forEach((i,idx)=>{ const pid=id+":"+idx; const p=producao.find(pp=>pp.id===pid);
+    if(!p){ i.recebido=0; }
+    else if((p.imp.feito||0)===0 && (p.acab.feito||0)===0){ producao=producao.filter(pp=>pp.id!==pid); i.recebido=0; }
+  });
+  o.recebida=false;
+  salvar(LS.oc,ordens); salvar(LS.prodflow,producao); ocRefresh();
 }
 function ocExcluir(id){ if(!confirm("Excluir esta ordem de compra?"))return; ordens=ordens.filter(x=>x.id!==id); salvar(LS.oc,ordens); ocRefresh(); }
 function renderOC(){
@@ -1993,7 +2042,7 @@ function renderOC(){
     <td class="devacts">
       <button class="ic-btn ed" onclick="ocDetalhes('${o.id}')" title="Detalhes">👁️</button>
       <button class="ic-btn pdf" onclick="ocPDF('${o.id}')" title="PDF da ordem">📄</button>
-      <button class="ic-btn ${o.recebida?"":"ok"}" onclick="ocReceber('${o.id}')" title="${o.recebida?"Reabrir":"Marcar recebida"}">${o.recebida?"↩︎":"✓"}</button>
+      <button class="ic-btn ${o.recebida?"":"ok"}" onclick="abrirReceber('${o.id}')" title="${o.recebida?"Reabrir recebimento":"Dar entrada (receber)"}">${o.recebida?"↩︎":"✓"}</button>
       ${ ehGestor() ? `<button class="ic-btn ed" onclick="editarOC('${o.id}')" title="Editar">✏️</button>` : "" }
       ${ ehGestor() ? `<button class="ic-btn rm" onclick="ocExcluir('${o.id}')" title="Excluir">×</button>` : "" }
     </td></tr>`;}).join("");
@@ -2073,7 +2122,7 @@ function agendaPrint(){
 }
 function ocCellHtml(o){ const st=OC_ST[ocStatus(o)];
   return `<div class="calev"><div class="calev-f">${esc((o.fornecedor||"—").slice(0,26))}</div><span class="stb ${st[1]}">${st[0]}</span>
-    <div class="calev-a">${o.recebida?"":`<a onclick="ocReceber('${o.id}')">✓ Receber</a>`}<a onclick="ocDetalhes('${o.id}')">👁️ Detalhes</a></div></div>`;
+    <div class="calev-a">${o.recebida?"":`<a onclick="abrirReceber('${o.id}')">✓ Receber</a>`}<a onclick="ocDetalhes('${o.id}')">👁️ Detalhes</a></div></div>`;
 }
 function renderAgenda(){
   const ref=parseISO(agendaRef), y=ref.getFullYear(), mo=ref.getMonth();
@@ -2239,13 +2288,15 @@ function renderProc(stage){
   const rows=slice.map(p=>{ const concl=(tab==="concluido"); const q= concl ? (stage==="imp"?p.imp.feito:p.acab.feito) : procDisp(stage,p);
     const delBtn=(stage==="imp" && ehGestor()) ? `<button class="delbtn" onclick="excluirProc('imp','${p.id}')" title="Excluir item">✕</button>` : "";
     const ficBtn=(stage==="imp" && p.sku) ? `<button class="ficbtn" onclick="fichaPorSku('${String(p.sku).replace(/'/g,"\\'")}')" title="Ficha técnica">📄</button>` : "";
+    const obsBtn=ehGestor() ? `<button class="obsbtn ${p.obs?"has":""}" onclick="abrirObs('${p.id}','${stage}')" title="Observações do item">📌</button>` : "";
+    const lampBtn=(!ehGestor() && p.obs) ? `<button class="lampsku" onclick="verObs('${p.id}')" title="Observação do gestor">💡</button>` : "";
     return `<tr>
-      <td><b>${esc(p.sku||"—")}</b></td>
+      <td><b>${esc(p.sku||"—")}</b>${lampBtn}</td>
       <td>${esc(p.ocId)}</td>
       <td>${p.c}×${p.l}×${p.a} mm</td>
       <td class="num">${(+q||0).toLocaleString("pt-BR")}</td>
       <td class="num">${(p.pesoUnit*q).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})} kg</td>
-      <td>${ concl ? `<div class="procacts"><span class="stb stb-rec">✓ Concluído</span>${ficBtn}${delBtn}</div>` : `<div class="procacts"><button class="okbtn" onclick="concluirProc('${stage}','${p.id}')" title="Concluir item">✓</button>${ficBtn}${ (stage==="imp" && ehGestor()) ? `<button class="tercbtn" onclick="marcarTerceirizado('${p.id}')" title="Marcar como terceirizado">Terceirizado</button>` : "" }${delBtn}</div>` }</td>
+      <td>${ concl ? `<div class="procacts"><span class="stb stb-rec">✓ Concluído</span>${obsBtn}${ficBtn}${delBtn}</div>` : `<div class="procacts"><button class="okbtn" onclick="concluirProc('${stage}','${p.id}')" title="Concluir item">✓</button>${obsBtn}${ficBtn}${ (stage==="imp" && ehGestor()) ? `<button class="tercbtn" onclick="marcarTerceirizado('${p.id}')" title="Marcar como terceirizado">Terceirizado</button>` : "" }${delBtn}</div>` }</td>
     </tr>`;}).join("");
   box.innerHTML=`<div class="tablewrap"><table class="htab">${head}<tbody>${rows}</tbody></table></div>
     <div class="pager"><button ${page<=1?"disabled":""} onclick="${stage==="imp"?"impPage--":"acabPage--"};renderProc('${stage}')">← Anterior</button><span class="pgnum">${page}</span><button ${page>=pages?"disabled":""} onclick="${stage==="imp"?"impPage++":"acabPage++"};renderProc('${stage}')">Próximo →</button></div>`;
@@ -2291,6 +2342,30 @@ function aplicarConc(){
   closeOcModal();
   renderProc(stage);
 }
+// observações do gestor para a produção
+let _obsStage="imp";
+function abrirObs(id,stage){ const p=producao.find(x=>x.id===id); if(!p)return; _obsStage=stage||"imp";
+  $("ocmodal").innerHTML=`<div class="modal-card" style="max-width:470px">
+    <h3 class="modal-h">🗒️ Observações do item</h3>
+    <div class="modal-meta" style="margin-bottom:14px"><div><div class="ml">SKU</div><div class="mv">${esc(p.sku||"—")}</div></div><div><div class="ml">ORDEM</div><div class="mv">${esc(p.ocId||"—")}</div></div></div>
+    <label class="flbl">Mensagem para a produção</label>
+    <textarea id="obs-txt" class="obs-ta" rows="5" placeholder="Ex.: caprichar no vinco; chapa com leve variação de cor; cliente vai retirar sexta...">${esc(p.obs||"")}</textarea>
+    <div class="modal-foot"><button class="btnlink" onclick="closeOcModal()">Cancelar</button>${p.obs?`<button class="btnlink" style="color:var(--red)" onclick="salvarObs('${id}',true)">Remover</button>`:""}<button class="btnprim" onclick="salvarObs('${id}',false)">Salvar</button></div>
+  </div>`;
+  $("ocmodal").style.display="flex"; setTimeout(()=>{ const t=$("obs-txt"); if(t)t.focus(); },50);
+}
+function salvarObs(id,remover){ const p=producao.find(x=>x.id===id); if(!p)return;
+  p.obs = remover ? "" : ($("obs-txt")?$("obs-txt").value:"").trim();
+  salvar(LS.prodflow,producao); closeOcModal(); renderProc(_obsStage||"imp"); }
+function verObs(id){ const p=producao.find(x=>x.id===id); if(!p)return;
+  $("ocmodal").innerHTML=`<div class="modal-card" style="max-width:470px">
+    <h3 class="modal-h">💡 Observação do gestor</h3>
+    <div class="modal-meta" style="margin-bottom:14px"><div><div class="ml">SKU</div><div class="mv">${esc(p.sku||"—")}</div></div><div><div class="ml">ORDEM</div><div class="mv">${esc(p.ocId||"—")}</div></div></div>
+    <div class="obs-view">${esc(p.obs||"")}</div>
+    <div class="modal-foot"><button class="btnprim" onclick="closeOcModal()">Fechar</button></div>
+  </div>`;
+  $("ocmodal").style.display="flex";
+}
 // terceirizado
 function marcarTerceirizado(id){ const p=producao.find(x=>x.id===id); if(!p)return; if(!confirm("Marcar este item como terceirizado? Ele sai da Impressão e vai para a aba Terceirizado.")) return; p.terceirizado=true; salvar(LS.prodflow,producao); renderProc("imp"); }
 function desfazerTerceirizado(id){ const p=producao.find(x=>x.id===id); if(!p)return; p.terceirizado=false; salvar(LS.prodflow,producao); renderTerc(); }
@@ -2322,7 +2397,7 @@ function entregarPCP(id){ const p=producao.find(x=>x.id===id); if(!p)return; if(
 function renderPCP(){
   const box=$("pcp-box"); if(!box) return;
   const f1=[];
-  ordens.filter(o=>!o.recebida).forEach(o=>{ (o.itens||[]).forEach(it=>{ f1.push({sku:it.sku, qtd:+it.qtd||0, peso:(it.pesoUnit||0)*(+it.qtd||0), oc:o.id, info:o.fornecedor}); }); });
+  ordens.filter(o=>!o.recebida).forEach(o=>{ (o.itens||[]).forEach(it=>{ const rest=(+it.qtd||0)-(+it.recebido||0); if(rest>0) f1.push({sku:it.sku, qtd:rest, peso:(it.pesoUnit||0)*rest, oc:o.id, info:o.fornecedor}); }); });
   const prod=producao.filter(p=>!p.terceirizado && !p.entregue);
   const f2=prod.filter(p=>!p.imp.done).map(p=>({sku:p.sku, qtd:p.qtd, peso:p.pesoUnit*p.qtd, oc:p.ocId}));
   const f3=prod.filter(p=>p.imp.done && !p.acab.done).map(p=>({sku:p.sku, qtd:p.imp.feito, peso:p.pesoUnit*p.imp.feito, oc:p.ocId}));
