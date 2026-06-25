@@ -638,7 +638,7 @@ tbody tr:hover{background:var(--surface-2)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v75 · dados salvos neste aparelho</div>
+    <div class="foot">v78 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -1084,7 +1084,7 @@ let vendedores = carregar(LS.vend, DEF_VEND).map(v=> typeof v==="string" ? {nome
 let produtos   = carregar(LS.prod, DEF_PROD);
 let ondas      = carregar(LS.ondas, DEF_ONDAS).map(o=>{ if(!o.comp) o.comp=compPadrao(o.nome); return o; });
 let fornecedores = carregar(LS.forn, []).map(f=> typeof f==="string" ? {nome:f,fone:""} : f);
-let itensAtuais=[], editandoId=null, tab="pendente", viewAtual="orcamentos";
+let itensAtuais=[], editandoId=null, tab="pendente", viewAtual="orcamentos", gviewAtual="dash-prod";
 let desenvStatus = carregar(LS.dev, {});   // { "orcId:idx": {status, sku, ...} }
 let devTab="aguardando";
 let devForm=null, devStep=1;
@@ -1150,7 +1150,36 @@ function reloadState(){
   records = carregar(LS.records, DEFAULT_RECORDS);
   metaProd = carregar(LS.metaprod, {caixas:35000, ton:2.5});
 }
-function syncRefreshUI(){ try{ preencherSelects(); render(); renderDashProd(); }catch(e){} }
+function refreshViewAtual(){
+  try{
+    const m=$("ocmodal"); if(m && getComputedStyle(m).display!=="none") return;        // modal aberto
+    const ae=document.activeElement; if(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return; // digitando
+    const g=$("tela-gestor");
+    if(g && g.classList.contains("on")){ const v=gviewAtual;
+      if(v==="dash-vendas") renderDashVendas("g");
+      else if(v==="dash-prod") renderDashProd();
+      else if(v==="dash-agenda") renderAgenda();
+      else if(v==="prod-ordem") renderOC();
+      else if(v==="prod-impressao") renderProc("imp");
+      else if(v==="prod-acabamento") renderProc("acab");
+      else if(v==="prod-terceirizado") renderTerc();
+      else if(v==="prod-expedicao") renderExpedicao();
+      else if(v==="bd-historico") renderHistorico();
+      else if(v==="dash-pcp") renderPCP();
+      return; }
+    const vd=$("tela-vendas");
+    if(vd && vd.classList.contains("on")){ const v=viewAtual;
+      if(v==="orcamentos") render();
+      else if(v==="dash-vendas") renderDashVendas("v"); }
+  }catch(e){}
+}
+function syncRefreshUI(){ try{ preencherSelects(); render(); renderDashProd(); refreshViewAtual(); }catch(e){} }
+function autoAtualizar(){
+  if(!syncOn || document.hidden) return;
+  if(($("tela-oc-nova")||{}).classList && $("tela-oc-nova").classList.contains("on")) return; // não atrapalha nova OC
+  flushPending().then(syncPull).finally(()=>{ try{ refreshViewAtual(); }catch(e){} });
+}
+setInterval(autoAtualizar, 120000);
 function syncSetStatus(s){ syncStatus=s; try{ renderSyncScreen(); }catch(e){} }
 function isEmptyVal(v){ return v==null || (Array.isArray(v)&&v.length===0) || (typeof v==="object"&&!Array.isArray(v)&&Object.keys(v).length===0); }
 function lsParse(k){ try{ const r=localStorage.getItem(k); return r==null?null:JSON.parse(r); }catch(e){ return null; } }
@@ -1209,12 +1238,6 @@ async function syncInit(){
           if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
           return;
         }
-        if(k===LS.devav){
-          const merged=mergeByKey(lsParse(k), cloud[k].value, devSig), ms=JSON.stringify(merged);
-          localStorage.setItem(k, ms); syncVer[k]=cloud[k].updated_at;
-          if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
-          return;
-        }
         const cu=cloud[k].updated_at, lm=localMod(k);
         if(lm && cu && new Date(lm) > new Date(cu)){ pendingPush[k]=true; syncVer[k]=cu; return; }
         if(isEmptyVal(cloud[k].value) && !isEmptyVal(lsParse(k))){ pendingPush[k]=true; syncVer[k]=cu; return; }
@@ -1234,13 +1257,6 @@ async function syncPull(){
       if(cloud[k].updated_at && cloud[k].updated_at!==syncVer[k]){
         if(k===LS.hist){
           const merged=mergeHist(lsParse(k), cloud[k].value), ms=JSON.stringify(merged);
-          if(localStorage.getItem(k)!==ms){ localStorage.setItem(k,ms); changed=true; }
-          syncVer[k]=cloud[k].updated_at;
-          if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
-          return;
-        }
-        if(k===LS.devav){
-          const merged=mergeByKey(lsParse(k), cloud[k].value, devSig), ms=JSON.stringify(merged);
           if(localStorage.getItem(k)!==ms){ localStorage.setItem(k,ms); changed=true; }
           syncVer[k]=cloud[k].updated_at;
           if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
@@ -1620,7 +1636,7 @@ function abrirGestor(){
 }
 function abrirProducao(){ const g=document.getElementById("tela-gestor"); g.classList.add("modo-prod"); const t=document.getElementById("gestor-drawer-title"); if(t)t.textContent="Produção"; show("tela-gestor"); irViewG("dash-prod"); }
 function irViewG(v){
-  closeDrawer();
+  gviewAtual=v; closeDrawer();
   document.querySelectorAll("#tela-gestor .navitem").forEach(b=>b.classList.toggle("on", b.dataset.v===v));
   const ns=$("g-navselect"); if(ns) ns.value=v;
   document.querySelectorAll("#tela-gestor .vview").forEach(x=>x.style.display="none");
@@ -3230,7 +3246,33 @@ preencherSelects();
 render();
 appReady=true;
 try{ renderSyncScreen(); }catch(e){}
-(async()=>{ try{ await syncInit(); }catch(e){} try{ repararOrdens(); }catch(e){} try{ repararHistorico(); }catch(e){} try{ dedupDevAvulsos(); }catch(e){} })();
+function seedFichas5(){
+  if(localStorage.getItem("malba_os_fichas_v5")) return;
+  const D=[
+    ["Pnova","Maleta",140,140,160,"B",346,"RCP PAPEIS UNIPESSOAL LTDA",602,306,70,166,70,"0","seta cuidado frágil",true,"MALBA FABRICA DE CAIXAS DE PAPELAO LTDA","","2026-02-04"],
+    ["MALUDOCES02","Maleta",280,180,90,"B",346,"RCP PAPEIS UNIPESSOAL LTDA",962,276,90,96,90,"MALUDOCES","MALUDOCES SETA",true,"MALU DOCES","","2026-04-14"],
+    ["MALUDOCES1.2","Maleta",250,250,140,"B",346,"CIBRAPEL SA",1042,396,125,146,125,"MALUDOCES","NUMERO 1.2 E SETAS",true,"MALU DOCES","","2026-03-18"],
+    ["MALUDOCES01","Maleta",250,250,200,"B",346,"CIBRAPEL SA",1042,456,125,206,125,"MALUDOCES","NUMERO 1 E SETAS",true,"MALU DOCES","","2026-03-18"],
+    ["MALUDOCESM","Maleta",240,160,90,"B",346,"CIBRAPEL SA",842,256,80,96,80,"MALUDOCES","LETRA M E SETAS",true,"MALU DOCES","","2026-03-18"]
+  ];
+  const skus=new Set(devAvulsos.map(a=>String(a.sku||"").trim().toLowerCase()));
+  let added=false;
+  D.forEach(r=>{
+    const [sku,produto,c,l,a,onda,gram,forn,chComp,chLarg,v1,v2,v3,cliche,ref,logo,cliente,vend,data]=r;
+    if(skus.has(String(sku).trim().toLowerCase())) return;
+    const ond=ondas.find(o=>o.nome===onda);
+    const comp= ond&&ond.comp ? JSON.parse(JSON.stringify(ond.comp)) : compPadrao(onda);
+    const tipo= /MALBA FABRICA/i.test(cliente) ? "Loja" : "Cliente";
+    devAvulsos.push({ key:"av:"+uid(), sku, produto, c, l, a, ondaNome:onda, gram, fornecedor:forn,
+      tipo, comp, chapaTipo:"nenhum", chapaComp:chComp, chapaLarg:chLarg, chapaManual:true,
+      vincos:[v1,v2,v3], codigoCliche:cliche, refCliente:ref, cor1:"", cor2:"", logoMalba:logo,
+      cliente, vendedor:vend, qtd:0, data, status:"desenvolvido" });
+    skus.add(String(sku).trim().toLowerCase()); added=true;
+  });
+  if(added){ salvar(LS.devav,devAvulsos); try{ render(); }catch(e){} }
+  localStorage.setItem("malba_os_fichas_v5","1");
+}
+(async()=>{ try{ await syncInit(); }catch(e){} try{ repararOrdens(); }catch(e){} try{ repararHistorico(); }catch(e){} try{ dedupDevAvulsos(); }catch(e){} try{ seedFichas5(); }catch(e){} })();
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden && syncOn){ flushPending().then(syncPull); } });
 </script>
 </body>
