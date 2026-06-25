@@ -638,7 +638,7 @@ tbody tr:hover{background:var(--surface-2)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v73 · dados salvos neste aparelho</div>
+    <div class="foot">v75 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -669,6 +669,7 @@ tbody tr:hover{background:var(--surface-2)}
 
       <div class="synccard" id="sync-actions">
         <button class="btn ghost full" onclick="syncAgora()">🔄 Sincronizar agora</button>
+        <button class="btn ghost full" onclick="recuperarBackup()">⏪ Recuperar itens do backup</button>
         <button class="btn ghost full danger" onclick="syncDesconectar()">Desconectar este aparelho</button>
       </div>
 
@@ -1162,6 +1163,7 @@ function mergeByKey(localArr, cloudArr, idf){
   return out;
 }
 function devIdent(x){ const s=(x&&x.sku!=null)?String(x.sku).trim().toLowerCase():""; return s ? ("sku:"+s) : ("key:"+((x&&x.key)||"")); }
+function devSig(x){ if(!x) return "x"; const c=Object.assign({},x); delete c.key; try{ return JSON.stringify(c); }catch(e){ return (x.sku||"")+"|"+(x.key||""); } }
 function mergeHist(localArr, cloudArr){
   const out=[], seenId=new Set(), seenSig=new Set();
   const sig=h=> (!h.sku && !(+h.qtdProd) && h.pesoTotalProd) ? ("MES|"+h.processo+"|"+h.data+"|"+h.pesoTotalProd) : null;
@@ -1175,10 +1177,6 @@ function recuperarBackup(){
   if(!raw){ alert("Não há backup salvo neste aparelho.\n\n(O backup é criado quando o aparelho baixa dados da nuvem pela primeira vez. Tente em outro aparelho onde os dados ainda apareçam.)"); return; }
   let bk; try{ bk=JSON.parse(raw); }catch(e){ alert("Backup ilegível neste aparelho."); return; }
   const planos=[
-    [LS.hist,"lançamentos de produção",h=>h.id, x=>(x.sku||(+x.qtdProd||0)>0||(+x.qtdDesp||0)>0)],
-    [LS.prodflow,"itens em produção",x=>x.id, null],
-    [LS.oc,"ordens de compra",x=>x.id, null],
-    [LS.orc,"orçamentos",x=>x.id, null],
     [LS.devav,"produtos desenvolvidos",x=>x.key, null]
   ];
   const msgs=[];
@@ -1212,7 +1210,7 @@ async function syncInit(){
           return;
         }
         if(k===LS.devav){
-          const merged=mergeByKey(lsParse(k), cloud[k].value, devIdent), ms=JSON.stringify(merged);
+          const merged=mergeByKey(lsParse(k), cloud[k].value, devSig), ms=JSON.stringify(merged);
           localStorage.setItem(k, ms); syncVer[k]=cloud[k].updated_at;
           if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
           return;
@@ -1242,7 +1240,7 @@ async function syncPull(){
           return;
         }
         if(k===LS.devav){
-          const merged=mergeByKey(lsParse(k), cloud[k].value, devIdent), ms=JSON.stringify(merged);
+          const merged=mergeByKey(lsParse(k), cloud[k].value, devSig), ms=JSON.stringify(merged);
           if(localStorage.getItem(k)!==ms){ localStorage.setItem(k,ms); changed=true; }
           syncVer[k]=cloud[k].updated_at;
           if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
@@ -3225,7 +3223,7 @@ function repararHistorico(){
 }
 function dedupDevAvulsos(){
   const seen=new Set(); const out=[];
-  devAvulsos.forEach(x=>{ const id=devIdent(x); if(seen.has(id)) return; seen.add(id); out.push(x); });
+  devAvulsos.forEach(x=>{ const id=devSig(x); if(seen.has(id)) return; seen.add(id); out.push(x); });
   if(out.length!==devAvulsos.length){ devAvulsos=out; salvar(LS.devav,devAvulsos); try{ render(); }catch(e){} }
 }
 preencherSelects();
