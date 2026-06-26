@@ -132,6 +132,13 @@ input,select,textarea{font-family:inherit;font-size:15px}
   .drawer .navitem.subitem.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
   .drawer .navmini{padding:6px 4px}
 }
+/* Menu da Produção — Opção 2 (Médio) */
+#tela-gestor.modo-prod .navitem.subitem{font-size:16px}
+#tela-gestor.modo-prod .drawer .navitem.subitem{padding:13px 14px;margin:2px 0;border-radius:10px}
+@media(max-width:899px){
+  #tela-gestor.modo-prod .drawer .navsub:not(.collapsed){gap:12px}
+  #tela-gestor.modo-prod .drawer .navitem.subitem{padding:12px 18px;margin:0;font-size:15px}
+}
 @media(max-width:560px){ .rail-btn .ri{font-size:18px} .rail-btn small{font-size:10.5px} }
 @media(max-width:560px){
   .chartcard{padding:11px;margin-top:12px}
@@ -638,7 +645,7 @@ tbody tr:hover{background:var(--surface-2)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v78 · dados salvos neste aparelho</div>
+    <div class="foot">v81 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -968,7 +975,7 @@ tbody tr:hover{background:var(--surface-2)}
     <div class="formcard">
       <div class="sec-title" style="margin-top:0">Dados do orçamento</div>
       <div class="grid g2">
-        <div class="field"><label>Vendedor</label><select id="f-vendedor"></select></div>
+        <div class="field"><label>Vendedor *</label><select id="f-vendedor"></select></div>
         <div class="field"><label>Cliente *</label>
           <input id="f-cliente" list="clientes-dl" placeholder="Digite ou selecione o cliente" autocomplete="off">
           <datalist id="clientes-dl"></datalist>
@@ -2275,7 +2282,7 @@ function excluirProc(stage,id){
 function procLists(stage){
   // itens que entram nesse estágio
   let base = producao.filter(p=> stage==="imp" ? !p.terceirizado : p.imp.feito>0 );
-  const ag = base.filter(p=> stage==="imp" ? !p.imp.done : !p.acab.done );
+  const ag = base.filter(p=> stage==="imp" ? !p.imp.done : (!p.acab.done && p.imp.feito>p.acab.feito) );
   const co = base.filter(p=> stage==="imp" ? p.imp.done : p.acab.done );
   return {ag, co};
 }
@@ -2838,6 +2845,7 @@ function addAvulso(){
 function salvarOrcamento(){
   const cliente=$("f-cliente").value.trim(), vendedor=$("f-vendedor").value;
   if(!cliente){ alert("Informe o nome do cliente."); return; }
+  if(!vendedor){ alert("Selecione o vendedor."); $("f-vendedor").focus(); return; }
   const parcial=itensAtuais.some(it=> it.tipo==="caixa" && (it.c||it.l||it.a||it.vkg) && !(it.c&&it.l&&it.a&&it.vkg));
   if(parcial){ alert("Há um produto com dados incompletos. Preencha medidas e valor do kg, ou remova-o."); return; }
   const itens=itensAtuais.filter(it=> it.tipo==="avulso" ? true : (it.c&&it.l&&it.a&&it.vkg));
