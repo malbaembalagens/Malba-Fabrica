@@ -205,6 +205,22 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .devside{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:9px}
 .devbtn{padding:9px 12px;border-radius:9px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-size:12.5px;font-weight:600;white-space:nowrap}
 .devside-btns{display:flex;gap:8px;align-items:center}
+.vincbtn{padding:9px 12px;border-radius:9px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-size:12.5px;font-weight:600;white-space:nowrap;cursor:pointer}
+.vincbtn.on{background:#e2effb;border-color:#9cc6f5;color:#1c66c2}
+.massabtn{margin:-4px 0 14px;width:100%;padding:13px;border-radius:13px;background:var(--dark);color:#fff;border:none;font-size:14px;font-weight:800;cursor:pointer;transition:.15s}
+.massabtn:hover{filter:brightness(1.1)}
+.massabtn.on{background:#fdeaea;border-color:#f3c2c2;border-style:solid;color:#c0392b}
+.masstool{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#fff8e6;border:1px solid var(--amber);border-radius:12px;padding:11px 14px;margin-bottom:12px;font-size:13.5px}
+.masstool-b{display:flex;gap:8px;align-items:center}
+.masschk{display:inline-flex;align-items:center;gap:7px;margin-top:7px;font-size:12.5px;color:var(--accent);font-weight:600;cursor:pointer}
+.masschk input{width:17px;height:17px}
+.massno{display:inline-block;margin-top:7px;font-size:12px;color:var(--muted-2);font-style:italic}
+.vincsug{margin-top:8px;background:#eefbf2;border:1px solid #b6e6c6;border-radius:9px;padding:7px 10px;font-size:12.5px;color:#15803d;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.vincsug button{border:1px solid #16a34a;background:#16a34a;color:#fff;border-radius:7px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer}
+.vincsug button:active{filter:brightness(.95)}
+.devcard.masssel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.cmassa-top{display:flex;gap:12px;flex-wrap:wrap}
+.cmassa-top>div{flex:1;min-width:160px}
 .devbtn:active{background:var(--bg)}
 @media(max-width:560px){.devcard{flex-direction:column}.devside{flex-direction:row;align-items:center;width:100%;justify-content:space-between}}
 
@@ -428,6 +444,11 @@ tbody tr:hover{background:var(--surface-2)}
 .delbtn{width:34px;height:34px;border-radius:9px;border:1px solid #f3c2c2;background:#fdeaea;color:#c0392b;font-size:15px;font-weight:800;cursor:pointer;display:inline-grid;place-items:center}
 .ficbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);font-size:15px;cursor:pointer;display:inline-grid;place-items:center}
 .obsbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);font-size:14px;cursor:pointer;display:inline-grid;place-items:center}
+.draghandle{cursor:grab;color:var(--muted-2);font-size:17px;text-align:center;width:34px;touch-action:none;user-select:none;-webkit-user-select:none}
+.draghandle:active{cursor:grabbing}
+tr.dragging{opacity:.55;background:var(--accent-soft)}
+.reordhint{font-size:12.5px;color:var(--muted);background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:10px}
+.thdrag{width:34px}
 .obsbtn.has{border-color:var(--amber);background:#fff7e0}
 .lampbtn{width:34px;height:34px;border-radius:9px;border:1px solid #f0c000;background:#fff3b0;font-size:15px;cursor:pointer;display:inline-grid;place-items:center}
 .lampsku{border:none;background:transparent;font-size:15px;cursor:pointer;padding:0;margin-left:6px;vertical-align:-1px;line-height:1}
@@ -441,6 +462,26 @@ tbody tr:hover{background:var(--surface-2)}
 .tercbtn:hover{border-color:var(--accent);color:var(--accent)}
 .truckbtn{width:38px;height:34px;border-radius:9px;border:none;background:var(--accent);color:#fff;font-size:16px;cursor:pointer;display:inline-grid;place-items:center;box-shadow:var(--shadow)}
 .truckbtn:hover{filter:brightness(.95)}
+/* PCP Kanban (Opção B) */
+.pcpk{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:start}
+.pcpk-col{background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:10px;min-width:0}
+.pcpk-head{margin-bottom:10px}
+.pcpk-htop{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:13.5px;font-weight:700}
+.pcpk-htop>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcpk-cnt{flex:none;background:var(--surface);border:1px solid var(--border);color:var(--c);border-radius:999px;padding:1px 9px;font-size:12px;font-weight:700}
+.pcpk-tot{font-size:11.5px;color:var(--c);font-weight:600;margin-top:3px}
+.pcpk-cards{display:flex;flex-direction:column;gap:7px}
+.pcpk-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--c);border-radius:8px;padding:8px 10px}
+.pcpk-sku{font-size:13px;font-weight:600}
+.pcpk-meta{font-size:11px;color:var(--muted);margin-top:1px}
+.pcpk-sub{font-size:10.5px;color:var(--muted-2);margin-top:1px}
+.pcpk-empty{font-size:11.5px;color:var(--muted-2);padding:12px 4px;text-align:center}
+.pcpk-truck{margin-top:7px;width:100%;border:1px solid #16a34a;background:#dcfce7;color:#15803d;border-radius:7px;padding:6px;font-size:11.5px;font-weight:600;cursor:pointer}
+.pcpk-truck:active{filter:brightness(.96)}
+@media(max-width:760px){
+  .pcpk{display:flex;overflow-x:auto;gap:10px;padding-bottom:6px;scroll-snap-type:x proximity}
+  .pcpk-col{flex:0 0 78%;max-width:280px;scroll-snap-align:start}
+}
 /* anel circular produção do dia */
 .ringchart{display:flex;align-items:center;gap:22px;flex-wrap:wrap;justify-content:center;padding:8px 0}
 .ring{width:170px;height:170px;cursor:pointer;flex:none}
@@ -646,7 +687,7 @@ tbody tr:hover{background:var(--surface-2)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v82 · dados salvos neste aparelho</div>
+    <div class="foot">v86 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -849,6 +890,7 @@ tbody tr:hover{background:var(--surface-2)}
             <input class="search big" id="dev-busca" placeholder="🔍  Buscar por SKU, medidas da caixa ou da chapa" oninput="renderDesenv()">
             <button class="novodev" onclick="novoDesenvolvimento()"><span>＋</span> Novo desenvolvimento</button>
           </div>
+          <button class="massabtn" id="massabtn" onclick="toggleMassa()">🛒 Comprar em massa</button>
           <div class="tabs">
             <button class="tab on" data-t="aguardando" onclick="setDevTab('aguardando',this)">Aguardando <span class="badge" id="dev-c-ag">0</span></button>
             <button class="tab" data-t="desenvolvido" onclick="setDevTab('desenvolvido',this)">Desenvolvido <span class="badge" id="dev-c-de">0</span></button>
@@ -1092,7 +1134,7 @@ let vendedores = carregar(LS.vend, DEF_VEND).map(v=> typeof v==="string" ? {nome
 let produtos   = carregar(LS.prod, DEF_PROD);
 let ondas      = carregar(LS.ondas, DEF_ONDAS).map(o=>{ if(!o.comp) o.comp=compPadrao(o.nome); return o; });
 let fornecedores = carregar(LS.forn, []).map(f=> typeof f==="string" ? {nome:f,fone:""} : f);
-let itensAtuais=[], editandoId=null, tab="pendente", viewAtual="orcamentos", gviewAtual="dash-prod";
+let itensAtuais=[], editandoId=null, tab="pendente", viewAtual="orcamentos", gviewAtual="dash-prod", _dragReord=false;
 let desenvStatus = carregar(LS.dev, {});   // { "orcId:idx": {status, sku, ...} }
 let devTab="aguardando";
 let devForm=null, devStep=1;
@@ -1160,6 +1202,7 @@ function reloadState(){
 }
 function refreshViewAtual(){
   try{
+    if(_dragReord) return;                                                          // arrastando para ordenar
     const m=$("ocmodal"); if(m && getComputedStyle(m).display!=="none") return;        // modal aberto
     const ae=document.activeElement; if(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return; // digitando
     const g=$("tela-gestor");
@@ -1867,6 +1910,7 @@ function renderDesenv(){
   const itens=devItems();
   $("dev-c-ag").textContent=itens.filter(x=>x.status==="aguardando").length;
   $("dev-c-de").textContent=itens.filter(x=>x.status==="desenvolvido").length;
+  const mb=$("massabtn"); if(mb){ mb.textContent=_massaMode?"✕ Cancelar seleção":"🛒 Comprar em massa"; mb.classList.toggle("on",_massaMode); }
   const busca=($("dev-busca").value||"").toLowerCase().trim();
   const lst=itens.filter(x=>x.status===devTab).filter(x=>{
     if(!busca) return true;
@@ -1894,18 +1938,26 @@ function renderDesenv(){
     box.innerHTML=`<div class="tablewrap"><table class="htab"><thead><tr><th>SKU</th><th class="num">Medida da chapa</th><th class="num">Medida da caixa</th><th>Data</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
     return;
   }
-  if(!lst.length){ box.innerHTML=`<div class="empty"><span class="em">🧱</span>Nenhum item aguardando desenvolvimento.</div>`; return; }
-  box.innerHTML=lst.map(x=>{
+  if(!lst.length){ box.innerHTML=(_massaMode?massaToolbar():"")+`<div class="empty"><span class="em">🧱</span>Nenhum item aguardando desenvolvimento.</div>`; return; }
+  box.innerHTML=(_massaMode?massaToolbar():"")+lst.map(x=>{
     const it=x.it, d=devChapaInfo(x); const sku=(x.entry&&x.entry.sku)||"";
-    return `<div class="devcard">
+    const vinc=(x.entry&&x.entry.vinculoSku)||"";
+    const sel=!!_massaSel[x.key];
+    const chk=_massaMode ? (vinc ? `<label class="masschk"><input type="checkbox" ${sel?"checked":""} onchange="massaToggleItem('${x.key}')"> selecionar para compra</label>` : `<span class="massno">vincule um SKU para poder comprar</span>`) : "";
+    const sug=!vinc ? sugerirVinculo(x) : "";
+    const sugHtml = sug ? `<div class="vincsug">💡 Sugestão por medidas: <b>${esc(sug)}</b> <button onclick="aprovarSugestao('${x.key}','${String(sug).replace(/'/g,"\\'")}')">✓ Aprovar vínculo</button></div>` : "";
+    return `<div class="devcard${sel?" masssel":""}">
       <div class="devinfo">
         <b>${esc(it.produto)} ${it.c}×${it.l}×${it.a} mm</b>
-        <span>${sku?`SKU ${esc(sku)} · `:""}Chapa ${Math.round(d.comp)}×${Math.round(d.larg)} mm · ${esc(it.ondaNome||"")} · ${it.gram} g/m²</span>
-        <span>${esc(x.cliente)}${x.orcId?` · Orçamento #${x.orcId}`:" · avulso"}</span>
+        <span>${vinc?`🔗 Vinculado ao SKU <b>${esc(vinc)}</b> · `:(sku?`SKU ${esc(sku)} · `:"")}Chapa ${Math.round(d.comp)}×${Math.round(d.larg)} mm · ${esc(it.ondaNome||"")} · ${it.gram} g/m²</span>
+        <span>${esc(x.cliente)}${x.orcId?` · Orçamento #${x.orcId}`:" · avulso"}${it.qtd?` · ${(+it.qtd).toLocaleString("pt-BR")} un`:""}</span>
+        ${sugHtml}
+        ${chk}
       </div>
       <div class="devside">
         <span class="st pend">Aguardando</span>
         <div class="devside-btns">
+          <button class="vincbtn ${vinc?"on":""}" onclick="abrirVincular('${x.key}')" title="Vincular SKU desenvolvido">🔗 ${vinc?"Vínculo: "+esc(vinc):"Vincular"}</button>
           <button class="devbtn" onclick="abrirDesenvWizard('${x.key}')">🛠️ Desenvolver</button>
           <button class="ic-btn rm" onclick="excluirDev('${x.key}')" title="Excluir">×</button>
         </div>
@@ -1918,6 +1970,94 @@ function excluirDev(key){
   if(String(key).startsWith("av:")){ devAvulsos=devAvulsos.filter(a=>a.key!==key); salvar(LS.devav,devAvulsos); }
   else { desenvStatus[key]={status:"excluido"}; salvar(LS.dev,desenvStatus); }
   renderDesenv();
+}
+// ---- Vincular SKU desenvolvido a um item aguardando ----
+let _vincKey=null;
+function abrirVincular(key){
+  _vincKey=key;
+  const x=devItems().find(d=>d.key===key); const atual=(x&&x.entry&&x.entry.vinculoSku)||"";
+  const skus=[...new Set(devItems().filter(d=>d.status==="desenvolvido"&&d.entry&&d.entry.sku).map(d=>d.entry.sku))];
+  $("ocmodal").innerHTML=`<div class="modal-card" style="max-width:470px">
+    <h3 class="modal-h">🔗 Vincular a um SKU desenvolvido</h3>
+    <p class="rechint">Digite o SKU já desenvolvido que corresponde a este item do orçamento. Depois dá pra comprar em massa todos os itens vinculados.</p>
+    <label class="flbl">SKU desenvolvido</label>
+    <input id="vinc-sku" list="vinc-dl" value="${esc(atual)}" placeholder="Ex.: MALUDOCES01" style="width:100%;border:1px solid var(--border);border-radius:12px;padding:12px;font:inherit;font-size:14px;box-sizing:border-box">
+    <datalist id="vinc-dl">${skus.map(s=>`<option value="${esc(s)}"></option>`).join("")}</datalist>
+    <div class="modal-foot"><button class="btnlink" onclick="closeOcModal()">Cancelar</button>${atual?`<button class="btnlink" style="color:var(--red)" onclick="salvarVinculo(true)">Remover vínculo</button>`:""}<button class="btnprim" onclick="salvarVinculo(false)">Vincular</button></div>
+  </div>`;
+  $("ocmodal").style.display="flex"; setTimeout(()=>{const e=$("vinc-sku");if(e)e.focus();},50);
+}
+function salvarVinculo(remover){
+  if(!_vincKey){ closeOcModal(); return; }
+  const e=Object.assign({}, devEntry(_vincKey)||{});
+  if(remover){ delete e.vinculoSku; e.status="aguardando"; desenvStatus[_vincKey]=e; salvar(LS.dev,desenvStatus); closeOcModal(); renderDesenv(); return; }
+  const sku=($("vinc-sku")?$("vinc-sku").value:"").trim();
+  if(!sku){ alert("Digite o SKU."); return; }
+  const dev=devItems().find(d=>d.status==="desenvolvido"&&d.entry&&String(d.entry.sku).toLowerCase()===sku.toLowerCase());
+  if(!dev){ alert("SKU não encontrado entre os desenvolvidos:\n"+sku); return; }
+  e.status="aguardando"; e.vinculoSku=dev.entry.sku; desenvStatus[_vincKey]=e;
+  salvar(LS.dev,desenvStatus); closeOcModal(); renderDesenv();
+}
+function devBoxDims(x){ const e=x.entry||{}, it=x.it||{}; return { c:+(e.c!=null?e.c:it.c)||0, l:+(e.l!=null?e.l:it.l)||0, a:+(e.a!=null?e.a:it.a)||0 }; }
+function sugerirVinculo(x){
+  const b=devBoxDims(x); if(!b.c||!b.l||!b.a) return null;
+  const cand=devItems().filter(d=>d.status==="desenvolvido"&&d.entry&&d.entry.sku);
+  for(const d of cand){ const db=devBoxDims(d); if(db.c===b.c&&db.l===b.l&&db.a===b.a) return d.entry.sku; }
+  return null;
+}
+function aprovarSugestao(key,sku){
+  const e=Object.assign({}, devEntry(key)||{}, {status:"aguardando", vinculoSku:sku});
+  desenvStatus[key]=e; salvar(LS.dev,desenvStatus); renderDesenv();
+}
+// ---- Comprar em massa ----
+let _massaMode=false, _massaSel={}, _massaItems=[];
+function toggleMassa(){ _massaMode=!_massaMode; _massaSel={}; if(_massaMode){ devTab="aguardando"; document.querySelectorAll("#gview-prod-desenv .tab").forEach(c=>c.classList.toggle("on", c.dataset.t==="aguardando")); } renderDesenv(); }
+function massaToggleItem(key){ if(_massaSel[key]) delete _massaSel[key]; else _massaSel[key]=true; renderDesenv(); }
+function massaToolbar(){
+  const n=Object.keys(_massaSel).length;
+  return `<div class="masstool"><span>🛒 <b>${n}</b> item(ns) selecionado(s) para compra</span><div class="masstool-b"><button class="btnlink" onclick="toggleMassa()">Cancelar</button><button class="btnprim" ${n?"":"disabled"} onclick="abrirCompraMassa()">Comprar selecionados →</button></div></div>`;
+}
+function abrirCompraMassa(){
+  const keys=Object.keys(_massaSel);
+  _massaItems=keys.map(k=>{ const x=devItems().find(d=>d.key===k); const sku=x&&x.entry&&x.entry.vinculoSku; const qtd=(x&&x.it&&+x.it.qtd)||0; return {key:k, sku, qtd}; }).filter(i=>i.sku);
+  if(!_massaItems.length){ alert("Selecione ao menos um item com SKU vinculado."); return; }
+  const fornOpts=fornecedores.map(f=>`<option value="${esc(f.nome)}"></option>`).join("");
+  const rows=_massaItems.map((i,idx)=>`<tr><td><b>${esc(i.sku)}</b></td><td><input type="number" id="massa-q-${idx}" min="1" value="${i.qtd||0}" style="width:110px"></td></tr>`).join("");
+  $("ocmodal").innerHTML=`<div class="modal-card" style="max-width:580px">
+    <h3 class="modal-h">🛒 Comprar em massa</h3>
+    <p class="rechint">Confira as quantidades (herdadas do orçamento, dá pra editar), escolha o fornecedor e a previsão. Vai gerar <b>uma</b> ordem de compra não recebida com todos os itens.</p>
+    <div class="cmassa-top">
+      <div><label class="flbl">Fornecedor *</label><input id="massa-forn" list="massa-forn-dl" placeholder="Buscar fornecedor..." style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px;font:inherit;box-sizing:border-box"><datalist id="massa-forn-dl">${fornOpts}</datalist></div>
+      <div><label class="flbl">Previsão de entrega</label><input id="massa-data" type="date" value="${hojeStr()}" style="border:1px solid var(--border);border-radius:10px;padding:10px;font:inherit"></div>
+    </div>
+    <div class="tablewrap" style="margin-top:12px"><table class="htab"><thead><tr><th>SKU</th><th>Quantidade</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="modal-foot"><button class="btnlink" onclick="closeOcModal()">Cancelar</button><button class="btnprim" onclick="confirmarCompraMassa()">Confirmar ordem de compra</button></div>
+  </div>`;
+  $("ocmodal").style.display="flex";
+}
+function confirmarCompraMassa(){
+  const forn=($("massa-forn")?$("massa-forn").value:"").trim(); const data=($("massa-data")?$("massa-data").value:"")||hojeStr();
+  if(!forn){ alert("Selecione o fornecedor."); return; }
+  const itens=[];
+  _massaItems.forEach((i,idx)=>{
+    const q=Math.max(0,parseInt($("massa-q-"+idx)?$("massa-q-"+idx).value:0)||0); if(q<=0) return;
+    const dev=devItems().find(d=>d.status==="desenvolvido"&&d.entry&&String(d.entry.sku).toLowerCase()===String(i.sku).toLowerCase());
+    if(!dev) return;
+    const it=dev.it, e=dev.entry||{}, d=devChapaInfo(dev);
+    const f={ produto:e.produto||it.produto, c:e.c!=null?e.c:it.c, l:e.l!=null?e.l:it.l, a:e.a!=null?e.a:it.a, gram:e.gram!=null?e.gram:it.gram, comp:e.comp||compPadrao(it.ondaNome), chapaTipo:e.chapaTipo||"nenhum", chapaComp:e.chapaComp!=null?e.chapaComp:it.c, chapaLarg:e.chapaLarg!=null?e.chapaLarg:it.l, chapaManual:!!e.chapaManual, pesoManual:!!e.pesoManual, pesoUnit:e.pesoUnit, custoManual:!!e.custoManual, custoUnit:e.custoUnit };
+    itens.push({ key:dev.key, sku:e.sku||"", produto:it.produto, c:it.c,l:it.l,a:it.a, chapaComp:Math.round(d.comp), chapaLarg:Math.round(d.larg), gram:f.gram, ondaNome:it.ondaNome, vincos:(e.vincos||[]).slice(), qtd:q, pesoUnit:chapaPeso(f), _origemKey:i.key });
+  });
+  if(!itens.length){ alert("Nenhum item válido para comprar."); return; }
+  const custoKg=fornCusto(forn); let peso=0, valor=0;
+  const itensF=itens.map(i=>{ const p=i.pesoUnit*i.qtd, v=custoKg*p; peso+=p; valor+=v; const o=Object.assign({},i,{peso:p, custoUnit:custoKg*i.pesoUnit, valor:v}); delete o._origemKey; return o; });
+  const ipi=valor*0.0325; const id=ocNovoId(data);
+  ordens.push({ id, dataPrevista:data, fornecedor:forn, itens:itensF, peso, valor, ipi, valorTotal:valor+ipi, recebida:false });
+  salvar(LS.oc,ordens);
+  itens.forEach(i=>{ const k=i._origemKey; if(!k || String(k).startsWith("av:")) return; const e=Object.assign({}, devEntry(k)||{}, {status:"comprado"}); desenvStatus[k]=e; });
+  salvar(LS.dev,desenvStatus);
+  _massaMode=false; _massaSel={}; _massaItems=[];
+  closeOcModal(); renderDesenv();
+  alert("Ordem de compra "+id+" criada com "+itensF.length+" item(ns)!\n\nEla está em 'Ordem de compra' como não recebida e segue o fluxo normal.");
 }
 function fichaPorSku(sku){
   if(!sku){ alert("Item sem SKU."); return; }
@@ -2299,20 +2439,25 @@ function renderProc(stage){
   if(busca) lst=lst.filter(p=>[p.sku,p.ocId,p.produto].join(" ").toLowerCase().includes(busca));
   if(de) lst=lst.filter(p=>(p.prev||"")>=de);
   if(ate) lst=lst.filter(p=>(p.prev||"")<=ate);
-  lst.sort((a,b)=>(a.prev||"").localeCompare(b.prev||"")||String(a.ocId).localeCompare(String(b.ocId)));
+  const ordf = stage==="imp"?"ordemImp":"ordemAcab";
+  const reord = (tab!=="concluido" && ehGestor() && (stage==="imp"||stage==="acab"));
+  lst.sort((a,b)=>{ const av=a[ordf]==null?Infinity:a[ordf], bv=b[ordf]==null?Infinity:b[ordf]; if(av!==bv) return av-bv; return (a.prev||"").localeCompare(b.prev||"")||String(a.ocId).localeCompare(String(b.ocId)); });
   const pp=Math.max(1,parseInt($(pre+"-pp")?$(pre+"-pp").value:10)||10);
-  let page=stage==="imp"?impPage:acabPage; const pages=Math.max(1,Math.ceil(lst.length/pp));
+  let page=stage==="imp"?impPage:acabPage; const pages= reord?1:Math.max(1,Math.ceil(lst.length/pp));
   if(page>pages){ page=pages; if(stage==="imp")impPage=page; else acabPage=page; }
-  const slice=lst.slice((page-1)*pp, page*pp);
+  const slice= reord ? lst : lst.slice((page-1)*pp, page*pp);
   const box=$(pre+"-list");
-  const head=`<thead><tr><th>SKU</th><th>Ordem de compra</th><th>Caixa</th><th class="num">QTDE</th><th class="num">Peso</th><th>Ações</th></tr></thead>`;
-  if(!lst.length){ box.innerHTML=`<div class="tablewrap"><table class="htab">${head}<tbody><tr><td colspan="6" style="text-align:center;color:var(--muted-2);padding:34px">Nenhum item encontrado.</td></tr></tbody></table></div>`; return; }
+  const colspan= reord?7:6;
+  const head=`<thead><tr>${reord?"<th class=\"thdrag\"></th>":""}<th>SKU</th><th>Ordem de compra</th><th>Caixa</th><th class="num">QTDE</th><th class="num">Peso</th><th>Ações</th></tr></thead>`;
+  if(!lst.length){ box.innerHTML=`<div class="tablewrap"><table class="htab">${head}<tbody><tr><td colspan="${colspan}" style="text-align:center;color:var(--muted-2);padding:34px">Nenhum item encontrado.</td></tr></tbody></table></div>`; return; }
   const rows=slice.map(p=>{ const concl=(tab==="concluido"); const q= concl ? (stage==="imp"?p.imp.feito:p.acab.feito) : procDisp(stage,p);
     const delBtn=(stage==="imp" && ehGestor()) ? `<button class="delbtn" onclick="excluirProc('imp','${p.id}')" title="Excluir item">✕</button>` : "";
     const ficBtn=(stage==="imp" && p.sku) ? `<button class="ficbtn" onclick="fichaPorSku('${String(p.sku).replace(/'/g,"\\'")}')" title="Ficha técnica">📄</button>` : "";
     const obsBtn=ehGestor() ? `<button class="obsbtn ${p.obs?"has":""}" onclick="abrirObs('${p.id}','${stage}')" title="Observações do item">📌</button>` : "";
     const lampBtn=(!ehGestor() && p.obs) ? `<button class="lampsku" onclick="verObs('${p.id}')" title="Observação do gestor">💡</button>` : "";
-    return `<tr>
+    const handle= reord ? `<td class="draghandle" data-id="${p.id}" title="Arraste para ordenar">⠿</td>` : "";
+    return `<tr data-id="${p.id}">
+      ${handle}
       <td><b>${esc(p.sku||"—")}</b>${lampBtn}</td>
       <td>${esc(p.ocId)}</td>
       <td>${p.c}×${p.l}×${p.a} mm</td>
@@ -2320,8 +2465,38 @@ function renderProc(stage){
       <td class="num">${(p.pesoUnit*q).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})} kg</td>
       <td>${ concl ? `<div class="procacts"><span class="stb stb-rec">✓ Concluído</span>${obsBtn}${ficBtn}${delBtn}</div>` : `<div class="procacts"><button class="okbtn" onclick="concluirProc('${stage}','${p.id}')" title="Concluir item">✓</button>${obsBtn}${ficBtn}${ (stage==="imp" && ehGestor()) ? `<button class="tercbtn" onclick="marcarTerceirizado('${p.id}')" title="Marcar como terceirizado">Terceirizado</button>` : "" }${delBtn}</div>` }</td>
     </tr>`;}).join("");
-  box.innerHTML=`<div class="tablewrap"><table class="htab">${head}<tbody>${rows}</tbody></table></div>
-    <div class="pager"><button ${page<=1?"disabled":""} onclick="${stage==="imp"?"impPage--":"acabPage--"};renderProc('${stage}')">← Anterior</button><span class="pgnum">${page}</span><button ${page>=pages?"disabled":""} onclick="${stage==="imp"?"impPage++":"acabPage++"};renderProc('${stage}')">Próximo →</button></div>`;
+  box.innerHTML=`${reord?`<div class="reordhint">⠿ Arraste para definir a <b>sequência de produção</b> — a Produção verá nesta ordem.</div>`:""}<div class="tablewrap"><table class="htab">${head}<tbody>${rows}</tbody></table></div>
+    ${reord?"":`<div class="pager"><button ${page<=1?"disabled":""} onclick="${stage==="imp"?"impPage--":"acabPage--"};renderProc('${stage}')">← Anterior</button><span class="pgnum">${page}</span><button ${page>=pages?"disabled":""} onclick="${stage==="imp"?"impPage++":"acabPage++"};renderProc('${stage}')">Próximo →</button></div>`}`;
+  if(reord) enableProcReorder(stage);
+}
+function enableProcReorder(stage){
+  const pre=stage==="imp"?"imp":"acab"; const box=$(pre+"-list"); if(!box) return;
+  const tbody=box.querySelector("tbody"); if(!tbody) return;
+  let dragRow=null;
+  box.querySelectorAll(".draghandle").forEach(h=>{
+    h.addEventListener("pointerdown", e=>{
+      e.preventDefault(); dragRow=h.closest("tr"); if(!dragRow)return;
+      _dragReord=true; dragRow.classList.add("dragging");
+      try{ h.setPointerCapture(e.pointerId); }catch(_){}
+    });
+  });
+  function onMove(e){
+    if(!dragRow) return; e.preventDefault();
+    const y=e.clientY; const rows=[...tbody.querySelectorAll("tr")].filter(r=>r!==dragRow);
+    let placed=false;
+    for(const r of rows){ const rc=r.getBoundingClientRect(); if(y < rc.top+rc.height/2){ tbody.insertBefore(dragRow,r); placed=true; break; } }
+    if(!placed) tbody.appendChild(dragRow);
+  }
+  function onUp(){
+    if(!dragRow) return; dragRow.classList.remove("dragging"); dragRow=null;
+    const ids=[...tbody.querySelectorAll(".draghandle")].map(h=>h.dataset.id);
+    const ordf= stage==="imp"?"ordemImp":"ordemAcab";
+    ids.forEach((id,idx)=>{ const p=producao.find(x=>x.id===id); if(p) p[ordf]=idx; });
+    _dragReord=false; salvar(LS.prodflow,producao); renderProc(stage);
+  }
+  box.addEventListener("pointermove", onMove);
+  box.addEventListener("pointerup", onUp);
+  box.addEventListener("pointercancel", onUp);
 }
 // modal de conclusão
 let _conc=null;
@@ -2424,29 +2599,29 @@ function renderPCP(){
   const f2=prod.filter(p=>!p.imp.done).map(p=>({sku:p.sku, qtd:p.qtd, peso:p.pesoUnit*p.qtd, oc:p.ocId}));
   const f3=prod.filter(p=>p.imp.done && !p.acab.done).map(p=>({sku:p.sku, qtd:p.imp.feito, peso:p.pesoUnit*p.imp.feito, oc:p.ocId}));
   const f4=producao.filter(p=>p.acab.done && !p.entregue).map(p=>({sku:p.sku, qtd:p.acab.feito, peso:p.pesoUnit*p.acab.feito, oc:p.ocId, id:p.id}));
-  const sec=(k,emoji,titulo,cor,arr,truck)=>{
-    const tot=arr.reduce((s,x)=>s+(x.peso||0),0), open=pcpOpen[k];
-    const linhas = arr.length ? arr.map(x=>`
-      <div class="pcp-item">
-        <div class="pcp-isku">${esc(x.sku||"—")}</div>
-        <div class="pcp-imeta">${(x.qtd||0).toLocaleString("pt-BR")} un · ${pcpFmtPeso(x.peso)}${x.oc?` · OC ${esc(x.oc)}`:""}${x.info?` · ${esc(x.info)}`:""}</div>
-        ${truck?`<button class="truckbtn" onclick="entregarPCP('${x.id}')" title="Concluir entrega">🚚</button>`:""}
-      </div>`).join("") : `<div class="pcp-empty">Nenhum item nesta fase.</div>`;
-    return `<div class="pcp-sec">
-      <button class="pcp-head" style="--c:${cor}" onclick="pcpTog('${k}')">
-        <span class="pcp-emoji">${emoji}</span>
-        <span class="pcp-tt">${titulo}</span>
-        <span class="pcp-count">${arr.length} ${arr.length===1?"item":"itens"} · ${pcpFmtPeso(tot)}</span>
-        <span class="pcp-chev">${open?"▾":"▸"}</span>
-      </button>
-      <div class="pcp-body" style="${open?"":"display:none"}">${linhas}</div>
+  const col=(emoji,titulo,cor,arr,truck)=>{
+    const tot=arr.reduce((s,x)=>s+(x.peso||0),0);
+    const cards = arr.length ? arr.map(x=>`
+      <div class="pcpk-card" style="--c:${cor}">
+        <div class="pcpk-sku">${esc(x.sku||"—")}</div>
+        <div class="pcpk-meta">${(x.qtd||0).toLocaleString("pt-BR")} un · ${pcpFmtPeso(x.peso)}</div>
+        ${(x.oc||x.info)?`<div class="pcpk-sub">${x.oc?`OC ${esc(x.oc)}`:""}${x.info?`${x.oc?" · ":""}${esc(x.info)}`:""}</div>`:""}
+        ${truck?`<button class="pcpk-truck" onclick="entregarPCP('${x.id}')">🚚 Entregar</button>`:""}
+      </div>`).join("") : `<div class="pcpk-empty">Sem itens.</div>`;
+    return `<div class="pcpk-col">
+      <div class="pcpk-head" style="--c:${cor}">
+        <div class="pcpk-htop"><span>${emoji} ${titulo}</span><span class="pcpk-cnt">${arr.length}</span></div>
+        <div class="pcpk-tot">${pcpFmtPeso(tot)}</div>
+      </div>
+      <div class="pcpk-cards">${cards}</div>
     </div>`;
   };
-  box.innerHTML =
-    sec("r","🛒","A receber (com OC)","#f5a623",f1,false) +
-    sec("i","🟡","Aguardando impressão","#eab308",f2,false) +
-    sec("a","🔵","Aguardando acabamento","#2b7fff",f3,false) +
-    sec("e","✅","Pronto na expedição","#22c55e",f4,true);
+  box.innerHTML=`<div class="pcpk">`+
+    col("🛒","A receber","#e08600",f1,false)+
+    col("🖨️","Impressão","#2b7fff",f2,false)+
+    col("✨","Acabamento","#8b5cf6",f3,false)+
+    col("✅","Pronto","#16a34a",f4,true)+
+  `</div>`;
 }
 function renderTerc(){
   let lst=producao.filter(p=>p.terceirizado);
