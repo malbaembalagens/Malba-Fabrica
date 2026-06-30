@@ -554,6 +554,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
 .ic-btn.ed{background:var(--accent-soft);color:var(--accent);border-color:transparent}
 .ic-btn.pdf{background:var(--surface-2)}
 .ic-btn.rm{background:var(--red-soft);color:var(--red);border-color:transparent;font-size:18px}
+.ic-btn.fp{background:var(--amber-soft);color:var(--amber);border-color:transparent}
 .tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
 .htab{width:100%;border-collapse:collapse;font-size:13px;min-width:780px}
 .htab th,.htab td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
@@ -687,7 +688,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v88 · dados salvos neste aparelho</div>
+    <div class="foot">v89 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -2203,6 +2204,25 @@ function ocReabrir(id){ const o=ordens.find(x=>x.id===id); if(!o)return;
   salvar(LS.oc,ordens); salvar(LS.prodflow,producao); ocRefresh();
 }
 function ocExcluir(id){ if(!confirm("Excluir esta ordem de compra?"))return; ordens=ordens.filter(x=>x.id!==id); salvar(LS.oc,ordens); ocRefresh(); }
+function forcarProducaoOC(id){
+  const o=ordens.find(x=>x.id===id); if(!o){ alert("OC não encontrada."); return; }
+  if(!confirm("Reenviar TODOS os itens desta OC para a Impressão?\n\nUse quando a OC foi recebida mas não apareceu na produção. O que já tiver baixa de impressão/acabamento é preservado.")) return;
+  let n=0;
+  (o.itens||[]).forEach((i,idx)=>{
+    const qtd=+i.qtd||0; if(qtd<=0) return;
+    if((+i.recebido||0)<=0) i.recebido=qtd;                 // se não constava recebido, marca recebido total
+    const alvo=+i.recebido||qtd;
+    const pid=o.id+":"+idx; let p=producao.find(pp=>pp.id===pid);
+    if(p){ p.excluido=false; if((+p.qtd||0) < alvo) p.qtd=alvo; tocaProd(p); }
+    else { producao.push(tocaProd({ id:pid, ocId:o.id, prev:ocPrevista(o), sku:i.sku, produto:i.produto, c:i.c,l:i.l,a:i.a,
+      chapaComp:i.chapaComp, chapaLarg:i.chapaLarg, gram:i.gram, ondaNome:i.ondaNome, vincos:(i.vincos||[]).slice(),
+      pesoUnit:i.pesoUnit, qtd:alvo, imp:{feito:0,desp:0,done:false}, acab:{feito:0,desp:0,done:false} })); }
+    n++;
+  });
+  o.recebida = (o.itens||[]).every(i=> (+i.recebido||0) >= (+i.qtd||0));
+  salvar(LS.oc,ordens); salvar(LS.prodflow,producao); ocRefresh();
+  alert(n+" item(ns) reenviado(s) para a Impressão.\n\nConfira a aba Impressão (atualize/aguarde a sincronização nos outros aparelhos).");
+}
 function renderOC(){
   const recCount=ordens.filter(o=>o.recebida).length, naoCount=ordens.length-recCount;
   if($("oc-c-nao")) $("oc-c-nao").textContent=naoCount;
@@ -2231,6 +2251,7 @@ function renderOC(){
       <button class="ic-btn ed" onclick="ocDetalhes('${o.id}')" title="Detalhes">👁️</button>
       <button class="ic-btn pdf" onclick="ocPDF('${o.id}')" title="PDF da ordem">📄</button>
       <button class="ic-btn ${o.recebida?"":"ok"}" onclick="abrirReceber('${o.id}')" title="${o.recebida?"Reabrir recebimento":"Dar entrada (receber)"}">${o.recebida?"↩︎":"✓"}</button>
+      ${ ehGestor() ? `<button class="ic-btn fp" onclick="forcarProducaoOC('${o.id}')" title="Forçar envio à produção (se recebeu e não foi pra impressão)">🔧</button>` : "" }
       ${ ehGestor() ? `<button class="ic-btn ed" onclick="editarOC('${o.id}')" title="Editar">✏️</button>` : "" }
       ${ ehGestor() ? `<button class="ic-btn rm" onclick="ocExcluir('${o.id}')" title="Excluir">×</button>` : "" }
     </td></tr>`;}).join("");
