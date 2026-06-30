@@ -687,7 +687,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v86 · dados salvos neste aparelho</div>
+    <div class="foot">v88 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -1122,7 +1122,12 @@ function carregar(k,def){ try{ const v=JSON.parse(localStorage.getItem(k)); retu
 function salvar(k,v){ localStorage.setItem(k, JSON.stringify(v)); try{ if(appReady){ if(typeof SYNC_KEYS!=="undefined" && SYNC_KEYS.includes(k)) setLocalMod(k); if(typeof syncPush==="function") syncPush(k); } }catch(e){} }
 function brl(n){ return "R$ " + (Number(n)||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}) }
 function hoje(){ return new Date() }
-function fmtData(iso){ return new Date(iso).toLocaleDateString("pt-BR") }
+function fmtData(iso){
+  if(!iso) return "";
+  const s=String(iso);
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)){ const p=s.split("-"); return p[2]+"/"+p[1]+"/"+p[0]; }
+  const d=new Date(s); return isNaN(d.getTime())?s:d.toLocaleDateString("pt-BR");
+}
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 function proxId(){ let s=carregar(LS.seq,CONFIG.seqInicial); salvar(LS.seq,s+1); return s; }
 function $(id){ return document.getElementById(id); }
@@ -1244,6 +1249,14 @@ function mergeByKey(localArr, cloudArr, idf){
 }
 function devIdent(x){ const s=(x&&x.sku!=null)?String(x.sku).trim().toLowerCase():""; return s ? ("sku:"+s) : ("key:"+((x&&x.key)||"")); }
 function devSig(x){ if(!x) return "x"; const c=Object.assign({},x); delete c.key; try{ return JSON.stringify(c); }catch(e){ return (x.sku||"")+"|"+(x.key||""); } }
+function tocaProd(p){ if(p) p._upd=Date.now(); return p; }
+function mergeProd(localArr, cloudArr){
+  const byId={};
+  const add=p=>{ if(!p||p.id==null) return; const ex=byId[p.id]; if(!ex){ byId[p.id]=p; return; } const lu=+ex._upd||0, cu=+p._upd||0; if(cu>=lu) byId[p.id]=p; };
+  (Array.isArray(localArr)?localArr:[]).forEach(p=>{ if(p&&p.id!=null) byId[p.id]=p; });
+  (Array.isArray(cloudArr)?cloudArr:[]).forEach(add);
+  return Object.values(byId);
+}
 function mergeHist(localArr, cloudArr){
   const out=[], seenId=new Set(), seenSig=new Set();
   const sig=h=> (!h.sku && !(+h.qtdProd) && h.pesoTotalProd) ? ("MES|"+h.processo+"|"+h.data+"|"+h.pesoTotalProd) : null;
@@ -1289,6 +1302,12 @@ async function syncInit(){
           if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
           return;
         }
+        if(k===LS.prodflow){
+          const merged=mergeProd(lsParse(k), cloud[k].value), ms=JSON.stringify(merged);
+          localStorage.setItem(k, ms); syncVer[k]=cloud[k].updated_at;
+          if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
+          return;
+        }
         const cu=cloud[k].updated_at, lm=localMod(k);
         if(lm && cu && new Date(lm) > new Date(cu)){ pendingPush[k]=true; syncVer[k]=cu; return; }
         if(isEmptyVal(cloud[k].value) && !isEmptyVal(lsParse(k))){ pendingPush[k]=true; syncVer[k]=cu; return; }
@@ -1308,6 +1327,13 @@ async function syncPull(){
       if(cloud[k].updated_at && cloud[k].updated_at!==syncVer[k]){
         if(k===LS.hist){
           const merged=mergeHist(lsParse(k), cloud[k].value), ms=JSON.stringify(merged);
+          if(localStorage.getItem(k)!==ms){ localStorage.setItem(k,ms); changed=true; }
+          syncVer[k]=cloud[k].updated_at;
+          if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
+          return;
+        }
+        if(k===LS.prodflow){
+          const merged=mergeProd(lsParse(k), cloud[k].value), ms=JSON.stringify(merged);
           if(localStorage.getItem(k)!==ms){ localStorage.setItem(k,ms); changed=true; }
           syncVer[k]=cloud[k].updated_at;
           if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
@@ -1420,7 +1446,7 @@ function renderDashProd(){
   const prodMesKg=acMes.reduce((s,h)=>s+(+h.pesoTotalProd||0),0), prodMesQt=acMes.reduce((s,h)=>s+(+h.qtdProd||0),0);
   // A produzir = tudo que está em IMPRESSÃO e ainda não foi produzido
   let aProdKg=0,aProdQt=0;
-  producao.filter(p=>!p.terceirizado).forEach(p=>{ const rem=Math.max(0,(+p.qtd||0)-(+p.imp.feito||0)); aProdKg+=(+p.pesoUnit||0)*rem; aProdQt+=rem; });
+  producao.filter(p=>!p.terceirizado && !p.excluido).forEach(p=>{ const rem=Math.max(0,(+p.qtd||0)-(+p.imp.feito||0)); aProdKg+=(+p.pesoUnit||0)*rem; aProdQt+=rem; });
   const cards=`<div class="stats">
     <div class="stat"><div class="l">Produzido hoje</div><div class="v num">${fmtTon(prodHojeKg)}</div><div class="sub">${fmtQt(prodHojeQt)}</div></div>
     <div class="stat"><div class="l">A produzir</div><div class="v num">${fmtTon(aProdKg)}</div><div class="sub">${fmtQt(aProdQt)}</div></div>
@@ -2157,10 +2183,10 @@ function aplicarReceber(){
     const rec=+i.recebido||0, rest=(+i.qtd||0)-rec; if(x>rest)x=rest; if(x<=0)return;
     i.recebido=rec+x; algum=true;
     const pid=o.id+":"+idx; let p=producao.find(pp=>pp.id===pid);
-    if(p){ p.qtd=(+p.qtd||0)+x; }
-    else { producao.push({ id:pid, ocId:o.id, prev:ocPrevista(o), sku:i.sku, produto:i.produto, c:i.c,l:i.l,a:i.a,
+    if(p){ p.qtd=(+p.qtd||0)+x; p.excluido=false; tocaProd(p); }
+    else { producao.push(tocaProd({ id:pid, ocId:o.id, prev:ocPrevista(o), sku:i.sku, produto:i.produto, c:i.c,l:i.l,a:i.a,
       chapaComp:i.chapaComp, chapaLarg:i.chapaLarg, gram:i.gram, ondaNome:i.ondaNome, vincos:(i.vincos||[]).slice(),
-      pesoUnit:i.pesoUnit, qtd:x, imp:{feito:0,desp:0,done:false}, acab:{feito:0,desp:0,done:false} }); }
+      pesoUnit:i.pesoUnit, qtd:x, imp:{feito:0,desp:0,done:false}, acab:{feito:0,desp:0,done:false} })); }
   });
   if(!algum){ alert("Informe ao menos uma quantidade para receber."); return; }
   o.recebida = (o.itens||[]).every(i=> (+i.recebido||0) >= (+i.qtd||0));
@@ -2171,7 +2197,7 @@ function ocReabrir(id){ const o=ordens.find(x=>x.id===id); if(!o)return;
   if(!confirm("Reabrir o recebimento desta OC?\n\nOs itens que ainda não entraram em produção voltam para 'a receber'. O que já foi pra produção permanece.")) return;
   (o.itens||[]).forEach((i,idx)=>{ const pid=id+":"+idx; const p=producao.find(pp=>pp.id===pid);
     if(!p){ i.recebido=0; }
-    else if((p.imp.feito||0)===0 && (p.acab.feito||0)===0){ producao=producao.filter(pp=>pp.id!==pid); i.recebido=0; }
+    else if((p.imp.feito||0)===0 && (p.acab.feito||0)===0){ p.excluido=true; tocaProd(p); i.recebido=0; }
   });
   o.recebida=false;
   salvar(LS.oc,ordens); salvar(LS.prodflow,producao); ocRefresh();
@@ -2416,13 +2442,13 @@ function procDisp(stage,p){ return stage==="imp" ? (p.qtd - p.imp.feito) : (p.im
 function ehGestor(){ const g=document.getElementById("tela-gestor"); return !!g && !g.classList.contains("modo-prod"); }
 function excluirProc(stage,id){
   if(!confirm("Excluir este item da impressão? Esta ação não pode ser desfeita.")) return;
-  producao = producao.filter(p=>p.id!==id);
+  const p=producao.find(x=>x.id===id); if(p){ p.excluido=true; tocaProd(p); }
   salvar(LS.prodflow, producao);
   renderProc(stage);
 }
 function procLists(stage){
   // itens que entram nesse estágio
-  let base = producao.filter(p=> stage==="imp" ? !p.terceirizado : p.imp.feito>0 );
+  let base = producao.filter(p=> !p.excluido && (stage==="imp" ? !p.terceirizado : p.imp.feito>0) );
   const ag = base.filter(p=> stage==="imp" ? !p.imp.done : (!p.acab.done && p.imp.feito>p.acab.feito) );
   const co = base.filter(p=> stage==="imp" ? p.imp.done : p.acab.done );
   return {ag, co};
@@ -2491,7 +2517,7 @@ function enableProcReorder(stage){
     if(!dragRow) return; dragRow.classList.remove("dragging"); dragRow=null;
     const ids=[...tbody.querySelectorAll(".draghandle")].map(h=>h.dataset.id);
     const ordf= stage==="imp"?"ordemImp":"ordemAcab";
-    ids.forEach((id,idx)=>{ const p=producao.find(x=>x.id===id); if(p) p[ordf]=idx; });
+    ids.forEach((id,idx)=>{ const p=producao.find(x=>x.id===id); if(p){ p[ordf]=idx; tocaProd(p); } });
     _dragReord=false; salvar(LS.prodflow,producao); renderProc(stage);
   }
   box.addEventListener("pointermove", onMove);
@@ -2531,6 +2557,7 @@ function aplicarConc(){
   if(_conc.tipo==="integral") st.done=true;
   else if(stage==="imp" && p.imp.feito>=p.qtd) st.done=true;
   else if(stage==="acab" && p.acab.feito>=p.imp.feito) st.done=true;
+  tocaProd(p);
   salvar(LS.prodflow,producao);
   // alimenta o histórico (dashboards)
   historico.push({ id:uid(), data:hojeStr(), processo:(stage==="imp"?"Impressão":"Acabamento"), sku:p.sku||"",
@@ -2552,7 +2579,7 @@ function abrirObs(id,stage){ const p=producao.find(x=>x.id===id); if(!p)return; 
   $("ocmodal").style.display="flex"; setTimeout(()=>{ const t=$("obs-txt"); if(t)t.focus(); },50);
 }
 function salvarObs(id,remover){ const p=producao.find(x=>x.id===id); if(!p)return;
-  p.obs = remover ? "" : ($("obs-txt")?$("obs-txt").value:"").trim();
+  p.obs = remover ? "" : ($("obs-txt")?$("obs-txt").value:"").trim(); tocaProd(p);
   salvar(LS.prodflow,producao); closeOcModal(); renderProc(_obsStage||"imp"); }
 function verObs(id){ const p=producao.find(x=>x.id===id); if(!p)return;
   $("ocmodal").innerHTML=`<div class="modal-card" style="max-width:470px">
@@ -2564,12 +2591,12 @@ function verObs(id){ const p=producao.find(x=>x.id===id); if(!p)return;
   $("ocmodal").style.display="flex";
 }
 // terceirizado
-function marcarTerceirizado(id){ const p=producao.find(x=>x.id===id); if(!p)return; if(!confirm("Marcar este item como terceirizado? Ele sai da Impressão e vai para a aba Terceirizado.")) return; p.terceirizado=true; salvar(LS.prodflow,producao); renderProc("imp"); }
-function desfazerTerceirizado(id){ const p=producao.find(x=>x.id===id); if(!p)return; p.terceirizado=false; salvar(LS.prodflow,producao); renderTerc(); }
+function marcarTerceirizado(id){ const p=producao.find(x=>x.id===id); if(!p)return; if(!confirm("Marcar este item como terceirizado? Ele sai da Impressão e vai para a aba Terceirizado.")) return; p.terceirizado=true; tocaProd(p); salvar(LS.prodflow,producao); renderProc("imp"); }
+function desfazerTerceirizado(id){ const p=producao.find(x=>x.id===id); if(!p)return; p.terceirizado=false; tocaProd(p); salvar(LS.prodflow,producao); renderTerc(); }
 // expedição
-function confirmarEntrega(id){ const p=producao.find(x=>x.id===id); if(!p)return; if(!confirm("Confirmar a entrega deste item? Ele sai da Expedição.")) return; p.entregue=true; salvar(LS.prodflow,producao); renderExpedicao(); }
+function confirmarEntrega(id){ const p=producao.find(x=>x.id===id); if(!p)return; if(!confirm("Confirmar a entrega deste item? Ele sai da Expedição.")) return; p.entregue=true; tocaProd(p); salvar(LS.prodflow,producao); renderExpedicao(); }
 function renderExpedicao(){
-  let lst=producao.filter(p=>p.acab.done && !p.entregue);
+  let lst=producao.filter(p=>p.acab.done && !p.entregue && !p.excluido);
   const busca=($("exp-busca")?$("exp-busca").value:"").toLowerCase().trim();
   if(busca) lst=lst.filter(p=>[p.sku,p.ocId,p.produto].join(" ").toLowerCase().includes(busca));
   lst.sort((a,b)=>(a.prev||"").localeCompare(b.prev||""));
@@ -2590,15 +2617,15 @@ function renderExpedicao(){
 let pcpOpen={r:true,i:true,a:true,e:true};
 function pcpTog(k){ pcpOpen[k]=!pcpOpen[k]; renderPCP(); }
 function pcpFmtPeso(kg){ kg=+kg||0; return kg/1000>=1 ? (kg/1000).toLocaleString("pt-BR",{maximumFractionDigits:2})+" t" : kg.toLocaleString("pt-BR",{maximumFractionDigits:0})+" kg"; }
-function entregarPCP(id){ const p=producao.find(x=>x.id===id); if(!p)return; if(!confirm("Confirmar a entrega deste item? Ele sai do PCP e da Expedição.")) return; p.entregue=true; salvar(LS.prodflow,producao); renderPCP(); }
+function entregarPCP(id){ const p=producao.find(x=>x.id===id); if(!p)return; if(!confirm("Confirmar a entrega deste item? Ele sai do PCP e da Expedição.")) return; p.entregue=true; tocaProd(p); salvar(LS.prodflow,producao); renderPCP(); }
 function renderPCP(){
   const box=$("pcp-box"); if(!box) return;
   const f1=[];
   ordens.filter(o=>!o.recebida).forEach(o=>{ (o.itens||[]).forEach(it=>{ const rest=(+it.qtd||0)-(+it.recebido||0); if(rest>0) f1.push({sku:it.sku, qtd:rest, peso:(it.pesoUnit||0)*rest, oc:o.id, info:o.fornecedor}); }); });
-  const prod=producao.filter(p=>!p.terceirizado && !p.entregue);
+  const prod=producao.filter(p=>!p.terceirizado && !p.entregue && !p.excluido);
   const f2=prod.filter(p=>!p.imp.done).map(p=>({sku:p.sku, qtd:p.qtd, peso:p.pesoUnit*p.qtd, oc:p.ocId}));
   const f3=prod.filter(p=>p.imp.done && !p.acab.done).map(p=>({sku:p.sku, qtd:p.imp.feito, peso:p.pesoUnit*p.imp.feito, oc:p.ocId}));
-  const f4=producao.filter(p=>p.acab.done && !p.entregue).map(p=>({sku:p.sku, qtd:p.acab.feito, peso:p.pesoUnit*p.acab.feito, oc:p.ocId, id:p.id}));
+  const f4=producao.filter(p=>p.acab.done && !p.entregue && !p.excluido).map(p=>({sku:p.sku, qtd:p.acab.feito, peso:p.pesoUnit*p.acab.feito, oc:p.ocId, id:p.id}));
   const col=(emoji,titulo,cor,arr,truck)=>{
     const tot=arr.reduce((s,x)=>s+(x.peso||0),0);
     const cards = arr.length ? arr.map(x=>`
@@ -2624,7 +2651,7 @@ function renderPCP(){
   `</div>`;
 }
 function renderTerc(){
-  let lst=producao.filter(p=>p.terceirizado);
+  let lst=producao.filter(p=>p.terceirizado && !p.excluido);
   const busca=($("terc-busca")?$("terc-busca").value:"").toLowerCase().trim();
   if(busca) lst=lst.filter(p=>[p.sku,p.ocId,p.produto].join(" ").toLowerCase().includes(busca));
   lst.sort((a,b)=>(a.prev||"").localeCompare(b.prev||""));
