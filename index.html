@@ -554,7 +554,6 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
 .ic-btn.ed{background:var(--accent-soft);color:var(--accent);border-color:transparent}
 .ic-btn.pdf{background:var(--surface-2)}
 .ic-btn.rm{background:var(--red-soft);color:var(--red);border-color:transparent;font-size:18px}
-.ic-btn.fp{background:var(--amber-soft);color:var(--amber);border-color:transparent}
 .tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
 .htab{width:100%;border-collapse:collapse;font-size:13px;min-width:780px}
 .htab th,.htab td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
@@ -688,7 +687,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v89 · dados salvos neste aparelho</div>
+    <div class="foot">v90 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -2148,31 +2147,34 @@ function fichaTecnica(key){
 // ---------- Ordem de compra ----------
 function ocPrevista(o){ return o.dataPrevista||o.data||""; }
 function ocRecebidoTotal(o){ return (o.itens||[]).reduce((s,i)=>s+(+i.recebido||0),0); }
-function ocStatus(o){ if(o.recebida) return "recebido"; if(ocRecebidoTotal(o)>0) return "parcial"; const p=ocPrevista(o); if(p && p<hojeStr()) return "atrasado"; return "pendente"; }
+function ocStatus(o){ if(o.recebida && !ocFaltaProd(o)) return "recebido"; if(o.recebida || ocRecebidoTotal(o)>0) return "parcial"; const p=ocPrevista(o); if(p && p<hojeStr()) return "atrasado"; return "pendente"; }
 const OC_ST={recebido:["Recebido","stb-rec"],parcial:["Parcial","stb-parc"],pendente:["Pendente","stb-pend"],atrasado:["Atrasado","stb-atr"]};
 function setOCTab(t,el){ ocTab=t; ocPage=1; document.querySelectorAll("#gview-prod-ordem .tab").forEach(c=>c.classList.remove("on")); el.classList.add("on"); renderOC(); }
 function ocNovoId(data){ const [y,m,d]=data.split("-"); const base=d+m+y; const n=ordens.filter(o=>String(o.id).startsWith(base)).length+1; return base+String(n).padStart(3,"0"); }
 function ocRefresh(){ const ag=document.getElementById("gview-dash-agenda"), oc=document.getElementById("gview-prod-ordem"); if(ag&&ag.style.display!=="none") renderAgenda(); if(oc&&oc.style.display!=="none") renderOC(); }
+function ocEmProd(ocId,idx){ const p=producao.find(pp=>pp.id===ocId+":"+idx); return (p && !p.excluido) ? (+p.qtd||0) : 0; }
+function ocFaltaProd(o){ return (o.itens||[]).some((i,idx)=> ocEmProd(o.id,idx) < (+i.qtd||0)); }
 function abrirReceber(id){
   const o=ordens.find(x=>x.id===id); if(!o)return;
-  if(o.recebida){ ocReabrir(id); return; }
+  // só "reabre" se já estiver recebida E a produção bater; se faltam itens na produção, abre o recebimento para completar
+  if(o.recebida && !ocFaltaProd(o)){ ocReabrir(id); return; }
   _recOC=id; renderReceberModal();
 }
 let _recOC=null;
 function renderReceberModal(){
   const o=ordens.find(x=>x.id===_recOC); if(!o){ closeOcModal(); return; }
-  const rows=(o.itens||[]).map((i,idx)=>{ const rec=+i.recebido||0, tot=+i.qtd||0, rest=tot-rec;
+  const rows=(o.itens||[]).map((i,idx)=>{ const tot=+i.qtd||0, jaProd=ocEmProd(o.id,idx), rest=tot-jaProd;
     return `<tr>
       <td><b>${esc(i.sku||"—")}</b></td>
       <td class="num">${tot.toLocaleString("pt-BR")}</td>
-      <td class="num">${rec.toLocaleString("pt-BR")}</td>
-      <td class="num">${rest.toLocaleString("pt-BR")}</td>
-      <td><input type="number" id="rec-${idx}" min="0" max="${rest}" value="${rest>0?rest:0}" ${rest<=0?"disabled":""} style="width:96px"></td>
+      <td class="num">${jaProd.toLocaleString("pt-BR")}</td>
+      <td class="num">${(rest>0?rest:0).toLocaleString("pt-BR")}</td>
+      <td><input type="number" id="rec-${idx}" min="0" max="${rest>0?rest:0}" value="${rest>0?rest:0}" ${rest<=0?"disabled":""} style="width:96px"></td>
     </tr>`;}).join("");
   $("ocmodal").innerHTML=`<div class="modal-card" style="max-width:600px">
     <h3 class="modal-h">Receber ordem ${esc(o.id)}</h3>
     <p class="rechint">Informe quanto <b>chegou agora</b> de cada item. Dá pra receber em partes — se vier em dois carregamentos, dê entrada do primeiro e depois do segundo. Só o que você receber vai pra Impressão.</p>
-    <div class="tablewrap"><table class="htab"><thead><tr><th>SKU</th><th class="num">Total</th><th class="num">Já recebido</th><th class="num">Falta</th><th>Receber agora</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="tablewrap"><table class="htab"><thead><tr><th>SKU</th><th class="num">Total</th><th class="num">Em produção</th><th class="num">Falta</th><th>Receber agora</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="modal-foot"><button class="btnlink" onclick="closeOcModal()">Cancelar</button><button class="btnprim" onclick="aplicarReceber()">Dar entrada</button></div>
   </div>`;
   $("ocmodal").style.display="flex";
@@ -2181,16 +2183,18 @@ function aplicarReceber(){
   const o=ordens.find(x=>x.id===_recOC); if(!o){ closeOcModal(); return; }
   let algum=false;
   (o.itens||[]).forEach((i,idx)=>{ const inp=$("rec-"+idx); if(!inp)return; let x=parseInt(inp.value)||0;
-    const rec=+i.recebido||0, rest=(+i.qtd||0)-rec; if(x>rest)x=rest; if(x<=0)return;
-    i.recebido=rec+x; algum=true;
     const pid=o.id+":"+idx; let p=producao.find(pp=>pp.id===pid);
-    if(p){ p.qtd=(+p.qtd||0)+x; p.excluido=false; tocaProd(p); }
+    const jaProd=(p && !p.excluido)?(+p.qtd||0):0;
+    const rest=(+i.qtd||0)-jaProd; if(x>rest)x=rest; if(x<=0)return;
+    algum=true;
+    if(p){ p.qtd=jaProd+x; p.excluido=false; tocaProd(p); }
     else { producao.push(tocaProd({ id:pid, ocId:o.id, prev:ocPrevista(o), sku:i.sku, produto:i.produto, c:i.c,l:i.l,a:i.a,
       chapaComp:i.chapaComp, chapaLarg:i.chapaLarg, gram:i.gram, ondaNome:i.ondaNome, vincos:(i.vincos||[]).slice(),
       pesoUnit:i.pesoUnit, qtd:x, imp:{feito:0,desp:0,done:false}, acab:{feito:0,desp:0,done:false} })); }
+    i.recebido=jaProd+x;
   });
   if(!algum){ alert("Informe ao menos uma quantidade para receber."); return; }
-  o.recebida = (o.itens||[]).every(i=> (+i.recebido||0) >= (+i.qtd||0));
+  o.recebida = !ocFaltaProd(o);
   salvar(LS.oc,ordens); salvar(LS.prodflow,producao);
   closeOcModal(); ocRefresh();
 }
@@ -2204,25 +2208,6 @@ function ocReabrir(id){ const o=ordens.find(x=>x.id===id); if(!o)return;
   salvar(LS.oc,ordens); salvar(LS.prodflow,producao); ocRefresh();
 }
 function ocExcluir(id){ if(!confirm("Excluir esta ordem de compra?"))return; ordens=ordens.filter(x=>x.id!==id); salvar(LS.oc,ordens); ocRefresh(); }
-function forcarProducaoOC(id){
-  const o=ordens.find(x=>x.id===id); if(!o){ alert("OC não encontrada."); return; }
-  if(!confirm("Reenviar TODOS os itens desta OC para a Impressão?\n\nUse quando a OC foi recebida mas não apareceu na produção. O que já tiver baixa de impressão/acabamento é preservado.")) return;
-  let n=0;
-  (o.itens||[]).forEach((i,idx)=>{
-    const qtd=+i.qtd||0; if(qtd<=0) return;
-    if((+i.recebido||0)<=0) i.recebido=qtd;                 // se não constava recebido, marca recebido total
-    const alvo=+i.recebido||qtd;
-    const pid=o.id+":"+idx; let p=producao.find(pp=>pp.id===pid);
-    if(p){ p.excluido=false; if((+p.qtd||0) < alvo) p.qtd=alvo; tocaProd(p); }
-    else { producao.push(tocaProd({ id:pid, ocId:o.id, prev:ocPrevista(o), sku:i.sku, produto:i.produto, c:i.c,l:i.l,a:i.a,
-      chapaComp:i.chapaComp, chapaLarg:i.chapaLarg, gram:i.gram, ondaNome:i.ondaNome, vincos:(i.vincos||[]).slice(),
-      pesoUnit:i.pesoUnit, qtd:alvo, imp:{feito:0,desp:0,done:false}, acab:{feito:0,desp:0,done:false} })); }
-    n++;
-  });
-  o.recebida = (o.itens||[]).every(i=> (+i.recebido||0) >= (+i.qtd||0));
-  salvar(LS.oc,ordens); salvar(LS.prodflow,producao); ocRefresh();
-  alert(n+" item(ns) reenviado(s) para a Impressão.\n\nConfira a aba Impressão (atualize/aguarde a sincronização nos outros aparelhos).");
-}
 function renderOC(){
   const recCount=ordens.filter(o=>o.recebida).length, naoCount=ordens.length-recCount;
   if($("oc-c-nao")) $("oc-c-nao").textContent=naoCount;
@@ -2239,7 +2224,7 @@ function renderOC(){
   const slice=lst.slice((ocPage-1)*perPage, ocPage*perPage);
   const box=$("oc-list");
   if(!lst.length){ box.innerHTML=`<div class="empty"><span class="em">🧾</span>Nenhuma ordem ${ocTab==="recebida"?"recebida":"em aberto"}.</div>`; return; }
-  const rows=slice.map(o=>{ const st=OC_ST[ocStatus(o)];
+  const rows=slice.map(o=>{ const st=OC_ST[ocStatus(o)]; const podeReceber=(!o.recebida || ocFaltaProd(o));
     return `<tr>
     <td><b>${esc(o.id)}</b></td>
     <td>${ocPrevista(o)?fmtData(ocPrevista(o)):"—"}</td>
@@ -2250,8 +2235,7 @@ function renderOC(){
     <td class="devacts">
       <button class="ic-btn ed" onclick="ocDetalhes('${o.id}')" title="Detalhes">👁️</button>
       <button class="ic-btn pdf" onclick="ocPDF('${o.id}')" title="PDF da ordem">📄</button>
-      <button class="ic-btn ${o.recebida?"":"ok"}" onclick="abrirReceber('${o.id}')" title="${o.recebida?"Reabrir recebimento":"Dar entrada (receber)"}">${o.recebida?"↩︎":"✓"}</button>
-      ${ ehGestor() ? `<button class="ic-btn fp" onclick="forcarProducaoOC('${o.id}')" title="Forçar envio à produção (se recebeu e não foi pra impressão)">🔧</button>` : "" }
+      <button class="ic-btn ${podeReceber?"ok":""}" onclick="abrirReceber('${o.id}')" title="${podeReceber?"Dar entrada (receber)":"Reabrir recebimento"}">${podeReceber?"✓":"↩︎"}</button>
       ${ ehGestor() ? `<button class="ic-btn ed" onclick="editarOC('${o.id}')" title="Editar">✏️</button>` : "" }
       ${ ehGestor() ? `<button class="ic-btn rm" onclick="ocExcluir('${o.id}')" title="Excluir">×</button>` : "" }
     </td></tr>`;}).join("");
