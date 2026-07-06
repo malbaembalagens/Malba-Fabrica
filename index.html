@@ -552,6 +552,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
 .devacts{display:flex;gap:7px;justify-content:flex-end}
 .ic-btn{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-size:15px;border:1px solid var(--border);background:var(--surface);cursor:pointer}
 .ic-btn.ed{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.ic-btn.mail{background:var(--green-soft);color:var(--green);border-color:transparent}
 .ic-btn.pdf{background:var(--surface-2)}
 .ic-btn.rm{background:var(--red-soft);color:var(--red);border-color:transparent;font-size:18px}
 .tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
@@ -687,7 +688,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v90 · dados salvos neste aparelho</div>
+    <div class="foot">v93 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -968,7 +969,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
 
         <div class="vview" id="gview-cad-fornecedores" style="display:none">
           <h2 class="viewtitle">Fornecedores</h2>
-          <div class="cadrow"><input id="g-forn-novo" placeholder="Nome do fornecedor"><input id="g-forn-fone" placeholder="Telefone (opcional)" style="max-width:150px"><input id="g-forn-custo" type="number" step="0.01" inputmode="decimal" placeholder="Custo R$/kg" style="max-width:130px"><button onclick="addFornecedor()">Adicionar</button></div>
+          <div class="cadrow"><input id="g-forn-novo" placeholder="Nome do fornecedor"><input id="g-forn-email" type="email" placeholder="E-mail (p/ enviar OC)" style="max-width:200px"><input id="g-forn-fone" placeholder="Telefone (opcional)" style="max-width:150px"><input id="g-forn-custo" type="number" step="0.01" inputmode="decimal" placeholder="Custo R$/kg" style="max-width:130px"><button onclick="addFornecedor()">Adicionar</button></div>
           <div id="g-fornecedores-list"></div>
         </div>
 
@@ -1087,6 +1088,13 @@ const CONFIG = {
   ],
 };
 
+// Empresas de compra (cada uma = um CNPJ / conta Bling). Preencher o CNPJ da Embalagens.
+const EMPRESAS = [
+  { key:"fabrica",    nome:"Malba Fábrica",    cnpj:"44.231.658/0001-80" },
+  { key:"embalagens", nome:"Malba Embalagens", cnpj:"" }
+];
+function empresaOC(o){ const k=(o&&o.empresa)||"fabrica"; return EMPRESAS.find(e=>e.key===k) || EMPRESAS[0]; }
+
 // Defaults (semente) — depois ficam editáveis no Cadastro
 const DEF_VEND = [
   {nome:"Alexandre Marques",fone:""},{nome:"Ligia Marques",fone:""},{nome:"Guilherme Marques",fone:""},
@@ -1146,7 +1154,7 @@ let devForm=null, devStep=1;
 let historico = carregar(LS.hist, []);
 let devAvulsos = carregar(LS.devav, []);
 let metas = carregar(LS.meta, {impressao:0, acabamento:0});
-let dashProc="Acabamento", dashMesAcab=mesAtual(), dashMesDesp=mesAtual(), dashAnoHist=String(new Date().getFullYear());
+let dashProc="Acabamento", dashMesAcab=mesAtual(), dashMesDesp=mesAtual(), dashMesLC=mesAtual(), dashAnoHist=String(new Date().getFullYear());
 let ordens = carregar(LS.oc, []);
 let ocTab="nao", ocPage=1, ocForm=null;
 let agendaRef=hojeStr(), agendaView="mensal";
@@ -1412,6 +1420,12 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 function mesAtual(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
 function hojeStr(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function fmtTon(kg){ return ((+kg||0)/1000).toLocaleString("pt-BR",{minimumFractionDigits:3,maximumFractionDigits:3})+" t"; }
+function tipoPorSku(sku){
+  if(!sku) return null; const s=String(sku).toLowerCase();
+  for(const a of devAvulsos){ if(String(a.sku||"").toLowerCase()===s) return (a.tipo==="Cliente"?"Cliente":"Loja"); }
+  for(const k in desenvStatus){ const e=desenvStatus[k]; if(e && String(e.sku||"").toLowerCase()===s && e.tipo) return (e.tipo==="Cliente"?"Cliente":"Loja"); }
+  return null;
+}
 function fmtQt(n){ return (+n||0).toLocaleString("pt-BR")+" un"; }
 function pesoUnitItem(it){ const onda=ondas.find(o=>o.nome===it.ondaNome); return calcCaixa(it.c,it.l,it.a,onda).areaM2*(+it.gram||0)/1000; } // kg/unidade
 function skuList(){ const map={}; devItems().forEach(x=>{ const sku=x.entry&&x.entry.sku; if(!sku) return; if(!map[sku]) map[sku]={sku, produto:x.it.produto, pesoUnit:+pesoUnitItem(x.it).toFixed(4)}; }); return Object.values(map).sort((a,b)=>String(a.sku).localeCompare(String(b.sku),"pt-BR")); }
@@ -1494,6 +1508,22 @@ function renderDashProd(){
     <div class="hint">Produção diária (toneladas) que passou pelo Acabamento no mês.</div>
   </div>`;
 
+  // gráfico Loja × Cliente — toneladas produzidas no mês (Acabamento) por destino
+  const lcMes=historico.filter(h=>(h.data||"").slice(0,7)===dashMesLC && h.processo==="Acabamento");
+  let lojaKg=0, cliKg=0, ndKg=0;
+  lcMes.forEach(h=>{ const t=tipoPorSku(h.sku), kg=+h.pesoTotalProd||0; if(t==="Cliente") cliKg+=kg; else if(t==="Loja") lojaKg+=kg; else ndKg+=kg; });
+  const maxLC=Math.max(lojaKg/1000, cliKg/1000, 0.001);
+  const cLC=`<div class="chartcard">
+    <div class="charthead"><h3>Loja × Cliente</h3>
+      <select class="selmes" onchange="dashMesLC=this.value;renderDashProd()">${optMeses(dashMesLC)}</select></div>
+    <div class="charttotal"><span class="ct-val">${((lojaKg+cliKg)/1000).toLocaleString("pt-BR",{minimumFractionDigits:3,maximumFractionDigits:3})}</span><span class="ct-unit">t</span><span class="ct-lbl">produzidas no mês</span></div>
+    <div class="chart">
+      <div class="barrow"><div class="barlbl">🏪 Loja</div><div class="bartrack"><div class="barfill" style="width:${(lojaKg/1000/maxLC*100).toFixed(1)}%;background:var(--accent)"></div></div><div class="barval num">${fmtTon(lojaKg)}</div></div>
+      <div class="barrow"><div class="barlbl">👤 Cliente</div><div class="bartrack"><div class="barfill" style="width:${(cliKg/1000/maxLC*100).toFixed(1)}%;background:var(--green)"></div></div><div class="barval num">${fmtTon(cliKg)}</div></div>
+    </div>
+    <div class="hint">${ndKg>0?`⚠️ ${fmtTon(ndKg)} de SKUs sem classificação Loja/Cliente no desenvolvimento.`:"Toneladas produzidas no mês (Acabamento), separadas por destino."}</div>
+  </div>`;
+
   // gráfico 3 — desperdício (impressão + acabamento) por processo no mês
   const md=historico.filter(h=>(h.data||"").slice(0,7)===dashMesDesp);
   const dImp=md.filter(h=>h.processo==="Impressão"), dAcab=md.filter(h=>h.processo==="Acabamento");
@@ -1554,7 +1584,7 @@ function renderDashProd(){
     <div class="hint">Ao alterar a meta aqui, o <b>gráfico Produção do dia</b> usa esse valor automaticamente.</div>
   </div>`;
 
-  $("dashprod-c").innerHTML=cards+carousel("car-prod",[c1,c2,c3,c4,c5,c6],"Dashboard · Produção");
+  $("dashprod-c").innerHTML=cards+carousel("car-prod",[c1,c2,cLC,c3,c4,c5,c6],"Dashboard · Produção");
   carScroll("car-prod");
 }
 // edição dos recordes e da meta
@@ -1845,11 +1875,12 @@ function delGram(i,gi,scope){ ondas[i].gramaturas.splice(gi,1); salvar(LS.ondas,
 // ---------- Fornecedores ----------
 function renderFornecedores(){
   $("g-fornecedores-list").innerHTML = fornecedores.length
-    ? fornecedores.map((f,i)=>`<div class="listrow"><span>${esc(f.nome)}${f.fone?` <small style="color:var(--muted-2)">· ${esc(f.fone)}</small>`:""}${(+f.custo)?` <small style="color:var(--green);font-weight:700">· ${brl(f.custo)}/kg</small>`:` <small style="color:var(--muted-2)">· sem custo</small>`}</span><div class="rowbtns"><button class="ed" onclick="editFornecedor(${i})" title="Editar">✏️</button><button class="rm" onclick="delFornecedor(${i})" title="Remover">×</button></div></div>`).join("")
+    ? fornecedores.map((f,i)=>`<div class="listrow"><span>${esc(f.nome)}${f.email?` <small style="color:var(--accent)">· ${esc(f.email)}</small>`:""}${f.fone?` <small style="color:var(--muted-2)">· ${esc(f.fone)}</small>`:""}${(+f.custo)?` <small style="color:var(--green);font-weight:700">· ${brl(f.custo)}/kg</small>`:` <small style="color:var(--muted-2)">· sem custo</small>`}</span><div class="rowbtns"><button class="ed" onclick="editFornecedor(${i})" title="Editar">✏️</button><button class="rm" onclick="delFornecedor(${i})" title="Remover">×</button></div></div>`).join("")
     : `<p class="muted-note">Nenhum fornecedor cadastrado.</p>`;
 }
-function addFornecedor(){ const n=$("g-forn-novo").value.trim(); if(!n)return; const f=$("g-forn-fone").value.trim(); const c=parseFloat(String($("g-forn-custo").value).replace(",","."))||0; if(!fornecedores.some(x=>x.nome===n)){ fornecedores.push({nome:n,fone:f,custo:c}); salvar(LS.forn,fornecedores);} $("g-forn-novo").value=""; $("g-forn-fone").value=""; $("g-forn-custo").value=""; renderFornecedores(); }
-function editFornecedor(i){ const n=prompt("Nome do fornecedor:", fornecedores[i].nome); if(n==null)return; const f=prompt("Telefone (opcional):", fornecedores[i].fone||""); if(f==null)return; const c=prompt("Preço de custo por kg (R$):", fornecedores[i].custo||0); if(c==null)return; fornecedores[i]={nome:n.trim()||fornecedores[i].nome, fone:f.trim(), custo:parseFloat(String(c).replace(",","."))||0}; salvar(LS.forn,fornecedores); renderFornecedores(); }
+function fornEmail(nome){ const f=fornecedores.find(x=>x.nome===nome); return (f&&f.email)?String(f.email).trim():""; }
+function addFornecedor(){ const n=$("g-forn-novo").value.trim(); if(!n)return; const e=$("g-forn-email").value.trim(); const f=$("g-forn-fone").value.trim(); const c=parseFloat(String($("g-forn-custo").value).replace(",","."))||0; if(!fornecedores.some(x=>x.nome===n)){ fornecedores.push({nome:n,email:e,fone:f,custo:c}); salvar(LS.forn,fornecedores);} $("g-forn-novo").value=""; $("g-forn-email").value=""; $("g-forn-fone").value=""; $("g-forn-custo").value=""; renderFornecedores(); }
+function editFornecedor(i){ const n=prompt("Nome do fornecedor:", fornecedores[i].nome); if(n==null)return; const e=prompt("E-mail (para enviar OC):", fornecedores[i].email||""); if(e==null)return; const f=prompt("Telefone (opcional):", fornecedores[i].fone||""); if(f==null)return; const c=prompt("Preço de custo por kg (R$):", fornecedores[i].custo||0); if(c==null)return; fornecedores[i]={nome:n.trim()||fornecedores[i].nome, email:e.trim(), fone:f.trim(), custo:parseFloat(String(c).replace(",","."))||0}; salvar(LS.forn,fornecedores); renderFornecedores(); }
 function delFornecedor(i){ if(confirm("Remover fornecedor?")){ fornecedores.splice(i,1); salvar(LS.forn,fornecedores); renderFornecedores(); } }
 
 // ---------- Dashboard ----------
@@ -2055,6 +2086,7 @@ function abrirCompraMassa(){
     <div class="cmassa-top">
       <div><label class="flbl">Fornecedor *</label><input id="massa-forn" list="massa-forn-dl" placeholder="Buscar fornecedor..." style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px;font:inherit;box-sizing:border-box"><datalist id="massa-forn-dl">${fornOpts}</datalist></div>
       <div><label class="flbl">Previsão de entrega</label><input id="massa-data" type="date" value="${hojeStr()}" style="border:1px solid var(--border);border-radius:10px;padding:10px;font:inherit"></div>
+      <div><label class="flbl">Comprar por (CNPJ)</label><select id="massa-empresa" style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px;font:inherit;box-sizing:border-box">${EMPRESAS.map(e=>`<option value="${e.key}">${esc(e.nome)}</option>`).join("")}</select></div>
     </div>
     <div class="tablewrap" style="margin-top:12px"><table class="htab"><thead><tr><th>SKU</th><th>Quantidade</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="modal-foot"><button class="btnlink" onclick="closeOcModal()">Cancelar</button><button class="btnprim" onclick="confirmarCompraMassa()">Confirmar ordem de compra</button></div>
@@ -2077,7 +2109,7 @@ function confirmarCompraMassa(){
   const custoKg=fornCusto(forn); let peso=0, valor=0;
   const itensF=itens.map(i=>{ const p=i.pesoUnit*i.qtd, v=custoKg*p; peso+=p; valor+=v; const o=Object.assign({},i,{peso:p, custoUnit:custoKg*i.pesoUnit, valor:v}); delete o._origemKey; return o; });
   const ipi=valor*0.0325; const id=ocNovoId(data);
-  ordens.push({ id, dataPrevista:data, fornecedor:forn, itens:itensF, peso, valor, ipi, valorTotal:valor+ipi, recebida:false });
+  ordens.push({ id, dataPrevista:data, fornecedor:forn, empresa:($("massa-empresa")?$("massa-empresa").value:"fabrica")||"fabrica", itens:itensF, peso, valor, ipi, valorTotal:valor+ipi, recebida:false });
   salvar(LS.oc,ordens);
   itens.forEach(i=>{ const k=i._origemKey; if(!k || String(k).startsWith("av:")) return; const e=Object.assign({}, devEntry(k)||{}, {status:"comprado"}); desenvStatus[k]=e; });
   salvar(LS.dev,desenvStatus);
@@ -2228,13 +2260,14 @@ function renderOC(){
     return `<tr>
     <td><b>${esc(o.id)}</b></td>
     <td>${ocPrevista(o)?fmtData(ocPrevista(o)):"—"}</td>
-    <td>${esc(o.fornecedor||"—")}</td>
+    <td>${esc(o.fornecedor||"—")}<br><small style="color:var(--muted-2)">${esc(empresaOC(o).nome)}</small></td>
     <td><span class="stb ${st[1]}">${st[0]}</span></td>
     <td class="num">${(+o.peso||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})} kg</td>
     <td class="num">${brl(ocTotais(o).total)}</td>
     <td class="devacts">
       <button class="ic-btn ed" onclick="ocDetalhes('${o.id}')" title="Detalhes">👁️</button>
       <button class="ic-btn pdf" onclick="ocPDF('${o.id}')" title="PDF da ordem">📄</button>
+      ${ ehGestor() ? `<button class="ic-btn mail" onclick="enviarOCEmail('${o.id}')" title="Enviar OC por e-mail">📧</button>` : "" }
       <button class="ic-btn ${podeReceber?"ok":""}" onclick="abrirReceber('${o.id}')" title="${podeReceber?"Dar entrada (receber)":"Reabrir recebimento"}">${podeReceber?"✓":"↩︎"}</button>
       ${ ehGestor() ? `<button class="ic-btn ed" onclick="editarOC('${o.id}')" title="Editar">✏️</button>` : "" }
       ${ ehGestor() ? `<button class="ic-btn rm" onclick="ocExcluir('${o.id}')" title="Excluir">×</button>` : "" }
@@ -2276,7 +2309,7 @@ function closeOcModal(){ const m=$("ocmodal"); if(m){ m.style.display="none"; m.
 
 // ----- PDF da ordem -----
 function ocPDF(id){
-  const o=ordens.find(x=>x.id===id); if(!o)return; const st=OC_ST[ocStatus(o)];
+  const o=ordens.find(x=>x.id===id); if(!o)return; const st=OC_ST[ocStatus(o)]; const emp=empresaOC(o);
   const rows=(o.itens||[]).map(i=>`<tr>
     <td><b>${esc(i.sku||"—")}</b></td>
     <td>${esc(i.ondaNome||"")}${i.gram?` · ${i.gram} g/m²`:""}</td>
@@ -2288,13 +2321,13 @@ function ocPDF(id){
   $("print").innerHTML=`<div class="ptop">
     <div class="ph"><div class="phl">
       <svg viewBox="0 0 64 64" width="44" height="44" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="14" width="40" height="40" rx="7" fill="#F2D374"/><rect x="18" y="10" width="40" height="40" rx="7" fill="#161e2a"/><text x="38" y="38" text-anchor="middle" font-family="Archivo,Arial" font-weight="800" font-size="30" fill="#fff">M</text></svg>
-      <div><div class="pht">Ordem de compra ${esc(o.id)}</div><div class="phs">${esc(CONFIG.empresa)} · CNPJ ${CONFIG.cnpj}</div></div>
+      <div><div class="pht">Ordem de compra ${esc(o.id)}</div><div class="phs">${esc(emp.nome)}${emp.cnpj?" · CNPJ "+emp.cnpj:""}</div></div>
     </div><div class="phr"><div class="phlabel">Previsão de entrega</div><div class="phnum" style="font-size:15px">${ocPrevista(o)?fmtData(ocPrevista(o)):"—"}</div><div class="phs">${OC_ST[ocStatus(o)][0]}</div></div></div>
     <div class="frow" style="border:none;padding-top:6px"><span>Fornecedor</span><b>${esc(o.fornecedor||"—")}</b></div>
     <table class="pordtab"><thead><tr><th>SKU</th><th>Qualidade</th><th>Chapa (L×C)</th><th>Vincos</th><th style="text-align:right">Qtd</th><th style="text-align:right">Valor un.</th><th style="text-align:right">Total</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="ptotais"><div>Peso total: <b>${(+o.peso||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})} kg</b></div><div>Subtotal: <b>${brl(ocTotais(o).sub)}</b></div><div>IPI (3,25%): <b>${brl(ocTotais(o).ipi)}</b></div><div style="font-size:15px">Total: <b>${brl(ocTotais(o).total)}</b></div></div>
     </div>
-    <div class="pbottom"><div class="pfoot">${esc(CONFIG.empresa)} · CNPJ ${CONFIG.cnpj} · Ordem de compra</div></div>`;
+    <div class="pbottom"><div class="pfoot">${esc(emp.nome)}${emp.cnpj?" · CNPJ "+emp.cnpj:""} · Ordem de compra</div></div>`;
   window.print();
   setTimeout(()=>{ $("print").innerHTML=""; },600);
 }
@@ -2348,10 +2381,61 @@ function renderAgenda(){
 
 // ----- criação -----
 function ocTotais(o){ const sub=+o.valor||0; const ipi=sub*0.0325; return {peso:+o.peso||0, sub, ipi, total:sub+ipi}; }
-function abrirNovaOC(){ ocForm={ editId:null, fornecedor:"", dataPrevista:hojeStr(), itens:[], _pickKey:"" }; window._ocb=""; window._ocq=""; const t=$("ocnova-title"); if(t)t.textContent="Nova ordem de compra"; show("tela-oc-nova"); renderNovaOC(); }
+// ----- Envio de OC por e-mail (Edge Function send-oc-email + Resend) -----
+let _jspdfLoaded=false;
+function carregarJsPDF(){
+  return new Promise((res,rej)=>{
+    if(_jspdfLoaded && window.jspdf) return res();
+    const s1=document.createElement("script"); s1.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+    s1.onload=()=>{ const s2=document.createElement("script"); s2.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"; s2.onload=()=>{ _jspdfLoaded=true; res(); }; s2.onerror=()=>rej(new Error("Falha ao carregar o gerador de PDF (autotable). Precisa de internet.")); document.head.appendChild(s2); };
+    s1.onerror=()=>rej(new Error("Falha ao carregar o gerador de PDF (jsPDF). Precisa de internet."));
+    document.head.appendChild(s1);
+  });
+}
+function ocGerarPDFBase64(o){
+  const { jsPDF }=window.jspdf; const doc=new jsPDF({unit:"mm",format:"a4"}); const emp=empresaOC(o);
+  doc.setFontSize(16); doc.setTextColor(20); doc.text("Ordem de compra "+o.id, 14, 18);
+  doc.setFontSize(10); doc.setTextColor(90);
+  doc.text(emp.nome+(emp.cnpj?" · CNPJ "+emp.cnpj:""), 14, 24);
+  doc.text("Fornecedor: "+(o.fornecedor||"—"), 14, 32);
+  doc.text("Previsão de entrega: "+(ocPrevista(o)?fmtData(ocPrevista(o)):"—"), 14, 38);
+  const body=(o.itens||[]).map(i=>[ i.sku||"—", (i.ondaNome||"")+(i.gram?" · "+i.gram+" g/m²":""), (i.chapaLarg+" × "+i.chapaComp+" mm"), (+i.qtd||0).toLocaleString("pt-BR"), brl(i.custoUnit||0), brl(i.valor||0) ]);
+  doc.autoTable({ startY:44, head:[["SKU","Qualidade","Chapa (L×C)","Qtd","Valor un.","Total"]], body, styles:{fontSize:9,cellPadding:2}, headStyles:{fillColor:[22,30,42]} });
+  const t=ocTotais(o); let y=(doc.lastAutoTable?doc.lastAutoTable.finalY:60)+8; doc.setTextColor(20); doc.setFontSize(10);
+  doc.text("Peso total: "+(+o.peso||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})+" kg", 14, y);
+  doc.text("Subtotal: "+brl(t.sub), 14, y+6);
+  doc.text("IPI (3,25%): "+brl(t.ipi), 14, y+12);
+  doc.setFontSize(13); doc.text("Total: "+brl(t.total), 14, y+21);
+  return doc.output("datauristring").split(",")[1];
+}
+async function enviarOCEmail(id){
+  const o=ordens.find(x=>x.id===id); if(!o){ alert("OC não encontrada."); return; }
+  let para=fornEmail(o.fornecedor);
+  if(!para){ const p=prompt("E-mail do fornecedor "+(o.fornecedor||"")+":", ""); if(p==null) return; para=(p||"").trim(); }
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(para)){ alert("E-mail inválido: "+para); return; }
+  if(!confirm("Enviar a ordem de compra "+o.id+" para:\n"+para+" ?")) return;
+  try{
+    await carregarJsPDF();
+    const pdf=ocGerarPDFBase64(o); const t=ocTotais(o); const emp=empresaOC(o);
+    const linhas=(o.itens||[]).map(i=>`<tr><td style="padding:6px;border-bottom:1px solid #eee">${esc(i.sku||"—")}</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:right">${(+i.qtd||0).toLocaleString("pt-BR")}</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:right">${brl(i.valor||0)}</td></tr>`).join("");
+    const corpo=`<div style="font-family:Arial,sans-serif;color:#161e2a;max-width:640px">
+      <h2 style="margin:0 0 4px">Ordem de compra ${esc(o.id)}</h2>
+      <p style="margin:0 0 12px;color:#555">${esc(emp.nome)}${emp.cnpj?" · CNPJ "+esc(emp.cnpj):""}</p>
+      <p>Fornecedor: <b>${esc(o.fornecedor||"—")}</b><br>Previsão de entrega: <b>${ocPrevista(o)?fmtData(ocPrevista(o)):"—"}</b></p>
+      <table style="border-collapse:collapse;width:100%;font-size:14px"><thead><tr style="background:#161e2a;color:#fff"><th style="padding:6px;text-align:left">SKU</th><th style="padding:6px;text-align:right">Qtd</th><th style="padding:6px;text-align:right">Total</th></tr></thead><tbody>${linhas}</tbody></table>
+      <p style="margin-top:12px">Peso total: <b>${(+o.peso||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})} kg</b><br>Total: <b>${brl(t.total)}</b></p>
+      <p style="color:#555">Segue em anexo o PDF da ordem de compra.</p>
+    </div>`;
+    const resp=await fetch(`${SUPA_URL}/functions/v1/send-oc-email`, { method:"POST", headers:{"Content-Type":"application/json","apikey":SUPA_KEY}, body:JSON.stringify({ para, assunto:"Ordem de compra "+o.id+" · "+emp.nome, corpo, pdfBase64:pdf, pdfNome:"OC-"+o.id+".pdf" }) });
+    const data=await resp.json().catch(()=>({}));
+    if(!resp.ok || !data.sucesso){ throw new Error(data.error || ("Erro "+resp.status)); }
+    alert("✅ Ordem de compra "+o.id+" enviada para "+para+"!");
+  }catch(e){ alert("❌ Não consegui enviar: "+e.message+"\n\nConfira se a Edge Function 'send-oc-email' está publicada e o Resend configurado."); }
+}
+function abrirNovaOC(){ ocForm={ editId:null, fornecedor:"", empresa:"fabrica", dataPrevista:hojeStr(), itens:[], _pickKey:"" }; window._ocb=""; window._ocq=""; const t=$("ocnova-title"); if(t)t.textContent="Nova ordem de compra"; show("tela-oc-nova"); renderNovaOC(); }
 function editarOC(id){
   const o=ordens.find(x=>x.id===id); if(!o){ alert("Ordem não encontrada."); return; }
-  ocForm={ editId:id, fornecedor:o.fornecedor||"", dataPrevista:o.dataPrevista||hojeStr(),
+  ocForm={ editId:id, fornecedor:o.fornecedor||"", empresa:o.empresa||"fabrica", dataPrevista:o.dataPrevista||hojeStr(),
     itens:(o.itens||[]).map(i=>({ key:i.key||"", sku:i.sku||"", produto:i.produto||"", c:i.c, l:i.l, a:i.a, chapaComp:i.chapaComp, chapaLarg:i.chapaLarg, gram:i.gram, ondaNome:i.ondaNome, vincos:(i.vincos||[]).slice(), qtd:i.qtd, pesoUnit:i.pesoUnit })),
     _pickKey:"" };
   window._ocb=""; window._ocq=""; const t=$("ocnova-title"); if(t)t.textContent="Editar ordem de compra "+id; show("tela-oc-nova"); renderNovaOC();
@@ -2390,10 +2474,10 @@ function salvarOC(){
   const ipi=valor*0.0325;
   if(ocForm.editId){
     const o=ordens.find(x=>x.id===ocForm.editId);
-    if(o){ o.fornecedor=ocForm.fornecedor; o.dataPrevista=ocForm.dataPrevista; o.itens=itens; o.peso=peso; o.valor=valor; o.ipi=ipi; o.valorTotal=valor+ipi; }
+    if(o){ o.fornecedor=ocForm.fornecedor; o.empresa=ocForm.empresa||"fabrica"; o.dataPrevista=ocForm.dataPrevista; o.itens=itens; o.peso=peso; o.valor=valor; o.ipi=ipi; o.valorTotal=valor+ipi; }
   } else {
     const id=ocNovoId(ocForm.dataPrevista);
-    ordens.push({ id, dataPrevista:ocForm.dataPrevista, fornecedor:ocForm.fornecedor, itens, peso, valor, ipi, valorTotal:valor+ipi, recebida:false });
+    ordens.push({ id, dataPrevista:ocForm.dataPrevista, fornecedor:ocForm.fornecedor, empresa:ocForm.empresa||"fabrica", itens, peso, valor, ipi, valorTotal:valor+ipi, recebida:false });
   }
   salvar(LS.oc,ordens);
   show("tela-gestor"); irViewG("prod-ordem");
@@ -2414,6 +2498,7 @@ function renderNovaOC(){
         <div class="compf"><label>Fornecedor *</label><input list="oc-forn-dl" value="${esc(ocForm.fornecedor)}" placeholder="Buscar fornecedor..." onchange="ocSetForn(this.value)"><datalist id="oc-forn-dl">${fornecedores.map(f=>`<option value="${esc(f.nome)}"></option>`).join("")}</datalist></div>
         <div class="compf"><label>Previsão de entrega *</label><input type="date" value="${ocForm.dataPrevista}" onchange="ocForm.dataPrevista=this.value"></div>
       </div>
+      <div class="compf"><label>Comprar por (CNPJ) *</label><select onchange="ocForm.empresa=this.value">${EMPRESAS.map(e=>`<option value="${e.key}" ${ (ocForm.empresa||"fabrica")===e.key?"selected":""}>${esc(e.nome)}${e.cnpj?" · "+e.cnpj:""}</option>`).join("")}</select></div>
       ${ocForm.fornecedor&&!custoKg?`<div class="hint warn">⚠️ Esse fornecedor está sem custo R$/kg cadastrado — o valor sairá zerado.</div>`:""}
     </div>
 
