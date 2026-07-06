@@ -415,9 +415,10 @@ tbody tr:hover{background:var(--surface-2)}
 #print .calwrap{border:1px solid #e6e8ec}
 #print .caldow div{font-size:10px}
 #print .calcell{min-height:90px}
-.ocpickrow{display:flex;gap:12px;align-items:flex-start}
+.ocpickrow{display:flex;gap:8px;align-items:flex-start}
 .ocpickbox{flex:1;min-width:0}
-.ocqtdbox{flex:none;width:130px}
+.ocqtdbox{flex:none;width:96px}
+#oc-pickq{min-width:0;width:100%;padding-left:10px;padding-right:10px;text-align:center}
 .ocres.sel{border-color:var(--accent);background:var(--accent-soft)}
 .ocres{cursor:pointer}
 .pickadd{flex:none;color:var(--accent);font-weight:700;font-size:12.5px}
@@ -688,7 +689,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v93 · dados salvos neste aparelho</div>
+    <div class="foot">v94 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -1091,7 +1092,7 @@ const CONFIG = {
 // Empresas de compra (cada uma = um CNPJ / conta Bling). Preencher o CNPJ da Embalagens.
 const EMPRESAS = [
   { key:"fabrica",    nome:"Malba Fábrica",    cnpj:"44.231.658/0001-80" },
-  { key:"embalagens", nome:"Malba Embalagens", cnpj:"" }
+  { key:"embalagens", nome:"Malba Embalagens", cnpj:"30.371.474/0001-00" }
 ];
 function empresaOC(o){ const k=(o&&o.empresa)||"fabrica"; return EMPRESAS.find(e=>e.key===k) || EMPRESAS[0]; }
 
