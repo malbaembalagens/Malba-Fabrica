@@ -554,6 +554,8 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
 .ic-btn{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-size:15px;border:1px solid var(--border);background:var(--surface);cursor:pointer}
 .ic-btn.ed{background:var(--accent-soft);color:var(--accent);border-color:transparent}
 .ic-btn.mail{background:var(--green-soft);color:var(--green);border-color:transparent}
+.ic-btn.bling{background:#e7effc;color:#1c66c2;border-color:transparent}
+.ic-btn.bling.done{background:var(--green-soft);color:var(--green)}
 .ic-btn.pdf{background:var(--surface-2)}
 .ic-btn.rm{background:var(--red-soft);color:var(--red);border-color:transparent;font-size:18px}
 .tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
@@ -689,7 +691,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v94 · dados salvos neste aparelho</div>
+    <div class="foot">v97 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -970,7 +972,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
 
         <div class="vview" id="gview-cad-fornecedores" style="display:none">
           <h2 class="viewtitle">Fornecedores</h2>
-          <div class="cadrow"><input id="g-forn-novo" placeholder="Nome do fornecedor"><input id="g-forn-email" type="email" placeholder="E-mail (p/ enviar OC)" style="max-width:200px"><input id="g-forn-fone" placeholder="Telefone (opcional)" style="max-width:150px"><input id="g-forn-custo" type="number" step="0.01" inputmode="decimal" placeholder="Custo R$/kg" style="max-width:130px"><button onclick="addFornecedor()">Adicionar</button></div>
+          <div class="cadrow"><input id="g-forn-novo" placeholder="Nome do fornecedor"><input id="g-forn-cnpj" placeholder="CNPJ (p/ Bling)" style="max-width:170px"><input id="g-forn-email" type="email" placeholder="E-mail (p/ enviar OC)" style="max-width:200px"><input id="g-forn-fone" placeholder="Telefone (opcional)" style="max-width:150px"><input id="g-forn-custo" type="number" step="0.01" inputmode="decimal" placeholder="Custo R$/kg" style="max-width:130px"><button onclick="addFornecedor()">Adicionar</button></div>
           <div id="g-fornecedores-list"></div>
         </div>
 
@@ -1177,6 +1179,11 @@ const DEFAULT_SUPA_KEY = "sb_publishable_9FpvlA5dbTmkQ2bhfYue9g_dMHsqIs5";
 let SUPA_URL = localStorage.getItem("malba_sync_url")||DEFAULT_SUPA_URL;
 let SUPA_KEY = localStorage.getItem("malba_sync_key")||DEFAULT_SUPA_KEY;
 let syncOff = localStorage.getItem("malba_sync_off")==="1";
+// ---- Integração Bling (Edge Function bling-oauth do projeto Malba Flex) ----
+const BLING_FN_URL="https://aveslxtnjlmtcdykqtmo.supabase.co/functions/v1/bling-oauth";
+const BLING_FN_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2ZXNseHRuamxtdGNkeWtxdG1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0MDEzMjAsImV4cCI6MjA5Mjk3NzMyMH0.gybrHrfL7vBkOVALOZlGIjZ2Tu9UwwOCh8w-6qqu5J0";
+function blingContas(){ try{ return JSON.parse(localStorage.getItem("malba_bling_contas")||"{}"); }catch(e){ return {}; } }
+function setBlingConta(k,v){ const c=blingContas(); c[k]=v; localStorage.setItem("malba_bling_contas", JSON.stringify(c)); }
 let syncOn = !syncOff && !!(SUPA_URL && SUPA_KEY);
 let syncStatus = syncOn?"conectando":"off";   // off | conectando | online | erro
 let pendingPush = {}, syncVer = {}, syncPollTimer = null, appReady = false;
@@ -1876,12 +1883,12 @@ function delGram(i,gi,scope){ ondas[i].gramaturas.splice(gi,1); salvar(LS.ondas,
 // ---------- Fornecedores ----------
 function renderFornecedores(){
   $("g-fornecedores-list").innerHTML = fornecedores.length
-    ? fornecedores.map((f,i)=>`<div class="listrow"><span>${esc(f.nome)}${f.email?` <small style="color:var(--accent)">· ${esc(f.email)}</small>`:""}${f.fone?` <small style="color:var(--muted-2)">· ${esc(f.fone)}</small>`:""}${(+f.custo)?` <small style="color:var(--green);font-weight:700">· ${brl(f.custo)}/kg</small>`:` <small style="color:var(--muted-2)">· sem custo</small>`}</span><div class="rowbtns"><button class="ed" onclick="editFornecedor(${i})" title="Editar">✏️</button><button class="rm" onclick="delFornecedor(${i})" title="Remover">×</button></div></div>`).join("")
+    ? fornecedores.map((f,i)=>`<div class="listrow"><span>${esc(f.nome)}${f.cnpj?` <small style="color:var(--muted-2)">· CNPJ ${esc(f.cnpj)}</small>`:""}${f.email?` <small style="color:var(--accent)">· ${esc(f.email)}</small>`:""}${f.fone?` <small style="color:var(--muted-2)">· ${esc(f.fone)}</small>`:""}${(+f.custo)?` <small style="color:var(--green);font-weight:700">· ${brl(f.custo)}/kg</small>`:` <small style="color:var(--muted-2)">· sem custo</small>`}</span><div class="rowbtns"><button class="ed" onclick="editFornecedor(${i})" title="Editar">✏️</button><button class="rm" onclick="delFornecedor(${i})" title="Remover">×</button></div></div>`).join("")
     : `<p class="muted-note">Nenhum fornecedor cadastrado.</p>`;
 }
 function fornEmail(nome){ const f=fornecedores.find(x=>x.nome===nome); return (f&&f.email)?String(f.email).trim():""; }
-function addFornecedor(){ const n=$("g-forn-novo").value.trim(); if(!n)return; const e=$("g-forn-email").value.trim(); const f=$("g-forn-fone").value.trim(); const c=parseFloat(String($("g-forn-custo").value).replace(",","."))||0; if(!fornecedores.some(x=>x.nome===n)){ fornecedores.push({nome:n,email:e,fone:f,custo:c}); salvar(LS.forn,fornecedores);} $("g-forn-novo").value=""; $("g-forn-email").value=""; $("g-forn-fone").value=""; $("g-forn-custo").value=""; renderFornecedores(); }
-function editFornecedor(i){ const n=prompt("Nome do fornecedor:", fornecedores[i].nome); if(n==null)return; const e=prompt("E-mail (para enviar OC):", fornecedores[i].email||""); if(e==null)return; const f=prompt("Telefone (opcional):", fornecedores[i].fone||""); if(f==null)return; const c=prompt("Preço de custo por kg (R$):", fornecedores[i].custo||0); if(c==null)return; fornecedores[i]={nome:n.trim()||fornecedores[i].nome, email:e.trim(), fone:f.trim(), custo:parseFloat(String(c).replace(",","."))||0}; salvar(LS.forn,fornecedores); renderFornecedores(); }
+function addFornecedor(){ const n=$("g-forn-novo").value.trim(); if(!n)return; const cn=$("g-forn-cnpj").value.trim(); const e=$("g-forn-email").value.trim(); const f=$("g-forn-fone").value.trim(); const c=parseFloat(String($("g-forn-custo").value).replace(",","."))||0; if(!fornecedores.some(x=>x.nome===n)){ fornecedores.push({nome:n,cnpj:cn,email:e,fone:f,custo:c}); salvar(LS.forn,fornecedores);} $("g-forn-novo").value=""; $("g-forn-cnpj").value=""; $("g-forn-email").value=""; $("g-forn-fone").value=""; $("g-forn-custo").value=""; renderFornecedores(); }
+function editFornecedor(i){ const n=prompt("Nome do fornecedor:", fornecedores[i].nome); if(n==null)return; const cn=prompt("CNPJ (para integrar com o Bling):", fornecedores[i].cnpj||""); if(cn==null)return; const e=prompt("E-mail (para enviar OC):", fornecedores[i].email||""); if(e==null)return; const f=prompt("Telefone (opcional):", fornecedores[i].fone||""); if(f==null)return; const c=prompt("Preço de custo por kg (R$):", fornecedores[i].custo||0); if(c==null)return; fornecedores[i]={nome:n.trim()||fornecedores[i].nome, cnpj:cn.trim(), email:e.trim(), fone:f.trim(), custo:parseFloat(String(c).replace(",","."))||0}; salvar(LS.forn,fornecedores); renderFornecedores(); }
 function delFornecedor(i){ if(confirm("Remover fornecedor?")){ fornecedores.splice(i,1); salvar(LS.forn,fornecedores); renderFornecedores(); } }
 
 // ---------- Dashboard ----------
@@ -2269,6 +2276,7 @@ function renderOC(){
       <button class="ic-btn ed" onclick="ocDetalhes('${o.id}')" title="Detalhes">👁️</button>
       <button class="ic-btn pdf" onclick="ocPDF('${o.id}')" title="PDF da ordem">📄</button>
       ${ ehGestor() ? `<button class="ic-btn mail" onclick="enviarOCEmail('${o.id}')" title="Enviar OC por e-mail">📧</button>` : "" }
+      ${ ehGestor() ? `<button class="ic-btn bling ${o.blingIntegrado?"done":""}" onclick="integrarBling('${o.id}')" title="${o.blingIntegrado?("Integrado ao Bling nº "+(o.blingId||"?")+" — clique p/ reenviar"):"Integrar com o Bling"}">${o.blingIntegrado?"✅":"🔗"}</button>` : "" }
       <button class="ic-btn ${podeReceber?"ok":""}" onclick="abrirReceber('${o.id}')" title="${podeReceber?"Dar entrada (receber)":"Reabrir recebimento"}">${podeReceber?"✓":"↩︎"}</button>
       ${ ehGestor() ? `<button class="ic-btn ed" onclick="editarOC('${o.id}')" title="Editar">✏️</button>` : "" }
       ${ ehGestor() ? `<button class="ic-btn rm" onclick="ocExcluir('${o.id}')" title="Excluir">×</button>` : "" }
@@ -2395,18 +2403,47 @@ function carregarJsPDF(){
 }
 function ocGerarPDFBase64(o){
   const { jsPDF }=window.jspdf; const doc=new jsPDF({unit:"mm",format:"a4"}); const emp=empresaOC(o);
-  doc.setFontSize(16); doc.setTextColor(20); doc.text("Ordem de compra "+o.id, 14, 18);
-  doc.setFontSize(10); doc.setTextColor(90);
-  doc.text(emp.nome+(emp.cnpj?" · CNPJ "+emp.cnpj:""), 14, 24);
-  doc.text("Fornecedor: "+(o.fornecedor||"—"), 14, 32);
-  doc.text("Previsão de entrega: "+(ocPrevista(o)?fmtData(ocPrevista(o)):"—"), 14, 38);
-  const body=(o.itens||[]).map(i=>[ i.sku||"—", (i.ondaNome||"")+(i.gram?" · "+i.gram+" g/m²":""), (i.chapaLarg+" × "+i.chapaComp+" mm"), (+i.qtd||0).toLocaleString("pt-BR"), brl(i.custoUnit||0), brl(i.valor||0) ]);
-  doc.autoTable({ startY:44, head:[["SKU","Qualidade","Chapa (L×C)","Qtd","Valor un.","Total"]], body, styles:{fontSize:9,cellPadding:2}, headStyles:{fillColor:[22,30,42]} });
-  const t=ocTotais(o); let y=(doc.lastAutoTable?doc.lastAutoTable.finalY:60)+8; doc.setTextColor(20); doc.setFontSize(10);
-  doc.text("Peso total: "+(+o.peso||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})+" kg", 14, y);
-  doc.text("Subtotal: "+brl(t.sub), 14, y+6);
-  doc.text("IPI (3,25%): "+brl(t.ipi), 14, y+12);
-  doc.setFontSize(13); doc.text("Total: "+brl(t.total), 14, y+21);
+  const W=210, M=14;
+  const ink=[23,21,15], kraft=[168,120,63], paper=[242,238,230], amareloA=[242,211,116], escuroM=[22,30,42];
+  // faixa de topo
+  doc.setFillColor(paper[0],paper[1],paper[2]); doc.rect(0,0,W,34,"F");
+  // logo (dois quadradinhos + M)
+  doc.setFillColor(amareloA[0],amareloA[1],amareloA[2]); doc.roundedRect(M,9,13,13,2.5,2.5,"F");
+  doc.setFillColor(escuroM[0],escuroM[1],escuroM[2]); doc.roundedRect(M+4,12,13,13,2.5,2.5,"F");
+  doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(14); doc.text("M", M+10.5, 21.5, {align:"center"});
+  // título + empresa
+  doc.setTextColor(ink[0],ink[1],ink[2]); doc.setFont("helvetica","bold"); doc.setFontSize(15);
+  doc.text("Ordem de compra "+o.id, M+23, 15);
+  doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(90,90,90);
+  doc.text(emp.nome+(emp.cnpj?"  ·  CNPJ "+emp.cnpj:""), M+23, 21);
+  // previsão (direita)
+  doc.setFontSize(8); doc.setTextColor(120,120,120); doc.text("Previsão de entrega", W-M, 13, {align:"right"});
+  doc.setFontSize(12); doc.setTextColor(ink[0],ink[1],ink[2]); doc.setFont("helvetica","bold"); doc.text(ocPrevista(o)?fmtData(ocPrevista(o)):"—", W-M, 19, {align:"right"});
+  // linha kraft
+  doc.setDrawColor(kraft[0],kraft[1],kraft[2]); doc.setLineWidth(0.8); doc.line(M,34,W-M,34);
+  // fornecedor
+  doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(110,110,110); doc.text("FORNECEDOR", M, 44);
+  doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(ink[0],ink[1],ink[2]); doc.text(o.fornecedor||"—", M, 50);
+  // tabela
+  const body=(o.itens||[]).map(i=>[ i.sku||"—", (i.ondaNome||"")+(i.gram?" · "+i.gram+" g/m²":""), (i.chapaLarg+" x "+i.chapaComp+" mm"), (+i.qtd||0).toLocaleString("pt-BR"), brl(i.custoUnit||0), brl(i.valor||0) ]);
+  doc.autoTable({ startY:56, head:[["SKU","Qualidade","Chapa (L x C)","Qtd","Valor un.","Total"]], body,
+    styles:{fontSize:9,cellPadding:2.5,textColor:[45,45,45]},
+    headStyles:{fillColor:ink,textColor:[255,255,255],fontStyle:"bold"},
+    alternateRowStyles:{fillColor:[248,246,242]},
+    columnStyles:{3:{halign:"right"},4:{halign:"right"},5:{halign:"right"}},
+    margin:{left:M,right:M} });
+  const t=ocTotais(o); let y=(doc.lastAutoTable?doc.lastAutoTable.finalY:70)+10;
+  const bw=66, bx=W-M-bw;
+  doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(80,80,80);
+  doc.text("Peso total", bx, y); doc.text((+o.peso||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})+" kg", bx+bw, y, {align:"right"});
+  doc.text("Subtotal", bx, y+6); doc.text(brl(t.sub), bx+bw, y+6, {align:"right"});
+  doc.text("IPI (3,25%)", bx, y+12); doc.text(brl(t.ipi), bx+bw, y+12, {align:"right"});
+  doc.setFillColor(ink[0],ink[1],ink[2]); doc.roundedRect(bx-4, y+16, bw+8, 11, 1.5,1.5,"F");
+  doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(11);
+  doc.text("Total", bx, y+23); doc.text(brl(t.total), bx+bw, y+23, {align:"right"});
+  // rodapé
+  doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(150,150,150);
+  doc.text(emp.nome+(emp.cnpj?" · CNPJ "+emp.cnpj:"")+" · Ordem de compra", W/2, 288, {align:"center"});
   return doc.output("datauristring").split(",")[1];
 }
 async function enviarOCEmail(id){
@@ -2432,6 +2469,33 @@ async function enviarOCEmail(id){
     if(!resp.ok || !data.sucesso){ throw new Error(data.error || ("Erro "+resp.status)); }
     alert("✅ Ordem de compra "+o.id+" enviada para "+para+"!");
   }catch(e){ alert("❌ Não consegui enviar: "+e.message+"\n\nConfira se a Edge Function 'send-oc-email' está publicada e o Resend configurado."); }
+}
+async function integrarBling(id){
+  const o=ordens.find(x=>x.id===id); if(!o){ alert("OC não encontrada."); return; }
+  const emp=empresaOC(o), ek=(o.empresa||"fabrica");
+  let contaId=blingContas()[ek];
+  if(!contaId){
+    const p=prompt("Cole o ID da conta Bling da "+emp.nome+"\n(está no seu painel Malba Flex / tabela bling_contas). Fica salvo pras próximas.","");
+    if(p==null) return; contaId=(p||"").trim(); if(!contaId){ alert("ID vazio."); return; }
+    setBlingConta(ek,contaId);
+  }
+  const forn=fornecedores.find(x=>x.nome===o.fornecedor)||{};
+  if(o.blingIntegrado && !confirm("Esta OC já foi integrada (nº "+(o.blingId||"?")+"). Enviar de novo?")) return;
+  if(!confirm("Integrar a OC "+o.id+" com o Bling?\n\nEmpresa: "+emp.nome+"\nFornecedor: "+(o.fornecedor||"—")+"\nItens: "+(o.itens||[]).length)) return;
+  try{
+    const resp=await fetch(BLING_FN_URL, { method:"POST", headers:{"Content-Type":"application/json","apikey":BLING_FN_KEY,"Authorization":"Bearer "+BLING_FN_KEY}, body:JSON.stringify({
+      action:"criar_pedido_compra", contaId,
+      fornecedorCnpj: forn.cnpj||"", fornecedorNome: o.fornecedor||"",
+      dataPrevista: ocPrevista(o)||"", observacoes: "OC "+o.id+" - MALBA "+emp.nome,
+      itens: (o.itens||[]).map(i=>({ sku:i.sku, qtd:i.qtd, custoUnit:i.custoUnit }))
+    }) });
+    const data=await resp.json().catch(()=>({}));
+    if(!resp.ok || !data.ok){ throw new Error(data.error || ("Erro "+resp.status)); }
+    o.blingId=data.bling_id; o.blingIntegrado=true; salvar(LS.oc,ordens); ocRefresh();
+    let msg="✅ Pedido de compra criado no Bling! Nº "+(data.bling_id||"?");
+    if(data.nao_encontrados && data.nao_encontrados.length) msg+="\n\n⚠️ SKUs não achados no Bling (ficaram de fora): "+data.nao_encontrados.join(", ");
+    alert(msg);
+  }catch(e){ alert("❌ Não consegui integrar: "+e.message); }
 }
 function abrirNovaOC(){ ocForm={ editId:null, fornecedor:"", empresa:"fabrica", dataPrevista:hojeStr(), itens:[], _pickKey:"" }; window._ocb=""; window._ocq=""; const t=$("ocnova-title"); if(t)t.textContent="Nova ordem de compra"; show("tela-oc-nova"); renderNovaOC(); }
 function editarOC(id){
