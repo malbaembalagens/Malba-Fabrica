@@ -691,7 +691,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v97 · dados salvos neste aparelho</div>
+    <div class="foot">v98 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -2322,6 +2322,7 @@ function ocPDF(id){
   const rows=(o.itens||[]).map(i=>`<tr>
     <td><b>${esc(i.sku||"—")}</b></td>
     <td>${esc(i.ondaNome||"")}${i.gram?` · ${i.gram} g/m²`:""}</td>
+    <td>${i.c}×${i.l}×${i.a} mm</td>
     <td>${i.chapaLarg} × ${i.chapaComp} mm</td>
     <td>${(i.vincos||[]).map(v=>+v||0).join(" | ")||"—"}</td>
     <td style="text-align:right">${(+i.qtd||0).toLocaleString("pt-BR")}</td>
@@ -2333,7 +2334,7 @@ function ocPDF(id){
       <div><div class="pht">Ordem de compra ${esc(o.id)}</div><div class="phs">${esc(emp.nome)}${emp.cnpj?" · CNPJ "+emp.cnpj:""}</div></div>
     </div><div class="phr"><div class="phlabel">Previsão de entrega</div><div class="phnum" style="font-size:15px">${ocPrevista(o)?fmtData(ocPrevista(o)):"—"}</div><div class="phs">${OC_ST[ocStatus(o)][0]}</div></div></div>
     <div class="frow" style="border:none;padding-top:6px"><span>Fornecedor</span><b>${esc(o.fornecedor||"—")}</b></div>
-    <table class="pordtab"><thead><tr><th>SKU</th><th>Qualidade</th><th>Chapa (L×C)</th><th>Vincos</th><th style="text-align:right">Qtd</th><th style="text-align:right">Valor un.</th><th style="text-align:right">Total</th></tr></thead><tbody>${rows}</tbody></table>
+    <table class="pordtab"><thead><tr><th>SKU</th><th>Qualidade</th><th>Caixa (C×L×A)</th><th>Chapa (L×C)</th><th>Vincos</th><th style="text-align:right">Qtd</th><th style="text-align:right">Valor un.</th><th style="text-align:right">Total</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="ptotais"><div>Peso total: <b>${(+o.peso||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})} kg</b></div><div>Subtotal: <b>${brl(ocTotais(o).sub)}</b></div><div>IPI (3,25%): <b>${brl(ocTotais(o).ipi)}</b></div><div style="font-size:15px">Total: <b>${brl(ocTotais(o).total)}</b></div></div>
     </div>
     <div class="pbottom"><div class="pfoot">${esc(emp.nome)}${emp.cnpj?" · CNPJ "+emp.cnpj:""} · Ordem de compra</div></div>`;
@@ -2402,38 +2403,48 @@ function carregarJsPDF(){
   });
 }
 function ocGerarPDFBase64(o){
-  const { jsPDF }=window.jspdf; const doc=new jsPDF({unit:"mm",format:"a4"}); const emp=empresaOC(o);
-  const W=210, M=14;
+  const { jsPDF }=window.jspdf; const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"}); const emp=empresaOC(o);
+  const W=297, H=210, M=14;
   const ink=[23,21,15], kraft=[168,120,63], paper=[242,238,230], amareloA=[242,211,116], escuroM=[22,30,42];
   // faixa de topo
-  doc.setFillColor(paper[0],paper[1],paper[2]); doc.rect(0,0,W,34,"F");
+  doc.setFillColor(paper[0],paper[1],paper[2]); doc.rect(0,0,W,32,"F");
   // logo (dois quadradinhos + M)
-  doc.setFillColor(amareloA[0],amareloA[1],amareloA[2]); doc.roundedRect(M,9,13,13,2.5,2.5,"F");
-  doc.setFillColor(escuroM[0],escuroM[1],escuroM[2]); doc.roundedRect(M+4,12,13,13,2.5,2.5,"F");
-  doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(14); doc.text("M", M+10.5, 21.5, {align:"center"});
+  doc.setFillColor(amareloA[0],amareloA[1],amareloA[2]); doc.roundedRect(M,8,13,13,2.5,2.5,"F");
+  doc.setFillColor(escuroM[0],escuroM[1],escuroM[2]); doc.roundedRect(M+4,11,13,13,2.5,2.5,"F");
+  doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(14); doc.text("M", M+10.5, 20.5, {align:"center"});
   // título + empresa
   doc.setTextColor(ink[0],ink[1],ink[2]); doc.setFont("helvetica","bold"); doc.setFontSize(15);
-  doc.text("Ordem de compra "+o.id, M+23, 15);
+  doc.text("Ordem de compra "+o.id, M+23, 14);
   doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(90,90,90);
-  doc.text(emp.nome+(emp.cnpj?"  ·  CNPJ "+emp.cnpj:""), M+23, 21);
+  doc.text(emp.nome+(emp.cnpj?"  ·  CNPJ "+emp.cnpj:""), M+23, 20);
   // previsão (direita)
-  doc.setFontSize(8); doc.setTextColor(120,120,120); doc.text("Previsão de entrega", W-M, 13, {align:"right"});
-  doc.setFontSize(12); doc.setTextColor(ink[0],ink[1],ink[2]); doc.setFont("helvetica","bold"); doc.text(ocPrevista(o)?fmtData(ocPrevista(o)):"—", W-M, 19, {align:"right"});
+  doc.setFontSize(8); doc.setTextColor(120,120,120); doc.text("Previsão de entrega", W-M, 12, {align:"right"});
+  doc.setFontSize(12); doc.setTextColor(ink[0],ink[1],ink[2]); doc.setFont("helvetica","bold"); doc.text(ocPrevista(o)?fmtData(ocPrevista(o)):"—", W-M, 18, {align:"right"});
   // linha kraft
-  doc.setDrawColor(kraft[0],kraft[1],kraft[2]); doc.setLineWidth(0.8); doc.line(M,34,W-M,34);
+  doc.setDrawColor(kraft[0],kraft[1],kraft[2]); doc.setLineWidth(0.8); doc.line(M,32,W-M,32);
   // fornecedor
-  doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(110,110,110); doc.text("FORNECEDOR", M, 44);
-  doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(ink[0],ink[1],ink[2]); doc.text(o.fornecedor||"—", M, 50);
-  // tabela
-  const body=(o.itens||[]).map(i=>[ i.sku||"—", (i.ondaNome||"")+(i.gram?" · "+i.gram+" g/m²":""), (i.chapaLarg+" x "+i.chapaComp+" mm"), (+i.qtd||0).toLocaleString("pt-BR"), brl(i.custoUnit||0), brl(i.valor||0) ]);
-  doc.autoTable({ startY:56, head:[["SKU","Qualidade","Chapa (L x C)","Qtd","Valor un.","Total"]], body,
+  doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(110,110,110); doc.text("FORNECEDOR", M, 41);
+  doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(ink[0],ink[1],ink[2]); doc.text(o.fornecedor||"—", M, 47);
+  // tabela (com medidas da caixa, chapa e vincos)
+  const body=(o.itens||[]).map(i=>[
+    i.sku||"—",
+    (i.ondaNome||"")+(i.gram?" · "+i.gram+" g/m²":""),
+    (i.c+" x "+i.l+" x "+i.a+" mm"),
+    (i.chapaLarg+" x "+i.chapaComp+" mm"),
+    ((i.vincos||[]).map(v=>+v||0).join(" | ")||"—"),
+    (+i.qtd||0).toLocaleString("pt-BR"),
+    brl(i.custoUnit||0),
+    brl(i.valor||0)
+  ]);
+  doc.autoTable({ startY:53, head:[["SKU","Qualidade","Caixa (C x L x A)","Chapa (L x C)","Vincos","Qtd","Valor un.","Total"]], body,
     styles:{fontSize:9,cellPadding:2.5,textColor:[45,45,45]},
     headStyles:{fillColor:ink,textColor:[255,255,255],fontStyle:"bold"},
     alternateRowStyles:{fillColor:[248,246,242]},
-    columnStyles:{3:{halign:"right"},4:{halign:"right"},5:{halign:"right"}},
+    columnStyles:{5:{halign:"right"},6:{halign:"right"},7:{halign:"right"}},
     margin:{left:M,right:M} });
   const t=ocTotais(o); let y=(doc.lastAutoTable?doc.lastAutoTable.finalY:70)+10;
-  const bw=66, bx=W-M-bw;
+  if(y>H-42) y=H-42;
+  const bw=70, bx=W-M-bw;
   doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(80,80,80);
   doc.text("Peso total", bx, y); doc.text((+o.peso||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})+" kg", bx+bw, y, {align:"right"});
   doc.text("Subtotal", bx, y+6); doc.text(brl(t.sub), bx+bw, y+6, {align:"right"});
@@ -2443,7 +2454,7 @@ function ocGerarPDFBase64(o){
   doc.text("Total", bx, y+23); doc.text(brl(t.total), bx+bw, y+23, {align:"right"});
   // rodapé
   doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(150,150,150);
-  doc.text(emp.nome+(emp.cnpj?" · CNPJ "+emp.cnpj:"")+" · Ordem de compra", W/2, 288, {align:"center"});
+  doc.text(emp.nome+(emp.cnpj?" · CNPJ "+emp.cnpj:"")+" · Ordem de compra", W/2, H-8, {align:"center"});
   return doc.output("datauristring").split(",")[1];
 }
 async function enviarOCEmail(id){
