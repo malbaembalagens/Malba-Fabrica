@@ -693,7 +693,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v99 · dados salvos neste aparelho</div>
+    <div class="foot">v100 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -1182,7 +1182,7 @@ let SUPA_URL = localStorage.getItem("malba_sync_url")||DEFAULT_SUPA_URL;
 let SUPA_KEY = localStorage.getItem("malba_sync_key")||DEFAULT_SUPA_KEY;
 let syncOff = localStorage.getItem("malba_sync_off")==="1";
 // ---- Integração Bling (Edge Function bling-oauth do projeto Malba Flex) ----
-const BLING_FN_URL="https://aveslxtnjlmtcdykqtmo.supabase.co/functions/v1/bling-oauth";
+const BLING_FN_URL="https://aveslxtnjlmtcdykqtmo.supabase.co/functions/v1/bling-pedido-compra";
 const BLING_FN_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2ZXNseHRuamxtdGNkeWtxdG1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0MDEzMjAsImV4cCI6MjA5Mjk3NzMyMH0.gybrHrfL7vBkOVALOZlGIjZ2Tu9UwwOCh8w-6qqu5J0";
 function blingContas(){ try{ return JSON.parse(localStorage.getItem("malba_bling_contas")||"{}"); }catch(e){ return {}; } }
 function setBlingConta(k,v){ const c=blingContas(); c[k]=v; localStorage.setItem("malba_bling_contas", JSON.stringify(c)); }
@@ -2523,7 +2523,7 @@ async function integrarBling(id){
   if(!confirm("Integrar a OC "+o.id+" com o Bling?\n\nEmpresa: "+emp.nome+"\nFornecedor: "+(o.fornecedor||"—")+"\nItens: "+(o.itens||[]).length)) return;
   try{
     const resp=await fetch(BLING_FN_URL, { method:"POST", headers:{"Content-Type":"application/json","apikey":BLING_FN_KEY,"Authorization":"Bearer "+BLING_FN_KEY}, body:JSON.stringify({
-      action:"criar_pedido_compra", contaId,
+      contaId,
       fornecedorCnpj: forn.cnpj||"", fornecedorNome: o.fornecedor||"",
       dataPrevista: ocPrevista(o)||"", observacoes: "OC "+o.id+" - MALBA "+emp.nome,
       itens: (o.itens||[]).map(i=>({ sku:i.sku, qtd:i.qtd, custoUnit:i.custoUnit }))
