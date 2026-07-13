@@ -628,6 +628,8 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
   #print .psec-h{padding:18px 0 12px}
   #print .frow{display:flex;justify-content:space-between;gap:20px;padding:7px 0;border-bottom:1px solid #f0f1f4;font-size:12px}
   #print .frow span{color:#6b7280}
+  #print .mark{background:#FFE96B;padding:2px 8px;border-radius:3px;font-size:16px;font-weight:800;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #print .phnum.mark{display:inline-block;font-size:20px;margin:3px 0}
   #print .dashprint-h{font-size:15px;font-weight:800;margin-bottom:14px}
   #print .dashpage{page-break-after:always;padding-bottom:10px}
   #print .dashpage:last-child{page-break-after:auto}
@@ -691,7 +693,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v98 · dados salvos neste aparelho</div>
+    <div class="foot">v99 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -1266,6 +1268,18 @@ function mergeByKey(localArr, cloudArr, idf){
 function devIdent(x){ const s=(x&&x.sku!=null)?String(x.sku).trim().toLowerCase():""; return s ? ("sku:"+s) : ("key:"+((x&&x.key)||"")); }
 function devSig(x){ if(!x) return "x"; const c=Object.assign({},x); delete c.key; try{ return JSON.stringify(c); }catch(e){ return (x.sku||"")+"|"+(x.key||""); } }
 function tocaProd(p){ if(p) p._upd=Date.now(); return p; }
+function mergeOrd(localArr, cloudArr){
+  const byId={};
+  (Array.isArray(localArr)?localArr:[]).forEach(o=>{ if(o&&o.id!=null) byId[o.id]=o; });
+  (Array.isArray(cloudArr)?cloudArr:[]).forEach(o=>{
+    if(!o||o.id==null) return; const ex=byId[o.id];
+    if(!ex){ byId[o.id]=o; return; }
+    const lu=+ex._upd||0, cu=+o._upd||0;
+    if(cu>lu){ byId[o.id]=o; return; }
+    if(cu===lu && (o.excluida && !ex.excluida)) byId[o.id]=o;   // exclusão prevalece em empate
+  });
+  return Object.values(byId);
+}
 function mergeProd(localArr, cloudArr){
   const byId={};
   const add=p=>{ if(!p||p.id==null) return; const ex=byId[p.id]; if(!ex){ byId[p.id]=p; return; } const lu=+ex._upd||0, cu=+p._upd||0; if(cu>=lu) byId[p.id]=p; };
@@ -1324,6 +1338,12 @@ async function syncInit(){
           if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
           return;
         }
+        if(k===LS.oc){
+          const merged=mergeOrd(lsParse(k), cloud[k].value), ms=JSON.stringify(merged);
+          localStorage.setItem(k, ms); syncVer[k]=cloud[k].updated_at;
+          if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
+          return;
+        }
         const cu=cloud[k].updated_at, lm=localMod(k);
         if(lm && cu && new Date(lm) > new Date(cu)){ pendingPush[k]=true; syncVer[k]=cu; return; }
         if(isEmptyVal(cloud[k].value) && !isEmptyVal(lsParse(k))){ pendingPush[k]=true; syncVer[k]=cu; return; }
@@ -1350,6 +1370,13 @@ async function syncPull(){
         }
         if(k===LS.prodflow){
           const merged=mergeProd(lsParse(k), cloud[k].value), ms=JSON.stringify(merged);
+          if(localStorage.getItem(k)!==ms){ localStorage.setItem(k,ms); changed=true; }
+          syncVer[k]=cloud[k].updated_at;
+          if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
+          return;
+        }
+        if(k===LS.oc){
+          const merged=mergeOrd(lsParse(k), cloud[k].value), ms=JSON.stringify(merged);
           if(localStorage.getItem(k)!==ms){ localStorage.setItem(k,ms); changed=true; }
           syncVer[k]=cloud[k].updated_at;
           if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
@@ -2139,6 +2166,7 @@ function fichaTecnica(key){
   const tipoLbl={nenhum:"Nenhum",meia:"Meia chapa",dupla:"Chapa dupla",contra:"Contra onda"}[f.chapaTipo||"nenhum"];
   const c=e.comp||compPadrao(it.ondaNome);
   const linha=(l,v)=>`<div class="frow"><span>${l}</span><b>${v}</b></div>`;
+  const linhaM=(l,v)=>`<div class="frow"><span>${l}</span><b class="mark">${v}</b></div>`;
   $("print").innerHTML=`
     <div class="ptop">
       <div class="ph">
@@ -2150,12 +2178,18 @@ function fichaTecnica(key){
           </svg>
           <div><div class="pht">Ficha técnica — ${esc(CONFIG.empresa)}</div><div class="phs">${esc(it.produto||"Caixa de papelão")}</div><div class="phs">CNPJ: ${CONFIG.cnpj}</div></div>
         </div>
-        <div class="phr"><div class="phlabel">SKU</div><div class="phnum">${esc(e.sku||"—")}</div><div class="phs">${e.data?fmtData(e.data):""}</div></div>
+        <div class="phr"><div class="phlabel">SKU</div><div class="phnum mark">${esc(e.sku||"—")}</div><div class="phs">${e.data?fmtData(e.data):""}</div></div>
       </div>
       <div class="psec-h"><div class="plabel">Caixa</div></div>
-      ${linha("Medida da caixa (C×L×A)", `${it.c} × ${it.l} × ${it.a} mm`)}
+      ${linhaM("Medida da caixa (C×L×A)", `${it.c} × ${it.l} × ${it.a} mm`)}
       ${linha("Onda", esc(f.gram?(it.ondaNome||""):it.ondaNome||""))}
       ${linha("Gramatura", `${f.gram} g/m²`)}
+      <div class="psec-h"><div class="plabel">Clichê</div></div>
+      ${linha("Código do clichê", esc(e.codigoCliche||"—"))}
+      ${linha("Referência do cliente", esc(e.refCliente||"—"))}
+      ${linha("Cores", `${esc(e.cor1||"—")} / ${esc(e.cor2||"—")}`)}
+      ${linhaM("Logo Malba", e.logoMalba?"Sim":"Não")}
+      ${linha("Arte anexada", esc(e.pdfNome||"—"))}
       <div class="psec-h"><div class="plabel">Chapa</div></div>
       ${linha("Tipo de chapa", tipoLbl)}
       ${linha("Medida da chapa (C×L)", `${Math.round(d.comp)} × ${Math.round(d.larg)} mm`)}
@@ -2167,12 +2201,6 @@ function fichaTecnica(key){
       ${linha("Largura 1 / 2", `${c.larg1} / ${c.larg2}`)}
       ${linha("Comprimento 1 / 2", `${c.comp1} / ${c.comp2}`)}
       ${linha("Aba sup. / inf. / altura", `${c.abaSup} / ${c.abaInf} / ${c.altura}`)}
-      <div class="psec-h"><div class="plabel">Clichê</div></div>
-      ${linha("Código do clichê", esc(e.codigoCliche||"—"))}
-      ${linha("Referência do cliente", esc(e.refCliente||"—"))}
-      ${linha("Cores", `${esc(e.cor1||"—")} / ${esc(e.cor2||"—")}`)}
-      ${linha("Logo Malba", e.logoMalba?"Sim":"Não")}
-      ${linha("Arte anexada", esc(e.pdfNome||"—"))}
     </div>
     <div class="pbottom"><div class="pfoot">${esc(CONFIG.empresa)} · CNPJ ${CONFIG.cnpj} · Ficha técnica de desenvolvimento</div></div>
     ${ e.pdfData ? `<div class="ficha-arte-page">
@@ -2234,7 +2262,7 @@ function aplicarReceber(){
     i.recebido=jaProd+x;
   });
   if(!algum){ alert("Informe ao menos uma quantidade para receber."); return; }
-  o.recebida = !ocFaltaProd(o);
+  o.recebida = !ocFaltaProd(o); o._upd=Date.now();
   salvar(LS.oc,ordens); salvar(LS.prodflow,producao);
   closeOcModal(); ocRefresh();
 }
@@ -2244,17 +2272,17 @@ function ocReabrir(id){ const o=ordens.find(x=>x.id===id); if(!o)return;
     if(!p){ i.recebido=0; }
     else if((p.imp.feito||0)===0 && (p.acab.feito||0)===0){ p.excluido=true; tocaProd(p); i.recebido=0; }
   });
-  o.recebida=false;
+  o.recebida=false; o._upd=Date.now();
   salvar(LS.oc,ordens); salvar(LS.prodflow,producao); ocRefresh();
 }
-function ocExcluir(id){ if(!confirm("Excluir esta ordem de compra?"))return; ordens=ordens.filter(x=>x.id!==id); salvar(LS.oc,ordens); ocRefresh(); }
+function ocExcluir(id){ if(!confirm("Excluir esta ordem de compra?"))return; const o=ordens.find(x=>x.id===id); if(o){ o.excluida=true; o._upd=Date.now(); } (producao||[]).forEach(p=>{ if(p.ocId===id && !p.excluido){ p.excluido=true; tocaProd(p); } }); salvar(LS.oc,ordens); salvar(LS.prodflow,producao); ocRefresh(); }
 function renderOC(){
-  const recCount=ordens.filter(o=>o.recebida).length, naoCount=ordens.length-recCount;
+  const vivas=ordens.filter(o=>!o.excluida); const recCount=vivas.filter(o=>o.recebida).length, naoCount=vivas.length-recCount;
   if($("oc-c-nao")) $("oc-c-nao").textContent=naoCount;
   if($("oc-c-rec")) $("oc-c-rec").textContent=recCount;
   const busca=($("oc-busca")?$("oc-busca").value:"").toLowerCase().trim();
   const de=$("oc-de")?$("oc-de").value:"", ate=$("oc-ate")?$("oc-ate").value:"";
-  let lst=ordens.filter(o=> (ocTab==="recebida")? o.recebida : !o.recebida );
+  let lst=ordens.filter(o=> !o.excluida && ((ocTab==="recebida")? o.recebida : !o.recebida) );
   if(de) lst=lst.filter(o=>ocPrevista(o)>=de);
   if(ate) lst=lst.filter(o=>ocPrevista(o)<=ate);
   if(busca) lst=lst.filter(o=>{ const hay=[o.id,o.fornecedor,...(o.itens||[]).map(i=>i.sku+" "+i.produto)].join(" ").toLowerCase(); return hay.includes(busca); });
@@ -2376,7 +2404,7 @@ function renderAgenda(){
     title=start.getDate()+" "+nomesMes[start.getMonth()].slice(0,3)+" – "+end.getDate()+" "+nomesMes[end.getMonth()].slice(0,3)+" "+y;
   }
   const hj=hojeStr();
-  const cellHtml=cells.map(d=>{ const ds=isoOf(d); const evs=ordens.filter(o=>ocPrevista(o)===ds);
+  const cellHtml=cells.map(d=>{ const ds=isoOf(d); const evs=ordens.filter(o=>!o.excluida && ocPrevista(o)===ds);
     const other=d.getMonth()!==mo && agendaView==="mensal";
     return `<div class="calcell${other?" other":""}${ds===hj?" today":""}"><div class="caldate">${ds===hj?`<span class="todaynum">${d.getDate()}</span>`:d.getDate()}</div>${evs.map(ocCellHtml).join("")}</div>`;
   }).join("");
@@ -2787,7 +2815,7 @@ function entregarPCP(id){ const p=producao.find(x=>x.id===id); if(!p)return; if(
 function renderPCP(){
   const box=$("pcp-box"); if(!box) return;
   const f1=[];
-  ordens.filter(o=>!o.recebida).forEach(o=>{ (o.itens||[]).forEach(it=>{ const rest=(+it.qtd||0)-(+it.recebido||0); if(rest>0) f1.push({sku:it.sku, qtd:rest, peso:(it.pesoUnit||0)*rest, oc:o.id, info:o.fornecedor}); }); });
+  ordens.filter(o=>!o.recebida && !o.excluida).forEach(o=>{ (o.itens||[]).forEach(it=>{ const rest=(+it.qtd||0)-(+it.recebido||0); if(rest>0) f1.push({sku:it.sku, qtd:rest, peso:(it.pesoUnit||0)*rest, oc:o.id, info:o.fornecedor}); }); });
   const prod=producao.filter(p=>!p.terceirizado && !p.entregue && !p.excluido);
   const f2=prod.filter(p=>!p.imp.done).map(p=>({sku:p.sku, qtd:p.qtd, peso:p.pesoUnit*p.qtd, oc:p.ocId}));
   const f3=prod.filter(p=>p.imp.done && !p.acab.done).map(p=>({sku:p.sku, qtd:p.imp.feito, peso:p.pesoUnit*p.imp.feito, oc:p.ocId}));
@@ -3596,11 +3624,21 @@ function fixOcsNaoRecebidas(){ /* desativado na v62: não deve mais desfazer rec
 fixOcsNaoRecebidas();
 function repararOrdens(){
   if(localStorage.getItem("malba_os_ocs_rep_v1")) return;
-  const ex=new Set(ordens.map(o=>String(o.id)));
+  const ex=new Set(ordens.map(o=>String(o.id)));   // já existentes (inclui as marcadas como excluídas)
   let added=false;
   OC_DATA.forEach(o=>{ if(!ex.has(String(o.id))){ ordens.push(ocRecord(o)); added=true; } });
   if(added){ salvar(LS.oc,ordens); try{ renderOC(); }catch(e){} try{ renderPCP(); }catch(e){} }
   localStorage.setItem("malba_os_ocs_rep_v1","1");
+}
+// v99: some com as OCs "fantasma" que voltavam por causa do reparo antigo
+const OCS_FANTASMA=["05062026002","01062026001","25052026001"];
+function limparOcsFantasma(){
+  if(localStorage.getItem("malba_os_ocs_fant_v1")) return;
+  let ch=false;
+  ordens.forEach(o=>{ if(OCS_FANTASMA.includes(String(o.id)) && !o.excluida){ o.excluida=true; o._upd=Date.now(); ch=true; } });
+  (producao||[]).forEach(p=>{ if(OCS_FANTASMA.includes(String(p.ocId)) && !p.excluido){ p.excluido=true; tocaProd(p); ch=true; } });
+  if(ch){ salvar(LS.oc,ordens); salvar(LS.prodflow,producao); try{ ocRefresh(); }catch(e){} try{ renderPCP(); }catch(e){} }
+  localStorage.setItem("malba_os_ocs_fant_v1","1");
 }
 function repararHistorico(){
   if(localStorage.getItem("malba_os_hist_rep_v1")) return;
@@ -3649,7 +3687,7 @@ function seedFichas5(){
   if(added){ salvar(LS.devav,devAvulsos); try{ render(); }catch(e){} }
   localStorage.setItem("malba_os_fichas_v5","1");
 }
-(async()=>{ try{ await syncInit(); }catch(e){} try{ repararOrdens(); }catch(e){} try{ repararHistorico(); }catch(e){} try{ dedupDevAvulsos(); }catch(e){} try{ seedFichas5(); }catch(e){} })();
+(async()=>{ try{ await syncInit(); }catch(e){} try{ repararOrdens(); }catch(e){} try{ limparOcsFantasma(); }catch(e){} try{ repararHistorico(); }catch(e){} try{ dedupDevAvulsos(); }catch(e){} try{ seedFichas5(); }catch(e){} })();
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden && syncOn){ flushPending().then(syncPull); } });
 </script>
 </body>
