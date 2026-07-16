@@ -693,7 +693,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v100 · dados salvos neste aparelho</div>
+    <div class="foot">v101d · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -843,6 +843,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
         <button class="navgroup collapsed" data-g="producao" onclick="toggleGroup(this)">🏭 Produção <span class="chev">▾</span></button>
         <div class="navsub collapsed">
           <button class="navitem subitem only-gestor" data-v="prod-desenv" onclick="irViewG('prod-desenv')">Desenvolvimento</button>
+          <button class="navitem subitem only-gestor" data-v="compras" onclick="irViewG('compras')">Compras</button>
           <button class="navitem subitem" data-v="prod-ordem" onclick="irViewG('prod-ordem')">Ordem de compra</button>
           <button class="navitem subitem" data-v="prod-impressao" onclick="irViewG('prod-impressao')">Impressão</button>
           <button class="navitem subitem" data-v="prod-acabamento" onclick="irViewG('prod-acabamento')">Acabamento</button>
@@ -866,12 +867,18 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
           <button class="navitem subitem" data-v="dash-pcp" onclick="irViewG('dash-pcp')">PCP</button>
           <button class="navitem subitem only-gestor" data-v="dash-vendas" onclick="irViewG('dash-vendas')">Vendas</button>
         </div>
+        <button class="navgroup collapsed only-gestor" data-g="opcoes" onclick="toggleGroup(this)">⚙️ Opções <span class="chev">▾</span></button>
+        <div class="navsub collapsed only-gestor">
+          <button class="navitem subitem only-gestor" data-v="opc-fornecedores" onclick="irViewG('opc-fornecedores')">Compras › Puxar fornecedores do Bling</button>
+        </div>
       </aside>
 
       <main class="content">
         <div class="vview" id="gview-dash-prod" style="display:none"><h2 class="viewtitle">Dashboard · Produção</h2><div id="dashprod-c"></div></div>
         <div class="vview" id="gview-dash-pcp" style="display:none"><h2 class="viewtitle">PCP · Planejamento e Controle</h2><div id="pcp-box"></div></div>
         <div class="vview" id="gview-dash-agenda" style="display:none"><h2 class="viewtitle">Agenda de Ordens de Compra</h2><div id="agenda-c"></div></div>
+        <div class="vview" id="gview-compras" style="display:none"><h2 class="viewtitle">Compras</h2><div id="compras-box"></div></div>
+        <div class="vview" id="gview-opc-fornecedores" style="display:none"><h2 class="viewtitle">Opções · Puxar fornecedores do Bling</h2><div id="opcforn-box"></div></div>
 
         <div class="vview" id="gview-dash-vendas" style="display:none">
           <h2 class="viewtitle">Dashboard · Vendas</h2>
@@ -1128,7 +1135,7 @@ const DEF_ONDAS = [
   { nome:"Onda TT", gramaturas:[470],         comp:compPadrao("Onda TT") },
 ];
 
-const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1" };
+const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1" };
 
 // util
 function carregar(k,def){ try{ const v=JSON.parse(localStorage.getItem(k)); return (v===null||v===undefined)?def:v }catch(e){ return def } }
@@ -1161,6 +1168,7 @@ let devAvulsos = carregar(LS.devav, []);
 let metas = carregar(LS.meta, {impressao:0, acabamento:0});
 let dashProc="Acabamento", dashMesAcab=mesAtual(), dashMesDesp=mesAtual(), dashMesLC=mesAtual(), dashAnoHist=String(new Date().getFullYear());
 let ordens = carregar(LS.oc, []);
+let compras = carregar(LS.compras, []);
 let ocTab="nao", ocPage=1, ocForm=null;
 let agendaRef=hojeStr(), agendaView="mensal";
 let producao = carregar(LS.prodflow, []);
@@ -1219,6 +1227,7 @@ function reloadState(){
   devAvulsos = carregar(LS.devav, []);
   metas = carregar(LS.meta, {impressao:0, acabamento:0});
   ordens = carregar(LS.oc, []);
+  compras = carregar(LS.compras, []);
   producao = carregar(LS.prodflow, []);
   records = carregar(LS.records, DEFAULT_RECORDS);
   metaProd = carregar(LS.metaprod, {caixas:35000, ton:2.5});
@@ -1787,6 +1796,8 @@ function irViewG(v){
   else if(v==="dash-prod") renderDashProd();
   else if(v==="dash-agenda") renderAgenda();
   else if(v==="prod-desenv") renderDesenv();
+  else if(v==="compras") renderCompras();
+  else if(v==="opc-fornecedores") renderOpcFornecedores();
   else if(v==="prod-ordem") renderOC();
   else if(v==="prod-impressao") renderProc("imp");
   else if(v==="prod-acabamento") renderProc("acab");
@@ -2509,6 +2520,167 @@ async function enviarOCEmail(id){
     alert("✅ Ordem de compra "+o.id+" enviada para "+para+"!");
   }catch(e){ alert("❌ Não consegui enviar: "+e.message+"\n\nConfira se a Edge Function 'send-oc-email' está publicada e o Resend configurado."); }
 }
+// ---------- Compras (pedido de compra a partir de orçamentos aprovados) ----------
+var comprasEmpresa = "embalagens";
+var comprasTab = "aberto";
+var comprasFornByEmp = (function(){ try{ return JSON.parse(localStorage.getItem("malba_compras_forn")||"{}"); }catch(e){ return {}; } })();
+function comprasFornList(){ return comprasFornByEmp[comprasEmpresa] || []; }
+var comprasSel = {};
+var comprasFornSel = {};
+var comprasQueue = [];
+
+function compraKeysSet(){ const s=new Set(); (compras||[]).forEach(c=>{ if(c&&c.excluida) return; ((c&&c.itens)||[]).forEach(i=>{ if(i&&i.key!=null) s.add(i.key); }); }); return s; }
+function comprasAbertos(){ const bought=compraKeysSet(); return devItems().filter(d=> d.origem==="orc" && !bought.has(d.key)); }
+function comprasContaId(empKey){
+  let c=blingContas()[empKey];
+  if(!c){ const emp=EMPRESAS.find(e=>e.key===empKey)||EMPRESAS[0]; const p=prompt("Cole o ID da conta Bling da "+emp.nome+"\n(tabela bling_contas). Fica salvo pras próximas.",""); if(p==null) return null; c=(p||"").trim(); if(!c) return null; setBlingConta(empKey,c); }
+  return c;
+}
+function comprasSetEmpresa(v){ comprasEmpresa=v; renderCompras(); }
+function comprasSetTab(t){ comprasTab=t; renderCompras(); }
+function comprasToggleSel(k,ch){ if(ch) comprasSel[k]=true; else delete comprasSel[k]; renderCompras(); }
+function comprasSetForn(k,v){ if(v) comprasFornSel[k]=v; else delete comprasFornSel[k]; }
+
+async function comprasCarregarFornecedores(empKey){
+  empKey = empKey || comprasEmpresa;
+  const contaId=comprasContaId(empKey); if(!contaId) return;
+  const st=document.getElementById("opcforn-status"); if(st) st.textContent="Carregando fornecedores do Bling…";
+  try{
+    const resp=await fetch(BLING_FN_URL,{method:"POST",headers:{"Content-Type":"application/json","apikey":BLING_FN_KEY,"Authorization":"Bearer "+BLING_FN_KEY},body:JSON.stringify({action:"listar_fornecedores",contaId})});
+    const data=await resp.json().catch(()=>({}));
+    if(!resp.ok||!data.ok){ throw new Error(data.error||("Erro "+resp.status)); }
+    comprasFornByEmp[empKey]=(data.fornecedores||[]).sort((a,b)=> String(a.nome||"").localeCompare(String(b.nome||"")));
+    try{ localStorage.setItem("malba_compras_forn", JSON.stringify(comprasFornByEmp)); }catch(e){}
+    renderOpcFornecedores();
+  }catch(e){ if(st) st.textContent="❌ "+e.message; else alert("❌ "+e.message); }
+}
+
+function renderOpcFornecedores(){
+  const box=document.getElementById("opcforn-box"); if(!box) return;
+  box.innerHTML=`<p class="muted-note" style="margin-bottom:14px">Baixa a lista de fornecedores de cada conta do Bling pra usar na tela de Compras. Faça uma vez por conta (fica salvo neste aparelho). Refaça se cadastrar fornecedor novo no Bling.</p>`
+    + EMPRESAS.map(e=>{ const n=(comprasFornByEmp[e.key]||[]).length;
+        return `<div class="listrow" style="align-items:center">
+          <span style="flex:1;min-width:0"><b>${esc(e.nome)}</b>${e.cnpj?` <small style="color:var(--muted-2)">· CNPJ ${esc(e.cnpj)}</small>`:""}<br><small style="color:var(--muted-2)">${n?(n+" fornecedores carregados"):"nenhum fornecedor carregado"}</small></span>
+          <button class="btn ghost" onclick="comprasCarregarFornecedores('${e.key}')">${n?"↻ Atualizar":"Puxar do Bling"}</button>
+        </div>`; }).join("")
+    + `<div id="opcforn-status" class="muted-note" style="margin-top:10px"></div>`;
+}
+
+function renderCompras(){
+  const box=document.getElementById("compras-box"); if(!box) return;
+  const emp=EMPRESAS.find(e=>e.key===comprasEmpresa)||EMPRESAS[0];
+  const abertos=comprasAbertos();
+  const fornList=comprasFornList();
+  const fornReady = fornList.length>0;
+  const selCount=Object.keys(comprasSel).length;
+  let h=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:8px"><span class="muted-note">Comprar por (CNPJ)</span>
+      <select onchange="comprasSetEmpresa(this.value)">${EMPRESAS.map(e=>`<option value="${e.key}" ${e.key===comprasEmpresa?"selected":""}>${esc(e.nome)}${e.cnpj?" · "+esc(e.cnpj):""}</option>`).join("")}</select></div>
+    <small style="color:var(--muted-2)">${fornReady?(fornList.length+" fornecedores"):`<span onclick="irViewG('opc-fornecedores')" style="cursor:pointer;text-decoration:underline">Puxe os fornecedores em Opções</span>`}</small>
+  </div>`;
+  h+=`<div class="tabs" style="margin-bottom:10px">
+    <div class="tab ${comprasTab==="aberto"?"on":""}" onclick="comprasSetTab('aberto')">Em aberto (${abertos.length})</div>
+    <div class="tab ${comprasTab==="comprado"?"on":""}" onclick="comprasSetTab('comprado')">Comprado</div></div>`;
+  if(comprasTab==="aberto"){
+    if(!abertos.length){ h+=`<div class="empty"><span class="em">🛒</span>Nenhum item de orçamento aprovado em aberto.</div>`; }
+    else{
+      const fornOpts = fornReady ? fornList.map(f=>`<option value="${f.id}">${esc(f.nome)}</option>`).join("") : "";
+      h+=`<div>`;
+      abertos.forEach(d=>{ const it=d.it; const med=`${it.c}×${it.l}×${it.a} mm`; const g=it.gram?(it.gram+"g"):""; const on=it.ondaNome||"";
+        const sel=!!comprasSel[d.key]; const fsel=comprasFornSel[d.key]||"";
+        h+=`<div class="listrow" style="align-items:center;gap:10px">
+          <label style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer">
+            <input type="checkbox" ${sel?"checked":""} onchange="comprasToggleSel('${d.key}',this.checked)">
+            <span style="min-width:0"><b>${esc(it.produto||"—")}</b> <small style="color:var(--muted-2)">· ${med}${on?" · "+esc(on):""}${g?" · "+g:""}</small><br><small style="color:var(--muted-2)">${esc(d.cliente||"")} · aprov. ${fmtData(d.data)}</small></span>
+          </label>
+          <div style="flex:none;width:210px">${fornReady?`<select onchange="comprasSetForn('${d.key}',this.value)"><option value="">Fornecedor…</option>${fornOpts}</select>`:`<small style="color:var(--muted-2)">Puxe em Opções</small>`}</div>
+        </div>`;
+        if(fornReady && fsel){ /* preserva seleção visual via script pós-render */ }
+      });
+      h+=`</div>`;
+      h+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+        <span class="muted-note">${selCount} selecionado(s)</span>
+        <button class="btn primary" onclick="comprarSelecionados()" ${selCount?"":"disabled"}>🛒 Comprar selecionados</button></div>`;
+    }
+  } else {
+    const lst=(compras||[]).filter(c=>!c.excluida).slice().reverse();
+    if(!lst.length){ h+=`<div class="empty"><span class="em">📦</span>Nenhuma compra realizada ainda.</div>`; }
+    else{
+      h+=`<div>`;
+      lst.forEach(c=>{ const empC=EMPRESAS.find(e=>e.key===c.empresa)||EMPRESAS[0];
+        const bling = c.blingId?(" · Bling nº "+esc(String(c.blingId))):(c.blingErro?` · <span style="color:#c0392b">erro Bling</span>`:"");
+        h+=`<div class="listrow" style="align-items:center">
+          <span style="flex:1;min-width:0"><b>${esc(c.fornecedorNome||"—")}</b> <small style="color:var(--muted-2)">· ${((c.itens)||[]).length} item(ns) · ${esc(empC.nome)}${bling}</small><br><small style="color:var(--muted-2)">${fmtData(c.data)}</small></span>
+          <div style="flex:none"><small style="color:var(--muted-2)">e-mail: próxima etapa</small></div>
+        </div>`;
+      });
+      h+=`</div>`;
+    }
+  }
+  h+=`<div id="compras-modal"></div>`;
+  box.innerHTML=h;
+  // restaura fornecedor escolhido nos selects
+  if(comprasTab==="aberto"){ abertos.forEach(d=>{ const v=comprasFornSel[d.key]; if(!v) return; const sels=box.querySelectorAll(`select[onchange="comprasSetForn('${d.key}',this.value)"]`); sels.forEach(s=>{ s.value=v; }); }); }
+}
+
+function comprarSelecionados(){
+  const keys=Object.keys(comprasSel); if(!keys.length){ alert("Selecione ao menos um item."); return; }
+  const semForn=keys.filter(k=>!comprasFornSel[k]);
+  if(semForn.length){ alert("Escolha o fornecedor de todos os itens selecionados ("+semForn.length+" sem fornecedor)."); return; }
+  const grupos={}; keys.forEach(k=>{ const fid=comprasFornSel[k]; (grupos[fid]=grupos[fid]||[]).push(k); });
+  comprasQueue=Object.keys(grupos).map(fid=>({ fornId:fid, keys:grupos[fid] }));
+  comprasQueueNext();
+}
+function comprasQueueNext(){ if(!comprasQueue.length){ comprasFecharModal(); renderCompras(); return; } comprasModal(comprasQueue[0]); }
+function comprasFecharModal(){ const m=document.getElementById("compras-modal"); if(m) m.innerHTML=""; }
+function comprasCancelarFila(){ comprasQueue=[]; comprasFecharModal(); }
+function comprasModal(group){
+  const f=comprasFornList().find(x=>String(x.id)===String(group.fornId))||{nome:"?"};
+  const abertos=comprasAbertos(); const byKey={}; abertos.forEach(d=>byKey[d.key]=d);
+  const emp=EMPRESAS.find(e=>e.key===comprasEmpresa)||EMPRESAS[0];
+  const itensHtml=group.keys.map(k=>{ const d=byKey[k]; if(!d) return ""; const it=d.it; return `<div style="display:flex;justify-content:space-between;padding:7px 12px;border-bottom:1px solid var(--border);font-size:13px"><span>${esc(it.produto||"—")} · ${it.c}×${it.l}×${it.a}${it.gram?(" · "+it.gram+"g"):""}</span><span style="color:var(--muted-2)">${(+it.qtd||0).toLocaleString("pt-BR")} un</span></div>`; }).join("");
+  const rest=comprasQueue.length-1;
+  const m=document.getElementById("compras-modal"); if(!m) return;
+  m.innerHTML=`<div style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px" onclick="if(event.target===this)comprasCancelarFila()">
+    <div style="background:var(--surface);border-radius:14px;max-width:520px;width:100%;padding:18px 20px;box-shadow:var(--shadow)">
+      <div style="font-size:16px;font-weight:800;margin-bottom:4px">Confirmar pedido de compra</div>
+      <div class="muted-note" style="margin-bottom:10px">Empresa: <b>${esc(emp.nome)}</b>${emp.cnpj?(" · CNPJ "+esc(emp.cnpj)):""}</div>
+      <div class="muted-note">Fornecedor</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:10px">${esc(f.nome)} <small style="color:var(--muted-2)">· do cadastro Bling</small></div>
+      <div class="muted-note">Itens (${group.keys.length})</div>
+      <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:6px 0 14px">${itensHtml}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <small style="color:var(--muted-2)">${rest>0?(rest+" fornecedor(es) na fila"):""}</small>
+        <div style="display:flex;gap:8px">
+          <button class="btn ghost" onclick="comprasCancelarFila()">Cancelar tudo</button>
+          <button class="btn primary" id="compras-conf-btn" onclick="comprasConfirmarAtual()">Confirmar e lançar no Bling</button>
+        </div></div>
+    </div></div>`;
+}
+async function comprasConfirmarAtual(){
+  const group=comprasQueue[0]; if(!group) return;
+  const empKey=comprasEmpresa; const contaId=comprasContaId(empKey); if(!contaId) return;
+  const emp=EMPRESAS.find(e=>e.key===empKey)||EMPRESAS[0];
+  const f=comprasFornList().find(x=>String(x.id)===String(group.fornId))||{nome:"?"};
+  const abertos=comprasAbertos(); const byKey={}; abertos.forEach(d=>byKey[d.key]=d);
+  const itens=group.keys.map(k=>{ const d=byKey[k]; if(!d) return null; const it=d.it; const e=devEntry(k); return { key:k, produto:it.produto, c:it.c, l:it.l, a:it.a, ondaNome:it.ondaNome, gram:it.gram, qtd:(+it.qtd||0), valor:(+it.preco||0), sku:(e&&e.vinculoSku)||"" }; }).filter(Boolean);
+  if(!itens.length){ alert("Itens não encontrados."); return; }
+  const btn=document.getElementById("compras-conf-btn"); if(btn){ btn.disabled=true; btn.textContent="Lançando…"; }
+  try{
+    const resp=await fetch(BLING_FN_URL,{method:"POST",headers:{"Content-Type":"application/json","apikey":BLING_FN_KEY,"Authorization":"Bearer "+BLING_FN_KEY},body:JSON.stringify({
+      contaId, fornecedorId: group.fornId,
+      observacoes:"Compra "+emp.nome+(emp.cnpj?(" · CNPJ "+emp.cnpj):""),
+      itens: itens.map(i=>({ descricao:(i.produto||"Item")+" "+i.c+"x"+i.l+"x"+i.a, sku:i.sku, qtd:i.qtd, valor:i.valor }))
+    })});
+    const data=await resp.json().catch(()=>({}));
+    if(!resp.ok||!data.ok){ throw new Error(data.error||("Erro "+resp.status)); }
+    compras.push({ id:uid(), empresa:empKey, cnpj:emp.cnpj, fornecedorId:group.fornId, fornecedorNome:f.nome, itens:itens, data:hojeStr(), blingId:data.bling_id||null, emailEnviado:false, _upd:Date.now() });
+    salvar(LS.compras, compras);
+    group.keys.forEach(k=>{ delete comprasSel[k]; delete comprasFornSel[k]; });
+    comprasQueue.shift(); comprasQueueNext();
+  }catch(e){ if(btn){ btn.disabled=false; btn.textContent="Confirmar e lançar no Bling"; } alert("❌ Não consegui lançar no Bling: "+e.message); }
+}
+
 async function integrarBling(id){
   const o=ordens.find(x=>x.id===id); if(!o){ alert("OC não encontrada."); return; }
   const emp=empresaOC(o), ek=(o.empresa||"fabrica");
