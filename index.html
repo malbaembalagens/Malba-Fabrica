@@ -693,7 +693,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v101e · dados salvos neste aparelho</div>
+    <div class="foot">v101f · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -1211,10 +1211,30 @@ async function cloudPullAll(){
   rows.forEach(row=>{ map[row.key]={value:row.value, updated_at:row.updated_at}; });
   return map;
 }
+function mergeFor(key, localVal, cloudVal){
+  if(key===LS.hist) return mergeHist(localVal, cloudVal);
+  if(key===LS.prodflow) return mergeProd(localVal, cloudVal);
+  if(key===LS.oc) return mergeOrd(localVal, cloudVal);
+  if(key===LS.dev) return mergeDevSt(localVal, cloudVal);
+  if(key===LS.devav) return mergeAv(localVal, cloudVal);
+  return localVal;
+}
+function ehChaveMerge(key){ return [LS.hist,LS.prodflow,LS.oc,LS.dev,LS.devav].includes(key); }
+async function cloudGetOne(key){
+  const r = await fetch(syncBase()+"/rest/v1/malba_kv?select=value&key=eq."+encodeURIComponent(key), { headers:syncHeaders() });
+  if(!r.ok) throw new Error("get "+r.status);
+  const j = await r.json();
+  return (Array.isArray(j) && j.length) ? j[0].value : null;
+}
 async function cloudUpsert(key,value){
+  let val=value;
+  // nunca substituir a lista inteira da nuvem: junta com o que já está lá (aparelho atrasado não apaga o dos outros)
+  if(ehChaveMerge(key)){
+    try{ const cv=await cloudGetOne(key); if(cv!==null && cv!==undefined) val=mergeFor(key, value, cv); }catch(e){}
+  }
   const r = await fetch(syncBase()+"/rest/v1/malba_kv?on_conflict=key", {
     method:"POST", headers:Object.assign({Prefer:"resolution=merge-duplicates"},syncHeaders()),
-    body:JSON.stringify([{ key, value, updated_at: localMod(key)||new Date().toISOString() }]) });
+    body:JSON.stringify([{ key, value: val, updated_at: localMod(key)||new Date().toISOString() }]) });
   if(!r.ok) throw new Error("upsert "+r.status);
 }
 function reloadState(){
@@ -1279,6 +1299,19 @@ function mergeByKey(localArr, cloudArr, idf){
 function devIdent(x){ const s=(x&&x.sku!=null)?String(x.sku).trim().toLowerCase():""; return s ? ("sku:"+s) : ("key:"+((x&&x.key)||"")); }
 function devSig(x){ if(!x) return "x"; const c=Object.assign({},x); delete c.key; try{ return JSON.stringify(c); }catch(e){ return (x.sku||"")+"|"+(x.key||""); } }
 function tocaProd(p){ if(p) p._upd=Date.now(); return p; }
+function tocaDev(e){ if(e) e._upd=Date.now(); return e; }
+function mergeDevSt(localObj, cloudObj){
+  const out=Object.assign({}, (cloudObj&&typeof cloudObj==="object")?cloudObj:{});
+  const L=(localObj&&typeof localObj==="object")?localObj:{};
+  for(const k in L){ const l=L[k], c=out[k]; if(!c){ out[k]=l; continue; } const lu=+(l&&l._upd)||0, cu=+(c&&c._upd)||0; if(lu>=cu) out[k]=l; }
+  return out;
+}
+function mergeAv(localArr, cloudArr){
+  const byK={};
+  (Array.isArray(cloudArr)?cloudArr:[]).forEach(a=>{ if(a&&a.key!=null) byK[a.key]=a; });
+  (Array.isArray(localArr)?localArr:[]).forEach(a=>{ if(!a||a.key==null) return; const c=byK[a.key]; if(!c){ byK[a.key]=a; return; } const lu=+a._upd||0, cu=+c._upd||0; if(lu>=cu) byK[a.key]=a; });
+  return Object.values(byK);
+}
 function mergeOrd(localArr, cloudArr){
   const byId={};
   (Array.isArray(localArr)?localArr:[]).forEach(o=>{ if(o&&o.id!=null) byId[o.id]=o; });
@@ -1355,6 +1388,12 @@ async function syncInit(){
           if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
           return;
         }
+        if(k===LS.dev || k===LS.devav){
+          const merged=mergeFor(k, lsParse(k), cloud[k].value), ms=JSON.stringify(merged);
+          localStorage.setItem(k, ms); syncVer[k]=cloud[k].updated_at;
+          if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
+          return;
+        }
         const cu=cloud[k].updated_at, lm=localMod(k);
         if(lm && cu && new Date(lm) > new Date(cu)){ pendingPush[k]=true; syncVer[k]=cu; return; }
         if(isEmptyVal(cloud[k].value) && !isEmptyVal(lsParse(k))){ pendingPush[k]=true; syncVer[k]=cu; return; }
@@ -1388,6 +1427,13 @@ async function syncPull(){
         }
         if(k===LS.oc){
           const merged=mergeOrd(lsParse(k), cloud[k].value), ms=JSON.stringify(merged);
+          if(localStorage.getItem(k)!==ms){ localStorage.setItem(k,ms); changed=true; }
+          syncVer[k]=cloud[k].updated_at;
+          if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
+          return;
+        }
+        if(k===LS.dev || k===LS.devav){
+          const merged=mergeFor(k, lsParse(k), cloud[k].value), ms=JSON.stringify(merged);
           if(localStorage.getItem(k)!==ms){ localStorage.setItem(k,ms); changed=true; }
           syncVer[k]=cloud[k].updated_at;
           if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
@@ -1997,6 +2043,7 @@ function devItems(){
     });
   });
   devAvulsos.forEach(a=>{
+    if(a && a.excluido) return;
     arr.push({ key:a.key, origem:"avulso", orcId:null, cliente:a.cliente||"—", vendedor:a.vendedor||"", data:a.data||hojeStr(),
       it:{produto:a.produto, c:a.c, l:a.l, a:a.a, ondaNome:a.ondaNome, gram:a.gram, qtd:a.qtd||0},
       entry:a, status:a.status||"desenvolvido" });
@@ -2072,8 +2119,8 @@ function renderDesenv(){
 }
 function excluirDev(key){
   if(!confirm("Excluir este item da lista de desenvolvimento?")) return;
-  if(String(key).startsWith("av:")){ devAvulsos=devAvulsos.filter(a=>a.key!==key); salvar(LS.devav,devAvulsos); }
-  else { desenvStatus[key]={status:"excluido"}; salvar(LS.dev,desenvStatus); }
+  if(String(key).startsWith("av:")){ const a=devAvulsos.find(x=>x.key===key); if(a){ a.excluido=true; a._upd=Date.now(); } salvar(LS.devav,devAvulsos); }
+  else { desenvStatus[key]=tocaDev({status:"excluido"}); salvar(LS.dev,desenvStatus); }
   renderDesenv();
 }
 // ---- Vincular SKU desenvolvido a um item aguardando ----
@@ -2095,12 +2142,12 @@ function abrirVincular(key){
 function salvarVinculo(remover){
   if(!_vincKey){ closeOcModal(); return; }
   const e=Object.assign({}, devEntry(_vincKey)||{});
-  if(remover){ delete e.vinculoSku; e.status="aguardando"; desenvStatus[_vincKey]=e; salvar(LS.dev,desenvStatus); closeOcModal(); renderDesenv(); return; }
+  if(remover){ delete e.vinculoSku; e.status="aguardando"; desenvStatus[_vincKey]=tocaDev(e); salvar(LS.dev,desenvStatus); closeOcModal(); renderDesenv(); return; }
   const sku=($("vinc-sku")?$("vinc-sku").value:"").trim();
   if(!sku){ alert("Digite o SKU."); return; }
   const dev=devItems().find(d=>d.status==="desenvolvido"&&d.entry&&String(d.entry.sku).toLowerCase()===sku.toLowerCase());
   if(!dev){ alert("SKU não encontrado entre os desenvolvidos:\n"+sku); return; }
-  e.status="aguardando"; e.vinculoSku=dev.entry.sku; desenvStatus[_vincKey]=e;
+  e.status="aguardando"; e.vinculoSku=dev.entry.sku; desenvStatus[_vincKey]=tocaDev(e);
   salvar(LS.dev,desenvStatus); closeOcModal(); renderDesenv();
 }
 function devBoxDims(x){ const e=x.entry||{}, it=x.it||{}; return { c:+(e.c!=null?e.c:it.c)||0, l:+(e.l!=null?e.l:it.l)||0, a:+(e.a!=null?e.a:it.a)||0 }; }
@@ -2112,7 +2159,7 @@ function sugerirVinculo(x){
 }
 function aprovarSugestao(key,sku){
   const e=Object.assign({}, devEntry(key)||{}, {status:"aguardando", vinculoSku:sku});
-  desenvStatus[key]=e; salvar(LS.dev,desenvStatus); renderDesenv();
+  desenvStatus[key]=tocaDev(e); salvar(LS.dev,desenvStatus); renderDesenv();
 }
 // ---- Comprar em massa ----
 let _massaMode=false, _massaSel={}, _massaItems=[];
@@ -2159,7 +2206,7 @@ function confirmarCompraMassa(){
   const ipi=valor*0.0325; const id=ocNovoId(data);
   ordens.push({ id, dataPrevista:data, fornecedor:forn, empresa:($("massa-empresa")?$("massa-empresa").value:"fabrica")||"fabrica", itens:itensF, peso, valor, ipi, valorTotal:valor+ipi, recebida:false });
   salvar(LS.oc,ordens);
-  itens.forEach(i=>{ const k=i._origemKey; if(!k || String(k).startsWith("av:")) return; const e=Object.assign({}, devEntry(k)||{}, {status:"comprado"}); desenvStatus[k]=e; });
+  itens.forEach(i=>{ const k=i._origemKey; if(!k || String(k).startsWith("av:")) return; const e=Object.assign({}, devEntry(k)||{}, {status:"comprado"}); desenvStatus[k]=tocaDev(e); });
   salvar(LS.dev,desenvStatus);
   _massaMode=false; _massaSel={}; _massaItems=[];
   closeOcModal(); renderDesenv();
@@ -3180,7 +3227,7 @@ function vincoChange(i,val){ devForm.vincos[i]=parseFloat(String(val).replace(",
 function anexarPdf(input){ const file=input.files[0]; if(!file)return; if(file.size>5*1024*1024){ alert("PDF acima de 5Mb."); input.value=""; return; } devForm.pdfNome=file.name; const r=new FileReader(); r.onload=e=>{ devForm.pdfData=e.target.result; const el=$("cliche-pdfname"); if(el) el.textContent="📎 "+file.name; }; r.readAsDataURL(file); }
 function persistDev(form,status){
   const obj=Object.assign({},form,{status});
-  const grava=(o)=>{ if(String(form.key).startsWith("av:")){ const i=devAvulsos.findIndex(a=>a.key===form.key); if(i>=0){ devAvulsos[i]=Object.assign({},devAvulsos[i],o); } else { devAvulsos.push(o); } salvar(LS.devav,devAvulsos); } else { desenvStatus[form.key]=o; salvar(LS.dev,desenvStatus); } };
+  const grava=(o)=>{ if(String(form.key).startsWith("av:")){ const i=devAvulsos.findIndex(a=>a.key===form.key); if(i>=0){ devAvulsos[i]=tocaDev(Object.assign({},devAvulsos[i],o)); } else { devAvulsos.push(tocaDev(o)); } salvar(LS.devav,devAvulsos); } else { desenvStatus[form.key]=tocaDev(o); salvar(LS.dev,desenvStatus); } };
   try{ grava(obj); }
   catch(e){ const lite=Object.assign({},obj); delete lite.pdfData; try{ grava(lite); alert("O PDF anexado é grande demais para guardar no navegador; salvei o desenvolvimento sem o arquivo (só o nome)."); }catch(e2){ alert("Não consegui salvar: armazenamento do navegador cheio."); } }
 }
