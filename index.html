@@ -693,7 +693,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v101f · dados salvos neste aparelho</div>
+    <div class="foot">v101g · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -1332,12 +1332,14 @@ function mergeProd(localArr, cloudArr){
   return Object.values(byId);
 }
 function mergeHist(localArr, cloudArr){
-  const out=[], seenId=new Set(), seenSig=new Set();
+  const byId={}, noId=[], seenSig=new Set();
   const sig=h=> (!h.sku && !(+h.qtdProd) && h.pesoTotalProd) ? ("MES|"+h.processo+"|"+h.data+"|"+h.pesoTotalProd) : null;
-  const add=h=>{ if(!h) return; const s=sig(h); if(h.id!=null && seenId.has(h.id)) return; if(s && seenSig.has(s)) return; out.push(h); if(h.id!=null) seenId.add(h.id); if(s) seenSig.add(s); };
+  const add=h=>{ if(!h) return;
+    if(h.id!=null){ const ex=byId[h.id]; if(!ex){ byId[h.id]=h; return; } const lu=+ex._upd||0, cu=+h._upd||0; if(cu>lu) byId[h.id]=h; return; }
+    const s=sig(h); if(s){ if(seenSig.has(s)) return; seenSig.add(s); } noId.push(h); };
   (Array.isArray(localArr)?localArr:[]).forEach(add);
   (Array.isArray(cloudArr)?cloudArr:[]).forEach(add);
-  return out;
+  return Object.values(byId).concat(noId);
 }
 function recuperarBackup(){
   const raw=localStorage.getItem("malba_sync_backup");
@@ -1524,7 +1526,7 @@ function skuList(){ const map={}; devItems().forEach(x=>{ const sku=x.entry&&x.e
 
 // ---------- meses para filtros ----------
 function mesesDisponiveis(){
-  const set=new Set(historico.map(h=>(h.data||"").slice(0,7)).filter(Boolean));
+  const set=new Set(histAtivo().map(h=>(h.data||"").slice(0,7)).filter(Boolean));
   set.add(mesAtual());
   return Array.from(set).sort().reverse();
 }
@@ -1543,7 +1545,7 @@ function editarMeta(proc){
 }
 function renderDashProd(){
   const hj=hojeStr(), mes=mesAtual();
-  const noDia=historico.filter(h=>h.data===hj), noMes=historico.filter(h=>(h.data||"").slice(0,7)===mes);
+  const noDia=histAtivo().filter(h=>h.data===hj), noMes=histAtivo().filter(h=>(h.data||"").slice(0,7)===mes);
   // Produzido hoje = só o que o ACABAMENTO concluiu hoje
   const acHoje=noDia.filter(h=>h.processo==="Acabamento");
   const prodHojeKg=acHoje.reduce((s,h)=>s+(+h.pesoTotalProd||0),0), prodHojeQt=acHoje.reduce((s,h)=>s+(+h.qtdProd||0),0);
@@ -1589,7 +1591,7 @@ function renderDashProd(){
 
   // gráfico 2 — acabamento ao longo do mês (ton por dia)
   const nd=diasNoMes(dashMesAcab);
-  const dias=[]; for(let d=1; d<=nd; d++){ const ds=dashMesAcab+"-"+String(d).padStart(2,"0"); const kg=historico.filter(h=>h.data===ds && h.processo==="Acabamento").reduce((s,h)=>s+(+h.pesoTotalProd||0),0); dias.push({label:d, val:kg/1000}); }
+  const dias=[]; for(let d=1; d<=nd; d++){ const ds=dashMesAcab+"-"+String(d).padStart(2,"0"); const kg=histAtivo().filter(h=>h.data===ds && h.processo==="Acabamento").reduce((s,h)=>s+(+h.pesoTotalProd||0),0); dias.push({label:d, val:kg/1000}); }
   const maxD=Math.max(0.001,...dias.map(d=>d.val));
   const totMes=dias.reduce((s,d)=>s+d.val,0);
   const c2=`<div class="chartcard">
@@ -1601,7 +1603,7 @@ function renderDashProd(){
   </div>`;
 
   // gráfico Loja × Cliente — toneladas produzidas no mês (Acabamento) por destino
-  const lcMes=historico.filter(h=>(h.data||"").slice(0,7)===dashMesLC && h.processo==="Acabamento");
+  const lcMes=histAtivo().filter(h=>(h.data||"").slice(0,7)===dashMesLC && h.processo==="Acabamento");
   let lojaKg=0, cliKg=0, ndKg=0;
   lcMes.forEach(h=>{ const t=tipoPorSku(h.sku), kg=+h.pesoTotalProd||0; if(t==="Cliente") cliKg+=kg; else if(t==="Loja") lojaKg+=kg; else ndKg+=kg; });
   const maxLC=Math.max(lojaKg/1000, cliKg/1000, 0.001);
@@ -1617,7 +1619,7 @@ function renderDashProd(){
   </div>`;
 
   // gráfico 3 — desperdício (impressão + acabamento) por processo no mês
-  const md=historico.filter(h=>(h.data||"").slice(0,7)===dashMesDesp);
+  const md=histAtivo().filter(h=>(h.data||"").slice(0,7)===dashMesDesp);
   const dImp=md.filter(h=>h.processo==="Impressão"), dAcab=md.filter(h=>h.processo==="Acabamento");
   const impKg=dImp.reduce((s,h)=>s+(+h.pesoTotalDesp||0),0), impQt=dImp.reduce((s,h)=>s+(+h.qtdDesp||0),0);
   const acabKg=dAcab.reduce((s,h)=>s+(+h.pesoTotalDesp||0),0), acabQt=dAcab.reduce((s,h)=>s+(+h.qtdDesp||0),0);
@@ -1632,12 +1634,12 @@ function renderDashProd(){
   </div>`;
 
   // gráfico 4 — histórico de produção (mensal no ano, só acabamento)
-  let anos=[...new Set(historico.map(h=>(h.data||"").slice(0,4)).filter(Boolean))];
+  let anos=[...new Set(histAtivo().map(h=>(h.data||"").slice(0,4)).filter(Boolean))];
   const anoAtual=String(new Date().getFullYear()); if(!anos.includes(anoAtual)) anos.push(anoAtual);
   anos.sort().reverse();
   if(!anos.includes(dashAnoHist)) dashAnoHist=anos[0];
   const mesesL=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-  const mvals=mesesL.map((m,i)=>{ const ym=dashAnoHist+"-"+String(i+1).padStart(2,"0"); const kg=historico.filter(h=>(h.data||"").slice(0,7)===ym && h.processo==="Acabamento").reduce((s,h)=>s+(+h.pesoTotalProd||0),0); return {label:m, val:kg/1000}; });
+  const mvals=mesesL.map((m,i)=>{ const ym=dashAnoHist+"-"+String(i+1).padStart(2,"0"); const kg=histAtivo().filter(h=>(h.data||"").slice(0,7)===ym && h.processo==="Acabamento").reduce((s,h)=>s+(+h.pesoTotalProd||0),0); return {label:m, val:kg/1000}; });
   const totAno=mvals.reduce((s,d)=>s+d.val,0), maxM=Math.max(0.001,...mvals.map(d=>d.val));
   const c4=`<div class="chartcard">
     <div class="charthead"><h3>Histórico de produção</h3>
@@ -1739,13 +1741,14 @@ function addHist(){
     pesoTotalDesp:parseFloat($("h-ptd").value)||0 };
   historico.push(reg); salvar(LS.hist,historico); renderHistorico();
 }
-function delHist(id){ if(confirm("Remover este lançamento?")){ historico=historico.filter(h=>h.id!==id); salvar(LS.hist,historico); renderHistorico(); } }
+function histAtivo(){ return historico.filter(h=>!h.excluido); }
+function delHist(id){ if(confirm("Remover este lançamento?")){ const h=historico.find(x=>x.id===id); if(h){ h.excluido=true; h._upd=Date.now(); } salvar(LS.hist,historico); renderHistorico(); } }
 function renderHistorico(){
   const dl=skuList().map(s=>`<option value="${esc(s.sku)}"></option>`).join("");
   const n3=v=>(+v||0).toLocaleString("pt-BR",{minimumFractionDigits:3,maximumFractionDigits:3});
   const n2=v=>(+v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
   const n0=v=>(+v||0).toLocaleString("pt-BR");
-  const filt=histProcTab==="todos"?historico:historico.filter(h=>h.processo===histProcTab);
+  const filt=histProcTab==="todos"?histAtivo():histAtivo().filter(h=>h.processo===histProcTab);
   const rows=filt.slice().sort((a,b)=>(b.data||"").localeCompare(a.data||"")).map(h=>`
     <tr>
       <td>${h.data?fmtData(h.data):"—"}</td><td>${esc(h.processo||"")}</td><td>${esc(h.sku||"")}</td>
@@ -1753,7 +1756,7 @@ function renderHistorico(){
       <td class="num">${n0(h.qtdDesp)}</td><td class="num">${n2(h.pesoTotalDesp)}</td>
       <td><button class="rm" onclick="delHist('${h.id}')">×</button></td>
     </tr>`).join("");
-  const cImp=historico.filter(h=>h.processo==="Impressão").length, cAcab=historico.filter(h=>h.processo==="Acabamento").length;
+  const cImp=histAtivo().filter(h=>h.processo==="Impressão").length, cAcab=histAtivo().filter(h=>h.processo==="Acabamento").length;
   $("historico-c").innerHTML=`
     <div class="formcard">
       <div class="compgrid">
