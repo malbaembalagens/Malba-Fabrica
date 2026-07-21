@@ -693,7 +693,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v101g · dados salvos neste aparelho</div>
+    <div class="foot">v103a · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -843,7 +843,6 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
         <button class="navgroup collapsed" data-g="producao" onclick="toggleGroup(this)">🏭 Produção <span class="chev">▾</span></button>
         <div class="navsub collapsed">
           <button class="navitem subitem only-gestor" data-v="prod-desenv" onclick="irViewG('prod-desenv')">Desenvolvimento</button>
-          <button class="navitem subitem only-gestor" data-v="compras" onclick="irViewG('compras')">Compras</button>
           <button class="navitem subitem" data-v="prod-ordem" onclick="irViewG('prod-ordem')">Ordem de compra</button>
           <button class="navitem subitem" data-v="prod-impressao" onclick="irViewG('prod-impressao')">Impressão</button>
           <button class="navitem subitem" data-v="prod-acabamento" onclick="irViewG('prod-acabamento')">Acabamento</button>
@@ -869,7 +868,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
         </div>
         <button class="navgroup collapsed only-gestor" data-g="opcoes" onclick="toggleGroup(this)">⚙️ Opções <span class="chev">▾</span></button>
         <div class="navsub collapsed only-gestor">
-          <button class="navitem subitem only-gestor" data-v="opc-fornecedores" onclick="irViewG('opc-fornecedores')">Compras › Puxar fornecedores do Bling</button>
+          <button class="navitem subitem only-gestor" data-v="opc-fornecedores" onclick="irViewG('opc-fornecedores')">Integrações</button>
         </div>
       </aside>
 
@@ -877,8 +876,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
         <div class="vview" id="gview-dash-prod" style="display:none"><h2 class="viewtitle">Dashboard · Produção</h2><div id="dashprod-c"></div></div>
         <div class="vview" id="gview-dash-pcp" style="display:none"><h2 class="viewtitle">PCP · Planejamento e Controle</h2><div id="pcp-box"></div></div>
         <div class="vview" id="gview-dash-agenda" style="display:none"><h2 class="viewtitle">Agenda de Ordens de Compra</h2><div id="agenda-c"></div></div>
-        <div class="vview" id="gview-compras" style="display:none"><h2 class="viewtitle">Compras</h2><div id="compras-box"></div></div>
-        <div class="vview" id="gview-opc-fornecedores" style="display:none"><h2 class="viewtitle">Opções · Puxar fornecedores do Bling</h2><div id="opcforn-box"></div></div>
+        <div class="vview" id="gview-opc-fornecedores" style="display:none"><h2 class="viewtitle">Opções · Integrações</h2><div id="opcforn-box"></div></div>
 
         <div class="vview" id="gview-dash-vendas" style="display:none">
           <h2 class="viewtitle">Dashboard · Vendas</h2>
@@ -1017,7 +1015,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
   <section id="tela-oc-nova" class="screen">
     <div class="topbar">
       <button class="back" onclick="cancelarOC()">‹</button>
-      <div class="tt"><small>MALBA Fábrica · Compras</small><h2 id="ocnova-title">Nova ordem de compra</h2></div>
+      <div class="tt"><small>MALBA Fábrica · Ordem de compra</small><h2 id="ocnova-title">Nova ordem de compra</h2></div>
     </div>
     <div id="ocnova-body"></div>
   </section>
@@ -1847,7 +1845,6 @@ function irViewG(v){
   else if(v==="dash-prod") renderDashProd();
   else if(v==="dash-agenda") renderAgenda();
   else if(v==="prod-desenv") renderDesenv();
-  else if(v==="compras") renderCompras();
   else if(v==="opc-fornecedores") renderOpcFornecedores();
   else if(v==="prod-ordem") renderOC();
   else if(v==="prod-impressao") renderProc("imp");
@@ -1909,11 +1906,11 @@ function excluir(id){ if(confirm("Excluir o orçamento #"+id+"?")){ orcamentos=o
 function cadastrarCliente(nome){ nome=(nome||"").trim(); if(nome && !clientes.some(c=>c.toLowerCase()===nome.toLowerCase())){ clientes.push(nome); clientes.sort((a,b)=>a.localeCompare(b,"pt-BR")); salvar(LS.cli,clientes); } }
 function renderClientes(scope){ const p=scope==="g"?"g-":"";
   $(p+"clientes-list").innerHTML = clientes.length
-    ? clientes.map((c,i)=>`<div class="listrow"><span>${esc(c)}</span><div class="rowbtns"><button class="ed" onclick="editCliente(${i},'${scope}')" title="Editar">✏️</button><button class="rm" onclick="delCliente(${i},'${scope}')" title="Remover">×</button></div></div>`).join("")
+    ? clientes.map((c,i)=>`<div class="listrow"><span>${esc(c)}</span><div class="rowbtns">${scope==="g"?chipVinc("cliente",c):""}<button class="ed" onclick="editCliente(${i},'${scope}')" title="Editar">✏️</button><button class="rm" onclick="delCliente(${i},'${scope}')" title="Remover">×</button></div></div>`).join("")
     : `<p class="muted-note">Nenhum cliente ainda. Eles também são criados sozinhos ao salvar um orçamento.</p>`;
 }
 function addClienteCad(scope){ const p=scope==="g"?"g-":""; const v=$(p+"cli-novo").value.trim(); if(!v)return; cadastrarCliente(v); $(p+"cli-novo").value=""; renderClientes(scope); }
-function editCliente(i,scope){ const v=prompt("Editar cliente:", clientes[i]); if(v==null)return; const t=v.trim(); if(!t)return; clientes[i]=t; clientes.sort((a,b)=>a.localeCompare(b,"pt-BR")); salvar(LS.cli,clientes); renderClientes(scope); }
+function editCliente(i,scope){ const antigo=clientes[i]; const v=prompt("Editar cliente:", antigo); if(v==null)return; const t=v.trim(); if(!t)return; clientes[i]=t; clientes.sort((a,b)=>a.localeCompare(b,"pt-BR")); salvar(LS.cli,clientes); renderClientes(scope); try{ if(t!==antigo && getVinc("cliente",antigo)) empurrarContatoBling("cliente",antigo,{nome:t}); }catch(e){} }
 function delCliente(i,scope){ if(confirm("Remover cliente?")){ clientes.splice(i,1); salvar(LS.cli,clientes); renderClientes(scope); } }
 
 // ---------- Cadastro: Vendedores ----------
@@ -1972,12 +1969,12 @@ function delGram(i,gi,scope){ ondas[i].gramaturas.splice(gi,1); salvar(LS.ondas,
 // ---------- Fornecedores ----------
 function renderFornecedores(){
   $("g-fornecedores-list").innerHTML = fornecedores.length
-    ? fornecedores.map((f,i)=>`<div class="listrow"><span>${esc(f.nome)}${f.cnpj?` <small style="color:var(--muted-2)">· CNPJ ${esc(f.cnpj)}</small>`:""}${f.email?` <small style="color:var(--accent)">· ${esc(f.email)}</small>`:""}${f.fone?` <small style="color:var(--muted-2)">· ${esc(f.fone)}</small>`:""}${(+f.custo)?` <small style="color:var(--green);font-weight:700">· ${brl(f.custo)}/kg</small>`:` <small style="color:var(--muted-2)">· sem custo</small>`}</span><div class="rowbtns"><button class="ed" onclick="editFornecedor(${i})" title="Editar">✏️</button><button class="rm" onclick="delFornecedor(${i})" title="Remover">×</button></div></div>`).join("")
+    ? fornecedores.map((f,i)=>`<div class="listrow"><span>${esc(f.nome)}${f.cnpj?` <small style="color:var(--muted-2)">· CNPJ ${esc(f.cnpj)}</small>`:""}${f.email?` <small style="color:var(--accent)">· ${esc(f.email)}</small>`:""}${f.fone?` <small style="color:var(--muted-2)">· ${esc(f.fone)}</small>`:""}${(+f.custo)?` <small style="color:var(--green);font-weight:700">· ${brl(f.custo)}/kg</small>`:` <small style="color:var(--muted-2)">· sem custo</small>`}</span><div class="rowbtns">${chipVinc("fornecedor",f.nome)}<button class="ed" onclick="editFornecedor(${i})" title="Editar">✏️</button><button class="rm" onclick="delFornecedor(${i})" title="Remover">×</button></div></div>`).join("")
     : `<p class="muted-note">Nenhum fornecedor cadastrado.</p>`;
 }
 function fornEmail(nome){ const f=fornecedores.find(x=>x.nome===nome); return (f&&f.email)?String(f.email).trim():""; }
 function addFornecedor(){ const n=$("g-forn-novo").value.trim(); if(!n)return; const cn=$("g-forn-cnpj").value.trim(); const e=$("g-forn-email").value.trim(); const f=$("g-forn-fone").value.trim(); const c=parseFloat(String($("g-forn-custo").value).replace(",","."))||0; if(!fornecedores.some(x=>x.nome===n)){ fornecedores.push({nome:n,cnpj:cn,email:e,fone:f,custo:c}); salvar(LS.forn,fornecedores);} $("g-forn-novo").value=""; $("g-forn-cnpj").value=""; $("g-forn-email").value=""; $("g-forn-fone").value=""; $("g-forn-custo").value=""; renderFornecedores(); }
-function editFornecedor(i){ const n=prompt("Nome do fornecedor:", fornecedores[i].nome); if(n==null)return; const cn=prompt("CNPJ (para integrar com o Bling):", fornecedores[i].cnpj||""); if(cn==null)return; const e=prompt("E-mail (para enviar OC):", fornecedores[i].email||""); if(e==null)return; const f=prompt("Telefone (opcional):", fornecedores[i].fone||""); if(f==null)return; const c=prompt("Preço de custo por kg (R$):", fornecedores[i].custo||0); if(c==null)return; fornecedores[i]={nome:n.trim()||fornecedores[i].nome, cnpj:cn.trim(), email:e.trim(), fone:f.trim(), custo:parseFloat(String(c).replace(",","."))||0}; salvar(LS.forn,fornecedores); renderFornecedores(); }
+function editFornecedor(i){ const n=prompt("Nome do fornecedor:", fornecedores[i].nome); if(n==null)return; const cn=prompt("CNPJ (para integrar com o Bling):", fornecedores[i].cnpj||""); if(cn==null)return; const e=prompt("E-mail (para enviar OC):", fornecedores[i].email||""); if(e==null)return; const f=prompt("Telefone (opcional):", fornecedores[i].fone||""); if(f==null)return; const c=prompt("Preço de custo por kg (R$):", fornecedores[i].custo||0); if(c==null)return; const antigo=fornecedores[i].nome; fornecedores[i]={nome:n.trim()||fornecedores[i].nome, cnpj:cn.trim(), email:e.trim(), fone:f.trim(), custo:parseFloat(String(c).replace(",","."))||0}; salvar(LS.forn,fornecedores); renderFornecedores(); try{ if(getVinc("fornecedor",antigo)) empurrarContatoBling("fornecedor",antigo,{nome:fornecedores[i].nome,cnpj:fornecedores[i].cnpj,email:fornecedores[i].email,telefone:fornecedores[i].fone}); }catch(e2){} }
 function delFornecedor(i){ if(confirm("Remover fornecedor?")){ fornecedores.splice(i,1); salvar(LS.forn,fornecedores); renderFornecedores(); } }
 
 // ---------- Dashboard ----------
@@ -2572,6 +2569,107 @@ async function enviarOCEmail(id){
     alert("✅ Ordem de compra "+o.id+" enviada para "+para+"!");
   }catch(e){ alert("❌ Não consegui enviar: "+e.message+"\n\nConfira se a Edge Function 'send-oc-email' está publicada e o Resend configurado."); }
 }
+// ---------- Vínculo com o Bling (clientes e fornecedores) ----------
+var blingContatos = (function(){ try{ return JSON.parse(localStorage.getItem("malba_bling_contatos")||"{}"); }catch(e){ return {}; } })();
+var blingVinc = (function(){ try{ return JSON.parse(localStorage.getItem("malba_bling_vinc")||"{}"); }catch(e){ return {}; } })();
+function blingContatosDe(tipo, empKey){ const e=blingContatos[empKey||comprasEmpresa]||{}; return e[tipo]||[]; }
+function salvarBlingContatos(){ try{ localStorage.setItem("malba_bling_contatos", JSON.stringify(blingContatos)); }catch(e){} }
+function vincKey(tipo, nome){ return tipo+"|"+String(nome||"").trim().toLowerCase(); }
+function getVinc(tipo, nome, empKey){ const m=blingVinc[empKey||comprasEmpresa]||{}; return m[vincKey(tipo,nome)]||null; }
+function setVinc(tipo, nome, obj, empKey){ const k=empKey||comprasEmpresa; blingVinc[k]=blingVinc[k]||{}; if(obj) blingVinc[k][vincKey(tipo,nome)]=obj; else delete blingVinc[k][vincKey(tipo,nome)]; try{ localStorage.setItem("malba_bling_vinc", JSON.stringify(blingVinc)); }catch(e){} }
+
+async function puxarContatos(tipo, empKey){
+  empKey=empKey||comprasEmpresa;
+  const contaId=comprasContaId(empKey); if(!contaId) return;
+  const st=document.getElementById("opcforn-status"); if(st) st.textContent="Carregando "+(tipo==="cliente"?"clientes":"fornecedores")+" do Bling…";
+  try{
+    const resp=await fetch(BLING_FN_URL,{method:"POST",headers:{"Content-Type":"application/json","apikey":BLING_FN_KEY,"Authorization":"Bearer "+BLING_FN_KEY},body:JSON.stringify({action:"listar_contatos",tipo,contaId})});
+    const data=await resp.json().catch(()=>({}));
+    if(!resp.ok||!data.ok) throw new Error(data.error||("Erro "+resp.status));
+    blingContatos[empKey]=blingContatos[empKey]||{};
+    blingContatos[empKey][tipo]=(data.contatos||[]).sort((a,b)=>String(a.nome||"").localeCompare(String(b.nome||"")));
+    salvarBlingContatos();
+    if(tipo==="fornecedor"){ comprasFornByEmp[empKey]=blingContatos[empKey][tipo]; try{ localStorage.setItem("malba_compras_forn", JSON.stringify(comprasFornByEmp)); }catch(e){} }
+    renderOpcFornecedores();
+    const st2=document.getElementById("opcforn-status");
+    if(st2) st2.textContent=(data.filtrado?"✅ ":"⚠️ ")+(data.contatos||[]).length+" "+(tipo==="cliente"?"clientes":"fornecedores")+(data.filtrado?" (filtrado por tipo).":" — tipo não encontrado, pode ter mistura.");
+    autoSugerirVinculos(tipo, empKey);
+  }catch(e){ const s2=document.getElementById("opcforn-status"); if(s2) s2.textContent="❌ "+e.message; else alert("❌ "+e.message); }
+}
+
+// sugere vínculo automático por CNPJ e por nome exato
+function autoSugerirVinculos(tipo, empKey){
+  const lista=blingContatosDe(tipo, empKey); if(!lista.length) return;
+  const nomes = tipo==="cliente" ? (clientes||[]) : (fornecedores||[]).map(f=>f.nome);
+  let n=0;
+  nomes.forEach(nome=>{
+    if(getVinc(tipo,nome,empKey)) return;
+    let alvo=null;
+    if(tipo==="fornecedor"){ const f=(fornecedores||[]).find(x=>x.nome===nome); const doc=String((f&&f.cnpj)||"").replace(/\D/g,"");
+      if(doc) alvo=lista.find(c=>String(c.numeroDocumento||"").replace(/\D/g,"")===doc); }
+    if(!alvo) alvo=lista.find(c=>String(c.nome||"").trim().toLowerCase()===String(nome).trim().toLowerCase());
+    if(alvo){ setVinc(tipo,nome,{id:alvo.id,nome:alvo.nome,doc:alvo.numeroDocumento||"",auto:true},empKey); n++; }
+  });
+  if(n){ try{ renderFornecedores(); }catch(e){} try{ renderClientes("g"); }catch(e){} }
+}
+
+// Modal de vínculo (escolher o contato do Bling)
+function abrirVinculoBling(tipo, nome){
+  const empKey=comprasEmpresa;
+  const lista=blingContatosDe(tipo, empKey);
+  const atual=getVinc(tipo,nome,empKey);
+  const emp=EMPRESAS.find(e=>e.key===empKey)||EMPRESAS[0];
+  let host=document.getElementById("vinc-modal");
+  if(!host){ host=document.createElement("div"); host.id="vinc-modal"; document.body.appendChild(host); }
+  const opts=lista.map(c=>`<option value="${c.id}" ${atual&&String(atual.id)===String(c.id)?"selected":""}>${esc(c.nome)}${c.numeroDocumento?(" · "+esc(c.numeroDocumento)):""}</option>`).join("");
+  host.innerHTML=`<div style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px" onclick="if(event.target===this)fecharVinculo()">
+    <div style="background:var(--surface);border-radius:14px;max-width:520px;width:100%;padding:18px 20px;box-shadow:var(--shadow)">
+      <div style="font-size:16px;font-weight:800;margin-bottom:2px">Vincular ao Bling</div>
+      <div class="muted-note" style="margin-bottom:12px">${tipo==="cliente"?"Cliente":"Fornecedor"} <b>${esc(nome)}</b> · conta ${esc(emp.nome)}</div>
+      ${lista.length?`
+        <label class="muted-note">Contato no Bling</label>
+        <input class="search" id="vinc-busca" placeholder="🔍 filtrar…" oninput="filtrarVinc(this.value)" style="width:100%;margin:6px 0 8px">
+        <select id="vinc-sel" size="8" style="width:100%">${opts}</select>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:14px">
+          <button class="btn ghost" onclick="desvincular('${tipo}','${esc(nome).replace(/'/g,"\\'")}')">Desvincular</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn ghost" onclick="fecharVinculo()">Cancelar</button>
+            <button class="btn primary" onclick="salvarVinculo('${tipo}','${esc(nome).replace(/'/g,"\\'")}')">Vincular</button>
+          </div></div>`
+      :`<p class="muted-note">Nenhum ${tipo} carregado do Bling. Vá em <b>Opções › Puxar do Bling</b> e carregue a lista da conta ${esc(emp.nome)}.</p>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn ghost" onclick="fecharVinculo()">Fechar</button></div>`}
+    </div></div>`;
+}
+function filtrarVinc(q){
+  const sel=document.getElementById("vinc-sel"); if(!sel) return;
+  const t=String(q||"").toLowerCase();
+  Array.from(sel.options).forEach(o=>{ o.style.display = o.text.toLowerCase().includes(t) ? "" : "none"; });
+}
+function fecharVinculo(){ const h=document.getElementById("vinc-modal"); if(h) h.innerHTML=""; }
+function salvarVinculo(tipo,nome){
+  const sel=document.getElementById("vinc-sel"); if(!sel||!sel.value){ alert("Escolha um contato."); return; }
+  const lista=blingContatosDe(tipo); const c=lista.find(x=>String(x.id)===String(sel.value));
+  if(c) setVinc(tipo,nome,{id:c.id,nome:c.nome,doc:c.numeroDocumento||""});
+  fecharVinculo(); try{ renderFornecedores(); }catch(e){} try{ renderClientes("g"); }catch(e){}
+}
+function desvincular(tipo,nome){ setVinc(tipo,nome,null); fecharVinculo(); try{ renderFornecedores(); }catch(e){} try{ renderClientes("g"); }catch(e){} }
+function chipVinc(tipo,nome){
+  const v=getVinc(tipo,nome);
+  if(v) return `<button class="btn ghost" style="padding:4px 8px;font-size:12px;color:var(--green)" onclick="abrirVinculoBling('${tipo}','${esc(nome).replace(/'/g,"\\'")}')" title="Vinculado a ${esc(v.nome)}${v.doc?(" · "+esc(v.doc)):""}">🔗 Bling ✓</button>`;
+  return `<button class="btn ghost" style="padding:4px 8px;font-size:12px" onclick="abrirVinculoBling('${tipo}','${esc(nome).replace(/'/g,"\\'")}')" title="Vincular ao Bling">🔗 vincular</button>`;
+}
+// Envia a edição do MF para o Bling (mantém os dois atualizados)
+async function empurrarContatoBling(tipo,nome,dados){
+  const v=getVinc(tipo,nome); if(!v) return;
+  const contaId=comprasContaId(comprasEmpresa); if(!contaId) return;
+  try{
+    const resp=await fetch(BLING_FN_URL,{method:"POST",headers:{"Content-Type":"application/json","apikey":BLING_FN_KEY,"Authorization":"Bearer "+BLING_FN_KEY},body:JSON.stringify(Object.assign({action:"atualizar_contato",contaId,contatoId:v.id},dados))});
+    const data=await resp.json().catch(()=>({}));
+    if(!resp.ok||!data.ok) throw new Error(data.error||("Erro "+resp.status));
+    if(dados.nome && dados.nome!==v.nome){ setVinc(tipo,nome,null); setVinc(tipo,dados.nome,{id:v.id,nome:dados.nome,doc:dados.cnpj||v.doc}); }
+  }catch(e){ alert("⚠️ Salvo no MALBA, mas não consegui atualizar no Bling: "+e.message); }
+}
+
 // ---------- Autenticador Bling (conectar/reconectar conta, direto do Fábrica) ----------
 async function blingExchange(contaId, code){
   const resp=await fetch(BLING_OAUTH_URL,{method:"POST",headers:{"Content-Type":"application/json","apikey":BLING_FN_KEY,"Authorization":"Bearer "+BLING_FN_KEY},body:JSON.stringify({action:"exchange_code",contaId,code})});
@@ -2624,17 +2722,28 @@ async function reconectarContaBling(empKey){
   }
   window.addEventListener("message",onMsg);
 }
-// Fallback manual: cola a URL de retorno (ou só o code) caso o popup não devolva sozinho
+// Reconexão manual em 2 passos (funciona mesmo com o redirect apontando pro painel)
 async function reconectarBlingManual(empKey){
   empKey=empKey||comprasEmpresa;
   const emp=EMPRESAS.find(e=>e.key===empKey)||EMPRESAS[0];
   const contaId=comprasContaId(empKey); if(!contaId) return;
-  const inp=prompt("Cole aqui a URL de retorno do Bling (a que tem ?code=...) OU só o código, da "+emp.nome+":",""); if(inp==null) return;
-  let code=(inp||"").trim(); if(!code) return;
-  const m=code.match(/[?&]code=([^&]+)/); if(m) code=decodeURIComponent(m[1]);
-  const st=document.getElementById("opcforn-status"); if(st) st.textContent="Finalizando conexão…";
-  try{ await blingExchange(contaId, code); if(st) st.textContent="✅ "+emp.nome+" reconectada!"; alert("✅ "+emp.nome+" reconectada com sucesso!"); }
-  catch(e){ if(st) st.textContent="❌ "+e.message; alert("❌ "+e.message); }
+  let clientId=await blingClientId(contaId);
+  if(!clientId){ const p=prompt("Cole o Client ID do app Bling da "+emp.nome+":",""); if(p==null) return; clientId=(p||"").trim(); if(!clientId) return; }
+  const state="malba2026|"+contaId;
+  const authUrl="https://www.bling.com.br/Api/v3/oauth/authorize?response_type=code&client_id="+encodeURIComponent(clientId)+"&state="+encodeURIComponent(state);
+  const st=document.getElementById("opcforn-status");
+  // abre SEM opener: assim a página de retorno não fecha sozinha e dá pra copiar a URL
+  try{ window.open(authUrl,"_blank","noopener"); }catch(e){}
+  if(st) st.innerHTML='1) Autorize na aba que abriu. 2) Quando terminar, <b>copie a URL inteira da barra de endereços</b> (tem <code>?code=</code>). 3) Volte aqui e cole.';
+  setTimeout(async ()=>{
+    const inp=prompt("Cole aqui a URL de retorno do Bling (a que tem ?code=...) da "+emp.nome+":","");
+    if(inp==null) return;
+    let code=(inp||"").trim(); if(!code) return;
+    const m=code.match(/[?&]code=([^&\s]+)/); if(m) code=decodeURIComponent(m[1]);
+    if(st) st.textContent="Finalizando conexão…";
+    try{ await blingExchange(contaId, code); if(st) st.textContent="✅ "+emp.nome+" reconectada! Agora clique em Puxar fornecedores."; alert("✅ "+emp.nome+" reconectada!"); }
+    catch(e){ if(st) st.textContent="❌ "+e.message; alert("❌ "+e.message+"\n\nDica: o código expira rápido. Refaça e cole logo em seguida."); }
+  }, 1200);
 }
 
 // ---------- Compras (pedido de compra a partir de orçamentos aprovados) ----------
@@ -2669,18 +2778,23 @@ async function comprasCarregarFornecedores(empKey){
     comprasFornByEmp[empKey]=(data.fornecedores||[]).sort((a,b)=> String(a.nome||"").localeCompare(String(b.nome||"")));
     try{ localStorage.setItem("malba_compras_forn", JSON.stringify(comprasFornByEmp)); }catch(e){}
     renderOpcFornecedores();
+    const st2=document.getElementById("opcforn-status");
+    if(st2) st2.textContent = data.filtrado ? ("✅ "+(data.fornecedores||[]).length+" fornecedores (só do tipo Fornecedor).")
+      : ("⚠️ "+(data.fornecedores||[]).length+" contatos — não achei o tipo \"Fornecedor\" nesta conta do Bling, então pode ter cliente na lista.");
   }catch(e){ if(st) st.textContent="❌ "+e.message; else alert("❌ "+e.message); }
 }
 
 function renderOpcFornecedores(){
   const box=document.getElementById("opcforn-box"); if(!box) return;
-  box.innerHTML=`<p class="muted-note" style="margin-bottom:14px">Conecte/reconecte as contas do Bling e baixe a lista de fornecedores de cada uma pra usar na tela de Compras. Refaça se o token expirar ou se cadastrar fornecedor novo.</p>`
+  box.innerHTML=`<p class="muted-note" style="margin-bottom:14px">Conecte as contas do Bling e baixe as listas de fornecedores e clientes de cada uma para vincular na Base de dados e usar na Ordem de compra. Refaça se o token expirar ou se cadastrar fornecedor novo.</p>`
     + EMPRESAS.map(e=>{ const n=(comprasFornByEmp[e.key]||[]).length;
         return `<div class="listrow" style="align-items:center">
-          <span style="flex:1;min-width:0"><b>${esc(e.nome)}</b>${e.cnpj?` <small style="color:var(--muted-2)">· CNPJ ${esc(e.cnpj)}</small>`:""}<br><small style="color:var(--muted-2)">${n?(n+" fornecedores carregados"):"nenhum fornecedor carregado"}</small></span>
+          <span style="flex:1;min-width:0"><b>${esc(e.nome)}</b>${e.cnpj?` <small style="color:var(--muted-2)">· CNPJ ${esc(e.cnpj)}</small>`:""}<br><small style="color:var(--muted-2)">${n?(n+" fornecedores"):"sem fornecedores"} · ${((blingContatos[e.key]||{}).cliente||[]).length} clientes</small></span>
           <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-            <button class="btn ghost" onclick="reconectarContaBling('${e.key}')" title="Autorizar/renovar o token no Bling">🔄 Reconectar</button>
-            <button class="btn ghost" onclick="comprasCarregarFornecedores('${e.key}')">${n?"↻ Fornecedores":"Puxar fornecedores"}</button>
+            <button class="btn ghost" onclick="reconectarContaBling('${e.key}')" title="Autorizar/renovar o token no Bling (automático)">🔄 Reconectar</button>
+            <button class="btn ghost" onclick="reconectarBlingManual('${e.key}')" title="Use se o automático não voltar sozinho">🔑 Reconectar (manual)</button>
+            <button class="btn ghost" onclick="puxarContatos('fornecedor','${e.key}')">${n?"↻ Fornecedores":"Puxar fornecedores"}</button>
+            <button class="btn ghost" onclick="puxarContatos('cliente','${e.key}')">${((blingContatos[e.key]||{}).cliente||[]).length?"↻ Clientes":"Puxar clientes"}</button>
           </div>
         </div>`; }).join("")
     + `<div style="margin-top:8px"><small style="color:var(--muted-2);cursor:pointer;text-decoration:underline" onclick="reconectarBlingManual(comprasEmpresa)">Colar retorno do Bling manualmente</small></div>`
@@ -2802,6 +2916,13 @@ async function comprasConfirmarAtual(){
   }catch(e){ if(btn){ btn.disabled=false; btn.textContent="Confirmar e lançar no Bling"; } alert("❌ Não consegui lançar no Bling: "+e.message); }
 }
 
+function blingFornIdDe(nome, empKey){
+  try{
+    const lista=(comprasFornByEmp&&comprasFornByEmp[empKey||comprasEmpresa])||[];
+    const n=String(nome||"").trim().toLowerCase(); if(!n) return null;
+    const f=lista.find(x=>String(x.nome||"").trim().toLowerCase()===n); return f?f.id:null;
+  }catch(e){ return null; }
+}
 async function integrarBling(id){
   const o=ordens.find(x=>x.id===id); if(!o){ alert("OC não encontrada."); return; }
   const emp=empresaOC(o), ek=(o.empresa||"fabrica");
@@ -2817,15 +2938,26 @@ async function integrarBling(id){
   try{
     const resp=await fetch(BLING_FN_URL, { method:"POST", headers:{"Content-Type":"application/json","apikey":BLING_FN_KEY,"Authorization":"Bearer "+BLING_FN_KEY}, body:JSON.stringify({
       contaId,
-      fornecedorCnpj: forn.cnpj||"", fornecedorNome: o.fornecedor||"",
+      fornecedorId: (blingFornIdDe(o.fornecedor, ek)||null),
+      fornecedorCnpj: forn.cnpj||"", fornecedorNome: o.fornecedor||"", criarFornecedor: true,
       dataPrevista: ocPrevista(o)||"", observacoes: "OC "+o.id+" - MALBA "+emp.nome,
-      itens: (o.itens||[]).map(i=>({ sku:i.sku, qtd:i.qtd, custoUnit:i.custoUnit }))
+      itens: (o.itens||[]).map(i=>({
+        sku:i.sku, qtd:i.qtd, valor:(+i.custoUnit||0),
+        nome:(i.produto||i.sku||"Item"),
+        descricao:(i.produto||i.sku||"Item")+" "+i.c+"x"+i.l+"x"+i.a,
+        c:i.c, l:i.l, a:i.a, pesoUnit:(+i.pesoUnit||0), unidade:"UN",
+        observacoes: ("Chapa "+(i.chapaLarg||"")+"x"+(i.chapaComp||"")+" mm"
+          + (i.gram?(" · "+i.gram+" g/m²"):"") + (i.ondaNome?(" · onda "+i.ondaNome):"")
+          + ((i.vincos&&i.vincos.length)?(" · vincos "+i.vincos.map(v=>+v||0).join(" | ")):""))
+      }))
     }) });
     const data=await resp.json().catch(()=>({}));
     if(!resp.ok || !data.ok){ throw new Error(data.error || ("Erro "+resp.status)); }
     o.blingId=data.bling_id; o.blingIntegrado=true; salvar(LS.oc,ordens); ocRefresh();
     let msg="✅ Pedido de compra criado no Bling! Nº "+(data.bling_id||"?");
-    if(data.nao_encontrados && data.nao_encontrados.length) msg+="\n\n⚠️ SKUs não achados no Bling (ficaram de fora): "+data.nao_encontrados.join(", ");
+    if(data.produtos_criados && data.produtos_criados.length) msg+="\n\n🆕 Produtos criados no Bling: "+data.produtos_criados.join(", ");
+    if(data.fornecedor_criado) msg+="\n🆕 Fornecedor cadastrado no Bling.";
+    if(data.itens_sem_sku && data.itens_sem_sku.length) msg+="\n\n⚠️ Sem SKU (entraram só como descrição): "+data.itens_sem_sku.join(", ");
     alert(msg);
   }catch(e){ alert("❌ Não consegui integrar: "+e.message); }
 }
