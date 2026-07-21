@@ -693,7 +693,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v103a · dados salvos neste aparelho</div>
+    <div class="foot">v104 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -1133,7 +1133,7 @@ const DEF_ONDAS = [
   { nome:"Onda TT", gramaturas:[470],         comp:compPadrao("Onda TT") },
 ];
 
-const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1" };
+const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1" };
 
 // util
 function carregar(k,def){ try{ const v=JSON.parse(localStorage.getItem(k)); return (v===null||v===undefined)?def:v }catch(e){ return def } }
@@ -1192,8 +1192,8 @@ const BLING_FN_URL="https://aveslxtnjlmtcdykqtmo.supabase.co/functions/v1/bling-
 const BLING_FN_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2ZXNseHRuamxtdGNkeWtxdG1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0MDEzMjAsImV4cCI6MjA5Mjk3NzMyMH0.gybrHrfL7vBkOVALOZlGIjZ2Tu9UwwOCh8w-6qqu5J0";
 const BLING_OAUTH_URL="https://aveslxtnjlmtcdykqtmo.supabase.co/functions/v1/bling-oauth";
 const FLEX_SUPA_URL="https://aveslxtnjlmtcdykqtmo.supabase.co";
-function blingContas(){ try{ return JSON.parse(localStorage.getItem("malba_bling_contas")||"{}"); }catch(e){ return {}; } }
-function setBlingConta(k,v){ const c=blingContas(); c[k]=v; localStorage.setItem("malba_bling_contas", JSON.stringify(c)); }
+function blingContas(){ try{ return (typeof blingCfg!=="undefined" && blingCfg.contas) ? blingCfg.contas : JSON.parse(localStorage.getItem("malba_bling_contas")||"{}"); }catch(e){ return {}; } }
+function setBlingConta(k,v){ try{ blingCfg.contas=blingCfg.contas||{}; blingCfg.contas[k]=v; salvarBlingCfg(); }catch(e){ const c={}; c[k]=v; localStorage.setItem("malba_bling_contas", JSON.stringify(c)); } }
 let syncOn = !syncOff && !!(SUPA_URL && SUPA_KEY);
 let syncStatus = syncOn?"conectando":"off";   // off | conectando | online | erro
 let pendingPush = {}, syncVer = {}, syncPollTimer = null, appReady = false;
@@ -1248,6 +1248,7 @@ function reloadState(){
   metas = carregar(LS.meta, {impressao:0, acabamento:0});
   ordens = carregar(LS.oc, []);
   compras = carregar(LS.compras, []);
+  try{ blingCfg = carregar(LS.bling, blingCfg)||blingCfg; blingCfg.vinc=blingCfg.vinc||{}; blingCfg.contas=blingCfg.contas||{}; blingVinc = blingCfg.vinc; }catch(e){}
   producao = carregar(LS.prodflow, []);
   records = carregar(LS.records, DEFAULT_RECORDS);
   metaProd = carregar(LS.metaprod, {caixas:35000, ton:2.5});
@@ -2571,12 +2572,21 @@ async function enviarOCEmail(id){
 }
 // ---------- Vínculo com o Bling (clientes e fornecedores) ----------
 var blingContatos = (function(){ try{ return JSON.parse(localStorage.getItem("malba_bling_contatos")||"{}"); }catch(e){ return {}; } })();
-var blingVinc = (function(){ try{ return JSON.parse(localStorage.getItem("malba_bling_vinc")||"{}"); }catch(e){ return {}; } })();
+var blingCfg = (function(){
+  var o = carregar(LS.bling, null);
+  if(!o){ o={vinc:{},contas:{}};
+    try{ o.vinc = JSON.parse(localStorage.getItem("malba_bling_vinc")||"{}"); }catch(e){}
+    try{ o.contas = JSON.parse(localStorage.getItem("malba_bling_contas")||"{}"); }catch(e){}
+  }
+  o.vinc=o.vinc||{}; o.contas=o.contas||{}; return o;
+})();
+function salvarBlingCfg(){ salvar(LS.bling, blingCfg); }
+var blingVinc = blingCfg.vinc;
 function blingContatosDe(tipo, empKey){ const e=blingContatos[empKey||comprasEmpresa]||{}; return e[tipo]||[]; }
 function salvarBlingContatos(){ try{ localStorage.setItem("malba_bling_contatos", JSON.stringify(blingContatos)); }catch(e){} }
 function vincKey(tipo, nome){ return tipo+"|"+String(nome||"").trim().toLowerCase(); }
 function getVinc(tipo, nome, empKey){ const m=blingVinc[empKey||comprasEmpresa]||{}; return m[vincKey(tipo,nome)]||null; }
-function setVinc(tipo, nome, obj, empKey){ const k=empKey||comprasEmpresa; blingVinc[k]=blingVinc[k]||{}; if(obj) blingVinc[k][vincKey(tipo,nome)]=obj; else delete blingVinc[k][vincKey(tipo,nome)]; try{ localStorage.setItem("malba_bling_vinc", JSON.stringify(blingVinc)); }catch(e){} }
+function setVinc(tipo, nome, obj, empKey){ const k=empKey||comprasEmpresa; blingVinc[k]=blingVinc[k]||{}; if(obj) blingVinc[k][vincKey(tipo,nome)]=obj; else delete blingVinc[k][vincKey(tipo,nome)]; blingCfg.vinc=blingVinc; salvarBlingCfg(); }
 
 async function puxarContatos(tipo, empKey){
   empKey=empKey||comprasEmpresa;
