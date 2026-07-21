@@ -693,7 +693,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v104 · dados salvos neste aparelho</div>
+    <div class="foot">v107 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -2570,6 +2570,114 @@ async function enviarOCEmail(id){
     alert("✅ Ordem de compra "+o.id+" enviada para "+para+"!");
   }catch(e){ alert("❌ Não consegui enviar: "+e.message+"\n\nConfira se a Edge Function 'send-oc-email' está publicada e o Resend configurado."); }
 }
+// ---------- Conciliação de cadastros MF × Bling ----------
+function normNome(v){
+  return String(v||"").toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/\b(ltda|me|epp|eireli|s\/a|sa|cia|comercio|comercial|industria|ind|distribuidora|dist|embalagens|emb)\b/g,"")
+    .replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+}
+function scoreNome(a,b){
+  const A=normNome(a), B=normNome(b);
+  if(!A||!B) return 0;
+  if(A===B) return 100;
+  if(A.includes(B)||B.includes(A)) return 90;
+  const ta=A.split(" ").filter(x=>x.length>2), tb=B.split(" ").filter(x=>x.length>2);
+  if(!ta.length||!tb.length) return 0;
+  const inter=ta.filter(x=>tb.includes(x)).length;
+  return Math.round(100*inter/Math.max(ta.length,tb.length));
+}
+function melhorCandidato(nome, lista, doc){
+  const d=String(doc||"").replace(/\D/g,"");
+  if(d){ const porDoc=lista.find(c=>String(c.numeroDocumento||"").replace(/\D/g,"")===d); if(porDoc) return {c:porDoc, score:100, via:"CNPJ"}; }
+  let melhor=null, best=0;
+  lista.forEach(c=>{ const sc=scoreNome(nome,c.nome); if(sc>best){ best=sc; melhor=c; } });
+  return melhor && best>=50 ? {c:melhor, score:best, via:"nome"} : null;
+}
+var concTipo="cliente";
+function concNomes(tipo){ return tipo==="cliente" ? (clientes||[]).slice() : (fornecedores||[]).map(f=>f.nome); }
+function renderConciliar(tipo){
+  concTipo=tipo||concTipo;
+  const box=document.getElementById("opcforn-box"); if(!box) return;
+  const empKey=comprasEmpresa, emp=EMPRESAS.find(e=>e.key===empKey)||EMPRESAS[0];
+  const geral = concTipo==="geral";
+  const tipos = geral?["cliente","fornecedor"]:[concTipo];
+  let html="", tot={v:0,s:0,x:0}, algumaLista=false;
+  tipos.forEach(tp=>{
+    const lista=blingContatosDe(tp, empKey); if(lista.length) algumaLista=true;
+    const nomes=concNomes(tp);
+    const porDoc={}; lista.forEach(c=>{ const d=String(c.numeroDocumento||"").replace(/\D/g,""); if(d) porDoc[d]=c; });
+    const linhas=nomes.map(nome=>{
+      const v=getVinc(tp,nome,empKey), doc=docDe(tp,nome);
+      const cand = (!v && doc) ? porDoc[doc] : null;
+      if(v) tot.v++; else if(cand) tot.s++; else tot.x++;
+      const badge = v?`<small style="color:var(--green);font-weight:700">✓ vinculado a ${esc(v.nome)}</small>`
+        : cand?`<small style="color:var(--accent)">CNPJ confere: ${esc(cand.nome)}</small>`
+        : doc?`<small style="color:var(--muted-2)">CNPJ não encontrado no Bling</small>`
+        : `<small style="color:#c0392b">sem CNPJ no MALBA</small>`;
+      const ct=contatoDe(tp,nome); const nm=esc(nome).replace(/'/g,"\\'");
+      const campoDoc = `<div style="flex:none;width:210px;display:flex;flex-direction:column;gap:4px">
+        <input class="search" style="width:100%;padding:6px 8px;font-size:12px" placeholder="CNPJ/CPF" value="${esc(doc)}" onchange="${tp==="cliente"?`setCliInfo('${nm}','doc',this.value)`:`setForncnpj('${nm}',this.value)`}; renderConciliar(concTipo)">
+        <input class="search" style="width:100%;padding:6px 8px;font-size:12px" placeholder="e-mail" value="${esc(ct.email)}" onchange="setContato('${tp}','${nm}','email',this.value)">
+        <input class="search" style="width:100%;padding:6px 8px;font-size:12px" placeholder="telefone" value="${esc(ct.fone)}" onchange="setContato('${tp}','${nm}','fone',this.value)">
+      </div>`;
+      const acao = cand?`<button class="btn ghost" style="flex:none" onclick="concVincDoc('${tp}','${esc(nome).replace(/'/g,"\\'")}','${cand.id}')">Vincular</button>`
+        : v?`<button class="btn ghost" style="flex:none" onclick="desvincular('${tp}','${esc(nome).replace(/'/g,"\\'")}')">Desfazer</button>`
+        : `<button class="btn ghost" style="flex:none" onclick="abrirVinculoBling('${tp}','${esc(nome).replace(/'/g,"\\'")}')">Manual</button>`;
+      return `<div class="listrow" style="align-items:center;gap:8px">
+        <span style="flex:1;min-width:0"><b>${esc(nome)}</b>${geral?` <small style="color:var(--muted-2)">· ${tp}</small>`:""}<br>${badge}</span>
+        ${campoDoc}${acao}</div>`;
+    }).join("");
+    html += (geral?`<div class="muted-note" style="margin:10px 0 4px"><b>${tp==="cliente"?"Clientes":"Fornecedores"}</b> · ${lista.length} no Bling</div>`:"")
+      + (linhas||`<p class="muted-note">Nenhum ${tp} no MALBA.</p>`);
+  });
+  const aba=(k,l)=>`<button class="btn ${concTipo===k?"primary":"ghost"}" onclick="renderConciliar('${k}')">${l}</button>`;
+  box.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <div style="display:flex;gap:6px">${aba("cliente","Clientes")}${aba("fornecedor","Fornecedores")}${aba("geral","Geral")}</div>
+      <button class="btn ghost" onclick="renderOpcFornecedores()">‹ Voltar</button></div>
+    <div class="muted-note" style="margin-bottom:8px">Conta ${esc(emp.nome)} · ✓ ${tot.v} vinculados · ${tot.s} com CNPJ conferindo · ${tot.x} pendentes</div>
+    ${algumaLista?`<div style="margin-bottom:10px"><button class="btn primary" onclick="concAceitarDoc()">Vincular todos por CNPJ</button></div>`:`<p class="muted-note">Puxe as listas do Bling primeiro (botão Voltar).</p>`}
+    ${html}`;
+}
+function setForncnpj(nome,v){ const f=(fornecedores||[]).find(x=>x.nome===nome); if(f){ f.cnpj=String(v||""); salvar(LS.forn,fornecedores); } }
+function concVincDoc(tp,nome,id){
+  const lista=blingContatosDe(tp,comprasEmpresa); const c=lista.find(x=>String(x.id)===String(id));
+  if(c){ setVinc(tp,nome,{id:c.id,nome:c.nome,doc:c.numeroDocumento||""},comprasEmpresa); puxarContatoDoBling(tp,nome,c); renderConciliar(concTipo); }
+}
+function concAceitarDoc(){
+  const empKey=comprasEmpresa; let n=0;
+  (concTipo==="geral"?["cliente","fornecedor"]:[concTipo]).forEach(tp=>{
+    const lista=blingContatosDe(tp,empKey); const porDoc={};
+    lista.forEach(c=>{ const d=String(c.numeroDocumento||"").replace(/\D/g,""); if(d) porDoc[d]=c; });
+    concNomes(tp).forEach(nome=>{ if(getVinc(tp,nome,empKey)) return; const doc=docDe(tp,nome); const c=doc?porDoc[doc]:null;
+      if(c){ setVinc(tp,nome,{id:c.id,nome:c.nome,doc:c.numeroDocumento||""},empKey); puxarContatoDoBling(tp,nome,c); n++; } });
+  });
+  alert(n?("✅ "+n+" vínculo(s) por CNPJ."):"Nenhum CNPJ bateu. Confira se os CNPJs estão preenchidos.");
+  renderConciliar(concTipo);
+}
+var concEscolhas={};
+function concEscolher(nome,val){ if(val) concEscolhas[nome]=val; else delete concEscolhas[nome]; }
+function concVincular(nome){
+  const empKey=comprasEmpresa, lista=blingContatosDe(concTipo,empKey);
+  let id=concEscolhas[nome];
+  if(!id){ const doc = concTipo==="fornecedor" ? ((fornecedores.find(f=>f.nome===nome)||{}).cnpj||"") : ""; const cand=melhorCandidato(nome,lista,doc); id=cand?cand.c.id:null; }
+  if(!id){ alert("Escolha um contato do Bling na lista."); return; }
+  const c=lista.find(x=>String(x.id)===String(id));
+  if(c){ setVinc(concTipo,nome,{id:c.id,nome:c.nome,doc:c.numeroDocumento||""},empKey); renderConciliar(concTipo); }
+}
+function concAceitarTodas(){
+  const empKey=comprasEmpresa, lista=blingContatosDe(concTipo,empKey);
+  const nomes = concTipo==="cliente" ? (clientes||[]) : (fornecedores||[]).map(f=>f.nome);
+  let n=0;
+  nomes.forEach(nome=>{ if(getVinc(concTipo,nome,empKey)) return;
+    const doc = concTipo==="fornecedor" ? ((fornecedores.find(f=>f.nome===nome)||{}).cnpj||"") : "";
+    const cand=melhorCandidato(nome,lista,doc);
+    if(cand && cand.score>=90){ setVinc(concTipo,nome,{id:cand.c.id,nome:cand.c.nome,doc:cand.c.numeroDocumento||""},empKey); n++; }
+  });
+  alert(n?("✅ "+n+" vínculo(s) criado(s)."):"Nenhuma sugestão com 90% ou mais.");
+  renderConciliar(concTipo);
+}
+
 // ---------- Vínculo com o Bling (clientes e fornecedores) ----------
 var blingContatos = (function(){ try{ return JSON.parse(localStorage.getItem("malba_bling_contatos")||"{}"); }catch(e){ return {}; } })();
 var blingCfg = (function(){
@@ -2578,10 +2686,26 @@ var blingCfg = (function(){
     try{ o.vinc = JSON.parse(localStorage.getItem("malba_bling_vinc")||"{}"); }catch(e){}
     try{ o.contas = JSON.parse(localStorage.getItem("malba_bling_contas")||"{}"); }catch(e){}
   }
-  o.vinc=o.vinc||{}; o.contas=o.contas||{}; return o;
+  o.vinc=o.vinc||{}; o.contas=o.contas||{}; o.docs=o.docs||{}; return o;
 })();
 function salvarBlingCfg(){ salvar(LS.bling, blingCfg); }
 var blingVinc = blingCfg.vinc;
+function cliInfo(nome){ const raw=(blingCfg.docs||{})[String(nome).toLowerCase()]; if(!raw) return {doc:"",email:"",fone:""}; if(typeof raw==="string") return {doc:raw,email:"",fone:""}; return {doc:raw.doc||"",email:raw.email||"",fone:raw.fone||""}; }
+function setCliInfo(nome,campo,val){ blingCfg.docs=blingCfg.docs||{}; const k=String(nome).toLowerCase(); const cur=cliInfo(nome); cur[campo]= campo==="doc" ? String(val||"").replace(/\D/g,"") : String(val||""); if(!cur.doc&&!cur.email&&!cur.fone) delete blingCfg.docs[k]; else blingCfg.docs[k]=cur; salvarBlingCfg(); }
+function docDe(tipo,nome){ if(tipo==="fornecedor"){ const f=(fornecedores||[]).find(x=>x.nome===nome); return String((f&&f.cnpj)||"").replace(/\D/g,""); } return cliInfo(nome).doc; }
+function contatoDe(tipo,nome){ if(tipo==="fornecedor"){ const f=(fornecedores||[]).find(x=>x.nome===nome)||{}; return {email:f.email||"", fone:f.fone||""}; } const i=cliInfo(nome); return {email:i.email, fone:i.fone}; }
+function setContato(tipo,nome,campo,val){ if(tipo==="fornecedor"){ const f=(fornecedores||[]).find(x=>x.nome===nome); if(f){ f[campo==="email"?"email":"fone"]=String(val||""); salvar(LS.forn,fornecedores); } } else { setCliInfo(nome, campo==="email"?"email":"fone", val); } }
+// ao vincular, traz telefone e e-mail do cadastro do Bling
+function puxarContatoDoBling(tipo,nome,c){
+  if(!c) return;
+  if(tipo==="fornecedor"){ const f=(fornecedores||[]).find(x=>x.nome===nome); if(f){ let m=false;
+      if(!f.email && c.email){ f.email=c.email; m=true; } if(!f.fone && c.telefone){ f.fone=c.telefone; m=true; }
+      if(!f.cnpj && c.numeroDocumento){ f.cnpj=c.numeroDocumento; m=true; } if(m) salvar(LS.forn,fornecedores); } }
+  else { const i=cliInfo(nome);
+    if(!i.email && c.email) setCliInfo(nome,"email",c.email);
+    if(!i.fone && c.telefone) setCliInfo(nome,"fone",c.telefone);
+    if(!i.doc && c.numeroDocumento) setCliInfo(nome,"doc",c.numeroDocumento); }
+}
 function blingContatosDe(tipo, empKey){ const e=blingContatos[empKey||comprasEmpresa]||{}; return e[tipo]||[]; }
 function salvarBlingContatos(){ try{ localStorage.setItem("malba_bling_contatos", JSON.stringify(blingContatos)); }catch(e){} }
 function vincKey(tipo, nome){ return tipo+"|"+String(nome||"").trim().toLowerCase(); }
@@ -2807,6 +2931,7 @@ function renderOpcFornecedores(){
             <button class="btn ghost" onclick="puxarContatos('cliente','${e.key}')">${((blingContatos[e.key]||{}).cliente||[]).length?"↻ Clientes":"Puxar clientes"}</button>
           </div>
         </div>`; }).join("")
+    + `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="renderConciliar('cliente')">Conciliar clientes</button><button class="btn ghost" onclick="renderConciliar('fornecedor')">Conciliar fornecedores</button></div>`
     + `<div style="margin-top:8px"><small style="color:var(--muted-2);cursor:pointer;text-decoration:underline" onclick="reconectarBlingManual(comprasEmpresa)">Colar retorno do Bling manualmente</small></div>`
     + `<div id="opcforn-status" class="muted-note" style="margin-top:10px"></div>`;
 }
