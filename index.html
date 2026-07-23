@@ -693,7 +693,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v107 · dados salvos neste aparelho</div>
+    <div class="foot">v108 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -1302,13 +1302,13 @@ function tocaDev(e){ if(e) e._upd=Date.now(); return e; }
 function mergeDevSt(localObj, cloudObj){
   const out=Object.assign({}, (cloudObj&&typeof cloudObj==="object")?cloudObj:{});
   const L=(localObj&&typeof localObj==="object")?localObj:{};
-  for(const k in L){ const l=L[k], c=out[k]; if(!c){ out[k]=l; continue; } const lu=+(l&&l._upd)||0, cu=+(c&&c._upd)||0; if(lu>=cu) out[k]=l; }
+  for(const k in L){ const l=L[k], c=out[k]; if(!c){ out[k]=l; continue; } const lu=+(l&&l._upd)||0, cu=+(c&&c._upd)||0; if(lu>cu) out[k]=l; }
   return out;
 }
 function mergeAv(localArr, cloudArr){
   const byK={};
   (Array.isArray(cloudArr)?cloudArr:[]).forEach(a=>{ if(a&&a.key!=null) byK[a.key]=a; });
-  (Array.isArray(localArr)?localArr:[]).forEach(a=>{ if(!a||a.key==null) return; const c=byK[a.key]; if(!c){ byK[a.key]=a; return; } const lu=+a._upd||0, cu=+c._upd||0; if(lu>=cu) byK[a.key]=a; });
+  (Array.isArray(localArr)?localArr:[]).forEach(a=>{ if(!a||a.key==null) return; const c=byK[a.key]; if(!c){ byK[a.key]=a; return; } const lu=+a._upd||0, cu=+c._upd||0; if(lu>cu) byK[a.key]=a; });
   return Object.values(byK);
 }
 function mergeOrd(localArr, cloudArr){
@@ -1333,12 +1333,20 @@ function mergeProd(localArr, cloudArr){
 function mergeHist(localArr, cloudArr){
   const byId={}, noId=[], seenSig=new Set();
   const sig=h=> (!h.sku && !(+h.qtdProd) && h.pesoTotalProd) ? ("MES|"+h.processo+"|"+h.data+"|"+h.pesoTotalProd) : null;
+  // 1) junta por id (mais recente vence) — preserva exclusões marcadas
   const add=h=>{ if(!h) return;
     if(h.id!=null){ const ex=byId[h.id]; if(!ex){ byId[h.id]=h; return; } const lu=+ex._upd||0, cu=+h._upd||0; if(cu>lu) byId[h.id]=h; return; }
-    const s=sig(h); if(s){ if(seenSig.has(s)) return; seenSig.add(s); } noId.push(h); };
+    noId.push(h); };
   (Array.isArray(localArr)?localArr:[]).forEach(add);
   (Array.isArray(cloudArr)?cloudArr:[]).forEach(add);
-  return Object.values(byId).concat(noId);
+  // 2) remove duplicatas de lançamento mensal (mesmo mês/processo/peso com ids diferentes)
+  const out=[];
+  Object.values(byId).concat(noId).forEach(h=>{
+    const sg=sig(h);
+    if(sg){ if(seenSig.has(sg)) return; seenSig.add(sg); }
+    out.push(h);
+  });
+  return out;
 }
 function recuperarBackup(){
   const raw=localStorage.getItem("malba_sync_backup");
