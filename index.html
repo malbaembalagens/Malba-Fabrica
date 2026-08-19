@@ -693,7 +693,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v108a · dados salvos neste aparelho</div>
+    <div class="foot">v108b · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -902,6 +902,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
             <button class="novodev" onclick="novoDesenvolvimento()"><span>＋</span> Novo desenvolvimento</button>
           </div>
           <button class="massabtn" id="massabtn" onclick="toggleMassa()">🛒 Comprar em massa</button>
+          <button class="massabtn only-gestor" onclick="limparDuplicatasAvulsos()" title="Encontra itens avulsos idênticos e mantém só um">🧹 Limpar duplicatas</button>
           <div class="tabs">
             <button class="tab on" data-t="aguardando" onclick="setDevTab('aguardando',this)">Aguardando <span class="badge" id="dev-c-ag">0</span></button>
             <button class="tab" data-t="desenvolvido" onclick="setDevTab('desenvolvido',this)">Desenvolvido <span class="badge" id="dev-c-de">0</span></button>
@@ -4220,10 +4221,29 @@ function repararHistorico(){
   if(added){ salvar(LS.hist,historico); try{ renderDashProd(); }catch(e){} }
   localStorage.setItem("malba_os_hist_rep_v1","1");
 }
+// assinatura por CONTEÚDO (ignora key, hora, status e marca de exclusão)
+function avSig(x){ if(!x) return "x"; const c=Object.assign({},x); delete c.key; delete c._upd; delete c.excluido; delete c.status; try{ return JSON.stringify(c); }catch(e){ return String(x.sku||"")+"|"+String(x.produto||"")+"|"+x.c+"x"+x.l+"x"+x.a; } }
+// marca duplicatas exatas como excluídas (tombstone que sincroniza e não volta)
 function dedupDevAvulsos(){
-  const seen=new Set(); const out=[];
-  devAvulsos.forEach(x=>{ const id=devSig(x); if(seen.has(id)) return; seen.add(id); out.push(x); });
-  if(out.length!==devAvulsos.length){ devAvulsos=out; salvar(LS.devav,devAvulsos); try{ render(); }catch(e){} }
+  const seen={}; let n=0;
+  devAvulsos.forEach(x=>{ if(!x||x.excluido) return; const id=avSig(x); if(seen[id]){ x.excluido=true; x._upd=Date.now(); n++; } else seen[id]=x.key; });
+  if(n){ salvar(LS.devav,devAvulsos); }
+  return n;
+}
+// faxina manual com prévia + confirmação (por SKU+medida+gramatura+onda+cliente)
+function avSigMeaning(x){ return [String(x.sku||"").trim().toLowerCase(), x.c,x.l,x.a, String(x.ondaNome||""), x.gram, String(x.cliente||"").trim().toLowerCase(), (x.vincos||[]).map(v=>+v||0).join(","), String(x.fornecedor||"").trim().toLowerCase()].join("|"); }
+function limparDuplicatasAvulsos(){
+  const grupos={};
+  devAvulsos.forEach(x=>{ if(!x||x.excluido) return; const g=avSigMeaning(x); (grupos[g]=grupos[g]||[]).push(x); });
+  let remover=[]; Object.values(grupos).forEach(arr=>{ if(arr.length<2) return;
+    arr.sort((a,b)=>(a.status==="desenvolvido"?-1:1)-(b.status==="desenvolvido"?-1:1)); // mantém um desenvolvido de preferência
+    arr.slice(1).forEach(x=>remover.push(x)); });
+  if(!remover.length){ alert("Nenhuma duplicata de item avulso encontrada (por SKU + medida + gramatura + onda + cliente)."); return; }
+  const amostra=remover.slice(0,8).map(x=>"• "+(x.sku||x.produto||"—")+" · "+x.c+"×"+x.l+"×"+x.a+" · "+(x.cliente||"")).join("\n");
+  if(!confirm("Encontrei "+remover.length+" cópia(s) duplicada(s) de itens avulsos.\nVou manter uma de cada e excluir as demais.\n\n"+amostra+(remover.length>8?"\n…":"")+"\n\nConfirmar exclusão?")) return;
+  remover.forEach(x=>{ x.excluido=true; x._upd=Date.now(); });
+  salvar(LS.devav,devAvulsos); try{ render(); }catch(e){}
+  alert("✅ "+remover.length+" duplicata(s) marcada(s) como excluída(s). Some agora e não volta.");
 }
 preencherSelects();
 render();
