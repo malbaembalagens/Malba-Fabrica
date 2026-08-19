@@ -693,7 +693,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v108 · dados salvos neste aparelho</div>
+    <div class="foot">v108a · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -1302,13 +1302,13 @@ function tocaDev(e){ if(e) e._upd=Date.now(); return e; }
 function mergeDevSt(localObj, cloudObj){
   const out=Object.assign({}, (cloudObj&&typeof cloudObj==="object")?cloudObj:{});
   const L=(localObj&&typeof localObj==="object")?localObj:{};
-  for(const k in L){ const l=L[k], c=out[k]; if(!c){ out[k]=l; continue; } const lu=+(l&&l._upd)||0, cu=+(c&&c._upd)||0; if(lu>cu) out[k]=l; }
+  for(const k in L){ const l=L[k], c=out[k]; if(!c){ out[k]=l; continue; } const lu=+(l&&l._upd)||0, cu=+(c&&c._upd)||0; if(lu>cu){ out[k]=l; continue; } if(lu===cu && l&&l.status==="excluido" && !(c&&c.status==="excluido")) out[k]=l; }
   return out;
 }
 function mergeAv(localArr, cloudArr){
   const byK={};
   (Array.isArray(cloudArr)?cloudArr:[]).forEach(a=>{ if(a&&a.key!=null) byK[a.key]=a; });
-  (Array.isArray(localArr)?localArr:[]).forEach(a=>{ if(!a||a.key==null) return; const c=byK[a.key]; if(!c){ byK[a.key]=a; return; } const lu=+a._upd||0, cu=+c._upd||0; if(lu>cu) byK[a.key]=a; });
+  (Array.isArray(localArr)?localArr:[]).forEach(a=>{ if(!a||a.key==null) return; const c=byK[a.key]; if(!c){ byK[a.key]=a; return; } const lu=+a._upd||0, cu=+c._upd||0; if(lu>cu){ byK[a.key]=a; return; } if(lu===cu && a.excluido && !c.excluido) byK[a.key]=a; });
   return Object.values(byK);
 }
 function mergeOrd(localArr, cloudArr){
