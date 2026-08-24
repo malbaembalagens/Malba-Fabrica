@@ -693,7 +693,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v109 · dados salvos neste aparelho</div>
+    <div class="foot">v110 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -3778,7 +3778,7 @@ function leItem(i){
   let qtd=parseInt(g("qtd").value)||0;
   if(pesoKg>0 && !it.qtdEditado){ qtd=qtdMin; g("qtd").value=qtdMin; }
   if(qtdMin){ g("qtd").min=qtdMin; }
-  const preco=pesoKg*vkg;
+  const preco=Math.round(pesoKg*vkg*100)/100;  // arredonda p/ centavos: qtd × preço unit = total (bate com o exibido)
   Object.assign(it,{produto,ondaNome:onda?onda.nome:"",gram,c,l,a,vkg,qtd,preco,total:preco*qtd,
     chapaComp:Math.round(compChapa),chapaLarg:Math.round(largChapa),
     desc: cust?`${produto} (chapa ${c||0}×${l||0}mm)`:`${produto} ${c||0}×${l||0}×${a||0}mm`,
