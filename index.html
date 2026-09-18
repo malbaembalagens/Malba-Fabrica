@@ -612,7 +612,11 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
 #print{display:none}
 @media print{
   @page{margin:14mm}
+  *,*::before,*::after{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
   .app{display:none}
+  /* fallback sólido caso o gradiente não saia na impressão */
+  #print .colbar,#print .barfill{background:#2b7fff!important}
+  #print .colbar.acab{background:#1f9d57!important}
   #print{display:flex!important;flex-direction:column;min-height:100vh;color:#1a2230;background:#fff;font-family:var(--font);font-size:12px}
   #print .pbottom{margin-top:auto;padding-top:26px}
   #print .ph{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #e6e8ec;padding-bottom:16px}
@@ -693,7 +697,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v110 · dados salvos neste aparelho</div>
+    <div class="foot">v112 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -1134,7 +1138,7 @@ const DEF_ONDAS = [
   { nome:"Onda TT", gramaturas:[470],         comp:compPadrao("Onda TT") },
 ];
 
-const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1" };
+const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1", oms:"malba_os_oms_v1" };
 
 // util
 function carregar(k,def){ try{ const v=JSON.parse(localStorage.getItem(k)); return (v===null||v===undefined)?def:v }catch(e){ return def } }
@@ -1185,6 +1189,7 @@ let histProcTab="todos";
 const SYNC_KEYS = Object.values(LS);
 const DEFAULT_SUPA_URL = "https://hatiyuhtbiyyfucexaar.supabase.co";
 const DEFAULT_SUPA_KEY = "sb_publishable_9FpvlA5dbTmkQ2bhfYue9g_dMHsqIs5";
+const OMS_FN_URL = DEFAULT_SUPA_URL + "/functions/v1/oms-entrada";
 let SUPA_URL = localStorage.getItem("malba_sync_url")||DEFAULT_SUPA_URL;
 let SUPA_KEY = localStorage.getItem("malba_sync_key")||DEFAULT_SUPA_KEY;
 let syncOff = localStorage.getItem("malba_sync_off")==="1";
@@ -1748,6 +1753,7 @@ function addHist(){
     pesoTotalProd:parseFloat($("h-ptp").value)||0, qtdDesp:parseFloat($("h-qd").value)||0,
     pesoTotalDesp:parseFloat($("h-ptd").value)||0 };
   historico.push(reg); salvar(LS.hist,historico); renderHistorico();
+  try{ omsEnviarAcab(reg); }catch(e){}
 }
 function histAtivo(){ return historico.filter(h=>!h.excluido); }
 function delHist(id){ if(confirm("Remover este lançamento?")){ const h=historico.find(x=>x.id===id); if(h){ h.excluido=true; h._upd=Date.now(); } salvar(LS.hist,historico); renderHistorico(); } }
@@ -2698,6 +2704,52 @@ var blingCfg = (function(){
   o.vinc=o.vinc||{}; o.contas=o.contas||{}; o.docs=o.docs||{}; return o;
 })();
 function salvarBlingCfg(){ salvar(LS.bling, blingCfg); }
+// ---------- OMS: entrada de produção no CD Vila Ema (via Edge Function) ----------
+var omsCfg = (function(){ var o=carregar(LS.oms,null)||{}; o.enviados=o.enviados||{}; o.pendentes=o.pendentes||[]; return o; })();
+function salvarOmsCfg(){ salvar(LS.oms, omsCfg); }
+var omsSkus = (function(){ try{ return JSON.parse(localStorage.getItem("malba_oms_skus")||"[]"); }catch(e){ return []; } })();
+function omsNorm(x){ return String(x||"").trim(); }
+function omsAutorizado(sku){ if(!omsSkus.length) return null; const n=omsNorm(sku); return omsSkus.some(x=>omsNorm(x.sku)===n); } // null = lista não carregada
+async function omsPost(action, extra){
+  const r=await fetch(OMS_FN_URL,{method:"POST",headers:{"Content-Type":"application/json","apikey":DEFAULT_SUPA_KEY,"Authorization":"Bearer "+DEFAULT_SUPA_KEY},body:JSON.stringify(Object.assign({action},extra||{}))});
+  const d=await r.json().catch(()=>({})); return {http:r.status, ...d};
+}
+async function omsCarregarSkus(){
+  const d=await omsPost("skus");
+  if(d && d.ok && Array.isArray(d.skus)){ omsSkus=d.skus; try{ localStorage.setItem("malba_oms_skus", JSON.stringify(omsSkus)); }catch(e){} return omsSkus.length; }
+  throw new Error(d.erro||("HTTP "+(d.http||"?")+" ao buscar SKUs"));
+}
+// envia UM lançamento de acabamento (loteId = id do lançamento → idempotente)
+async function omsEnviarAcab(reg){
+  if(!reg || reg.processo!=="Acabamento" || !reg.sku) return;
+  const qtd=Math.round(+reg.qtdProd||0); if(qtd<=0) return;
+  if(omsCfg.enviados[reg.id] && omsCfg.enviados[reg.id].ok) return;      // já entrou
+  const auth=omsAutorizado(reg.sku);
+  if(auth===false){ return; }                                            // sabidamente não-autorizado: nem envia
+  const body={ loteId:"PROD-"+reg.id, itens:[{sku:reg.sku, quantidade:qtd}], observacao:"Acabamento "+(reg.data||"") };
+  let d;
+  try{ d=await omsPost("entrada", body); }catch(e){ omsPendAdd(reg); return; }
+  if(d.http===200 && d.ok){
+    const falhou=(d.falhas||[]).some(f=>omsNorm(f.sku)===omsNorm(reg.sku));
+    omsCfg.enviados[reg.id]={ok:!falhou, sku:reg.sku, qtd, em:Date.now(), motivo: falhou?((d.falhas.find(f=>omsNorm(f.sku)===omsNorm(reg.sku))||{}).erro||"falha"):null};
+    omsPendDel(reg.id); salvarOmsCfg();
+    if(falhou) omsToast("⚠️ OMS recusou "+reg.sku+": "+omsCfg.enviados[reg.id].motivo);
+    else omsToast("✅ "+qtd+" un de "+reg.sku+" no CD Vila Ema");
+  } else if(d.http===403){ omsPendAdd(reg); omsToast("⛔ OMS bloqueou o IP (403). Configure o IP na Integração.");
+  } else { omsPendAdd(reg); omsToast("⚠️ OMS indisponível — "+reg.sku+" ficou pendente."); }
+}
+function omsPendAdd(reg){ if(!omsCfg.pendentes.some(x=>x.id===reg.id)){ omsCfg.pendentes.push({id:reg.id, sku:reg.sku, qtd:Math.round(+reg.qtdProd||0), data:reg.data}); salvarOmsCfg(); } }
+function omsPendDel(id){ omsCfg.pendentes=omsCfg.pendentes.filter(x=>x.id!==id); }
+async function omsReprocessar(){
+  const pend=omsCfg.pendentes.slice(); let ok=0;
+  for(const x of pend){ const reg=(historico||[]).find(h=>h.id===x.id) || {id:x.id,sku:x.sku,qtdProd:x.qtd,data:x.data,processo:"Acabamento"};
+    await omsEnviarAcab(reg); if(omsCfg.enviados[x.id] && omsCfg.enviados[x.id].ok) ok++; }
+  return {tentados:pend.length, ok, restantes:omsCfg.pendentes.length};
+}
+function omsToast(msg){ try{ const st=document.getElementById("oms-status"); if(st){ st.textContent=msg; return; } }catch(e){} console.log("[OMS]",msg); }
+async function omsUiStatus(){ omsToast("Consultando OMS…"); try{ const d=await omsPost("status"); const o=d.oms||{}; const ip=o.ipDetectado||(o.raw&&o.raw); omsToast((o.ok?"✅ OMS operacional. ":"⚠️ ")+"IP desta integração: "+(ip||"?")+(o.oficialFilial?(" · depósito: "+o.oficialFilial):"")+". Cadastre esse IP no OMS (FABRICA_ALLOWED_IPS) se ainda não estiver."); }catch(e){ omsToast("❌ "+e.message); } }
+async function omsUiSkus(){ omsToast("Atualizando SKUs autorizados…"); try{ const n=await omsCarregarSkus(); omsToast("✅ "+n+" SKUs autorizados carregados."); renderOpcFornecedores(); }catch(e){ omsToast("❌ "+e.message); } }
+async function omsUiReprocessar(){ omsToast("Reenviando pendentes…"); try{ const r=await omsReprocessar(); omsToast("Reenvio: "+r.ok+" ok, "+r.restantes+" restante(s)."); renderOpcFornecedores(); }catch(e){ omsToast("❌ "+e.message); } }
 var blingVinc = blingCfg.vinc;
 function cliInfo(nome){ const raw=(blingCfg.docs||{})[String(nome).toLowerCase()]; if(!raw) return {doc:"",email:"",fone:""}; if(typeof raw==="string") return {doc:raw,email:"",fone:""}; return {doc:raw.doc||"",email:raw.email||"",fone:raw.fone||""}; }
 function setCliInfo(nome,campo,val){ blingCfg.docs=blingCfg.docs||{}; const k=String(nome).toLowerCase(); const cur=cliInfo(nome); cur[campo]= campo==="doc" ? String(val||"").replace(/\D/g,"") : String(val||""); if(!cur.doc&&!cur.email&&!cur.fone) delete blingCfg.docs[k]; else blingCfg.docs[k]=cur; salvarBlingCfg(); }
@@ -2942,6 +2994,11 @@ function renderOpcFornecedores(){
         </div>`; }).join("")
     + `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="renderConciliar('cliente')">Conciliar clientes</button><button class="btn ghost" onclick="renderConciliar('fornecedor')">Conciliar fornecedores</button></div>`
     + `<div style="margin-top:8px"><small style="color:var(--muted-2);cursor:pointer;text-decoration:underline" onclick="reconectarBlingManual(comprasEmpresa)">Colar retorno do Bling manualmente</small></div>`
+    + `<hr style="border:none;border-top:1px solid var(--line);margin:16px 0">`
+    + `<div style="font-weight:800;margin-bottom:4px">OMS · Entrada de produção (CD Vila Ema)</div>`
+    + `<p class="muted-note" style="margin-bottom:8px">Ao finalizar um Acabamento, o item vai pro estoque do CD Vila Ema (só SKUs autorizados no OMS). ${omsSkus.length?("<b>"+omsSkus.length+"</b> SKUs autorizados em cache."):"Lista de SKUs ainda não carregada."} ${omsCfg.pendentes.length?("<b style=\"color:#c0392b\">"+omsCfg.pendentes.length+" pendente(s) de envio.</b>"):""}</p>`
+    + `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" onclick="omsUiStatus()">🔎 Testar conexão / ver IP</button><button class="btn ghost" onclick="omsUiSkus()">↻ Atualizar SKUs autorizados</button>${omsCfg.pendentes.length?`<button class="btn primary" onclick="omsUiReprocessar()">↑ Reenviar pendentes (${omsCfg.pendentes.length})</button>`:""}</div>`
+    + `<div id="oms-status" class="muted-note" style="margin-top:8px"></div>`
     + `<div id="opcforn-status" class="muted-note" style="margin-top:10px"></div>`;
 }
 
