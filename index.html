@@ -2396,7 +2396,7 @@ function renderOC(){
     <td class="num">${brl(ocTotais(o).total)}</td>
     <td class="devacts">
       <button class="ic-btn ed" onclick="ocDetalhes('${o.id}')" title="Detalhes">👁️</button>
-      <button class="ic-btn pdf" onclick="ocBaixarPDF('${o.id}')" title="PDF da ordem">📄</button>
+      <button class="ic-btn pdf" onclick="ocPDF('${o.id}')" title="PDF da ordem">📄</button>
       ${ ehGestor() ? `<button class="ic-btn mail" onclick="enviarOCEmail('${o.id}')" title="Enviar OC por e-mail">📧</button>` : "" }
       ${ ehGestor() ? `<button class="ic-btn bling ${o.blingIntegrado?"done":""}" onclick="integrarBling('${o.id}')" title="${o.blingIntegrado?("Integrado ao Bling nº "+(o.blingId||"?")+" — clique p/ reenviar"):"Integrar com o Bling"}">${o.blingIntegrado?"✅":"🔗"}</button>` : "" }
       <button class="ic-btn ${podeReceber?"ok":""}" onclick="abrirReceber('${o.id}')" title="${podeReceber?"Dar entrada (receber)":"Reabrir recebimento"}">${podeReceber?"✓":"↩︎"}</button>
@@ -2432,7 +2432,7 @@ function ocDetalhes(id){
       <div>IPI (3,25%): <b>${brl(ocTotais(o).ipi)}</b></div>
       <div class="octot-final">Total: <b>${brl(ocTotais(o).total)}</b></div>
     </div>
-    <div class="modal-foot"><button class="btnghost" onclick="ocBaixarPDF('${o.id}')">📄 PDF</button><button class="btnprim" onclick="closeOcModal()">Fechar</button></div>
+    <div class="modal-foot"><button class="btnghost" onclick="ocPDF('${o.id}')">📄 PDF</button><button class="btnprim" onclick="closeOcModal()">Fechar</button></div>
   </div>`;
   $("ocmodal").style.display="flex";
 }
@@ -2444,7 +2444,6 @@ function ocPDF(id){
   const rows=(o.itens||[]).map(i=>`<tr>
     <td><b>${esc(i.sku||"—")}</b></td>
     <td>${esc(i.ondaNome||"")}${i.gram?` · ${i.gram} g/m²`:""}</td>
-    <td>${i.c}×${i.l}×${i.a} mm</td>
     <td>${i.chapaLarg} × ${i.chapaComp} mm</td>
     <td>${(i.vincos||[]).map(v=>+v||0).join(" | ")||"—"}</td>
     <td style="text-align:right">${(+i.qtd||0).toLocaleString("pt-BR")}</td>
@@ -2456,11 +2455,11 @@ function ocPDF(id){
       <div><div class="pht">Ordem de compra ${esc(o.id)}</div><div class="phs">${esc(emp.nome)}${emp.cnpj?" · CNPJ "+emp.cnpj:""}</div></div>
     </div><div class="phr"><div class="phlabel">Previsão de entrega</div><div class="phnum" style="font-size:15px">${ocPrevista(o)?fmtData(ocPrevista(o)):"—"}</div><div class="phs">${OC_ST[ocStatus(o)][0]}</div></div></div>
     <div class="frow" style="border:none;padding-top:6px"><span>Fornecedor</span><b>${esc(o.fornecedor||"—")}</b></div>
-    <table class="pordtab"><thead><tr><th>SKU</th><th>Qualidade</th><th>Caixa (C×L×A)</th><th>Chapa (L×C)</th><th>Vincos</th><th style="text-align:right">Qtd</th><th style="text-align:right">Valor un.</th><th style="text-align:right">Total</th></tr></thead><tbody>${rows}</tbody></table>
+    <table class="pordtab"><thead><tr><th>SKU</th><th>Qualidade</th><th>Chapa (L×C)</th><th>Vincos</th><th style="text-align:right">Qtd</th><th style="text-align:right">Valor un.</th><th style="text-align:right">Total</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="ptotais"><div>Peso total: <b>${(+o.peso||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})} kg</b></div><div>Subtotal: <b>${brl(ocTotais(o).sub)}</b></div><div>IPI (3,25%): <b>${brl(ocTotais(o).ipi)}</b></div><div style="font-size:15px">Total: <b>${brl(ocTotais(o).total)}</b></div></div>
     </div>
     <div class="pbottom"><div class="pfoot">${esc(emp.nome)}${emp.cnpj?" · CNPJ "+emp.cnpj:""} · Ordem de compra</div></div>`;
-  const stLand=document.createElement("style"); stLand.id="ll-land"; stLand.textContent="@media print{@page{size:A4 landscape;margin:10mm}}"; document.head.appendChild(stLand);
+  const stLand=document.createElement("style"); stLand.id="ll-land"; stLand.textContent="@media print{@page{size:A4 portrait;margin:10mm}}"; document.head.appendChild(stLand);
   window.print();
   setTimeout(()=>{ const s=$("ll-land"); if(s) s.remove(); $("print").innerHTML=""; },600);
 }
