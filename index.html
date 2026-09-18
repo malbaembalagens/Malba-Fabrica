@@ -704,7 +704,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v114 · dados salvos neste aparelho</div>
+    <div class="foot">v115 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -2459,8 +2459,9 @@ function ocPDF(id){
     <div class="ptotais"><div>Peso total: <b>${(+o.peso||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})} kg</b></div><div>Subtotal: <b>${brl(ocTotais(o).sub)}</b></div><div>IPI (3,25%): <b>${brl(ocTotais(o).ipi)}</b></div><div style="font-size:15px">Total: <b>${brl(ocTotais(o).total)}</b></div></div>
     </div>
     <div class="pbottom"><div class="pfoot">${esc(emp.nome)}${emp.cnpj?" · CNPJ "+emp.cnpj:""} · Ordem de compra</div></div>`;
+  const stLand=document.createElement("style"); stLand.id="ll-land"; stLand.textContent="@media print{@page{size:A4 landscape;margin:10mm}}"; document.head.appendChild(stLand);
   window.print();
-  setTimeout(()=>{ $("print").innerHTML=""; },600);
+  setTimeout(()=>{ const s=$("ll-land"); if(s) s.remove(); $("print").innerHTML=""; },600);
 }
 
 // ----- Agenda (calendário por previsão de entrega) -----
