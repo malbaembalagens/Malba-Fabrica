@@ -697,7 +697,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v112 · dados salvos neste aparelho</div>
+    <div class="foot">v113 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -1660,6 +1660,16 @@ function renderDashProd(){
     <div class="colchart">${mvals.map(d=>`<div class="col" title="${d.label} ${dashAnoHist}: ${d.val.toLocaleString("pt-BR",{minimumFractionDigits:3,maximumFractionDigits:3})} t"><div class="colval">${d.val>0?d.val.toLocaleString("pt-BR",{maximumFractionDigits:1}):""}</div><div class="colbar acab" style="height:${(d.val/maxM*100).toFixed(1)}%"></div><div class="collbl">${d.label}</div></div>`).join("")}</div>
     <div class="hint">Produção mensal (toneladas) que passou pelo Acabamento em ${dashAnoHist} · total no ano: <b>${totAno.toLocaleString("pt-BR",{minimumFractionDigits:3,maximumFractionDigits:3})} t</b>.</div>
   </div>`;
+  // Histórico de produção — QUANTIDADE (unidades) por mês
+  const mqtd=mesesL.map((m,i)=>{ const ym=dashAnoHist+"-"+String(i+1).padStart(2,"0"); const q=histAtivo().filter(h=>(h.data||"").slice(0,7)===ym && h.processo==="Acabamento").reduce((s,h)=>s+(+h.qtdProd||0),0); return {label:m, val:q}; });
+  const totAnoQ=mqtd.reduce((s,d)=>s+d.val,0), maxMQ=Math.max(1,...mqtd.map(d=>d.val));
+  const fmtU=v=> (+v||0)>=1000 ? ((v/1000).toLocaleString("pt-BR",{maximumFractionDigits:1})+"k") : (+v||0).toLocaleString("pt-BR");
+  const c4b=`<div class="chartcard">
+    <div class="charthead"><h3>Histórico de produção · Quantidade</h3>
+      <select class="selmes" onchange="dashAnoHist=this.value;renderDashProd()">${anos.map(a=>`<option ${a===dashAnoHist?"selected":""}>${a}</option>`).join("")}</select></div>
+    <div class="colchart">${mqtd.map(d=>`<div class="col" title="${d.label} ${dashAnoHist}: ${d.val.toLocaleString("pt-BR")} un"><div class="colval">${d.val>0?fmtU(d.val):""}</div><div class="colbar" style="height:${(d.val/maxMQ*100).toFixed(1)}%"></div><div class="collbl">${d.label}</div></div>`).join("")}</div>
+    <div class="hint">Quantidade produzida (unidades) no Acabamento em ${dashAnoHist} · total no ano: <b>${totAnoQ.toLocaleString("pt-BR")} un</b>.</div>
+  </div>`;
 
   // gráfico 5 — Malba Records (editável)
   const recCard=(proc,nome)=>{ const r=records[proc]||{};
@@ -1691,7 +1701,7 @@ function renderDashProd(){
     <div class="hint">Ao alterar a meta aqui, o <b>gráfico Produção do dia</b> usa esse valor automaticamente.</div>
   </div>`;
 
-  $("dashprod-c").innerHTML=cards+carousel("car-prod",[c1,c2,cLC,c3,c4,c5,c6],"Dashboard · Produção");
+  $("dashprod-c").innerHTML=cards+carousel("car-prod",[c1,c2,cLC,c3,c4,c4b,c5,c6],"Dashboard · Produção");
   carScroll("car-prod");
 }
 // edição dos recordes e da meta
