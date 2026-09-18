@@ -660,6 +660,13 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
   #print .ptab tr{display:table-row!important;background:none!important;border:none!important;box-shadow:none!important;margin:0!important;padding:0!important}
   #print .ptab th,#print .ptab td{display:table-cell!important;width:auto!important}
   #print .ptab th::before,#print .ptab td::before{content:none!important}
+  /* restaura a tabela da OC (.pordtab) e do modal (.htab) na impressão — evita empilhar como no celular */
+  #print .pordtab,#print .htab{display:table!important;width:100%!important}
+  #print .pordtab thead,#print .htab thead{display:table-header-group!important}
+  #print .pordtab tbody,#print .htab tbody{display:table-row-group!important}
+  #print .pordtab tr,#print .htab tr{display:table-row!important;width:auto!important}
+  #print .pordtab th,#print .pordtab td,#print .htab th,#print .htab td{display:table-cell!important;width:auto!important}
+  #print .pordtab th::before,#print .pordtab td::before,#print .htab th::before,#print .htab td::before{content:none!important}
   #print .ptotal{display:flex;justify-content:space-between;align-items:center;background:#f6f7f9;border-radius:10px;padding:16px 18px;margin-top:16px}
   #print .ptotal span{font-size:14px;color:#111;font-weight:700}
   #print .ptotal b{font-size:24px;font-weight:800;color:#000}
@@ -697,7 +704,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v113 · dados salvos neste aparelho</div>
+    <div class="foot">v114 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
