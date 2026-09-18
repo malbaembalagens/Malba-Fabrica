@@ -705,7 +705,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v116 · dados salvos neste aparelho</div>
+    <div class="foot">v118 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -2396,7 +2396,7 @@ function renderOC(){
     <td class="num">${brl(ocTotais(o).total)}</td>
     <td class="devacts">
       <button class="ic-btn ed" onclick="ocDetalhes('${o.id}')" title="Detalhes">👁️</button>
-      <button class="ic-btn pdf" onclick="ocPDF('${o.id}')" title="PDF da ordem">📄</button>
+      <button class="ic-btn pdf" onclick="ocBaixarPDF('${o.id}')" title="PDF da ordem">📄</button>
       ${ ehGestor() ? `<button class="ic-btn mail" onclick="enviarOCEmail('${o.id}')" title="Enviar OC por e-mail">📧</button>` : "" }
       ${ ehGestor() ? `<button class="ic-btn bling ${o.blingIntegrado?"done":""}" onclick="integrarBling('${o.id}')" title="${o.blingIntegrado?("Integrado ao Bling nº "+(o.blingId||"?")+" — clique p/ reenviar"):"Integrar com o Bling"}">${o.blingIntegrado?"✅":"🔗"}</button>` : "" }
       <button class="ic-btn ${podeReceber?"ok":""}" onclick="abrirReceber('${o.id}')" title="${podeReceber?"Dar entrada (receber)":"Reabrir recebimento"}">${podeReceber?"✓":"↩︎"}</button>
@@ -2432,7 +2432,7 @@ function ocDetalhes(id){
       <div>IPI (3,25%): <b>${brl(ocTotais(o).ipi)}</b></div>
       <div class="octot-final">Total: <b>${brl(ocTotais(o).total)}</b></div>
     </div>
-    <div class="modal-foot"><button class="btnghost" onclick="ocPDF('${o.id}')">📄 PDF</button><button class="btnprim" onclick="closeOcModal()">Fechar</button></div>
+    <div class="modal-foot"><button class="btnghost" onclick="ocBaixarPDF('${o.id}')">📄 PDF</button><button class="btnprim" onclick="closeOcModal()">Fechar</button></div>
   </div>`;
   $("ocmodal").style.display="flex";
 }
@@ -2525,9 +2525,9 @@ function carregarJsPDF(){
     document.head.appendChild(s1);
   });
 }
-function ocGerarPDFBase64(o){
-  const { jsPDF }=window.jspdf; const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"}); const emp=empresaOC(o);
-  const W=297, H=210, M=14;
+function ocMontarDoc(o){
+  const { jsPDF }=window.jspdf; const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"}); const emp=empresaOC(o);
+  const W=210, H=297, M=14;
   const ink=[23,21,15], kraft=[168,120,63], paper=[242,238,230], amareloA=[242,211,116], escuroM=[22,30,42];
   // faixa de topo
   doc.setFillColor(paper[0],paper[1],paper[2]); doc.rect(0,0,W,32,"F");
@@ -2578,7 +2578,13 @@ function ocGerarPDFBase64(o){
   // rodapé
   doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(150,150,150);
   doc.text(emp.nome+(emp.cnpj?" · CNPJ "+emp.cnpj:"")+" · Ordem de compra", W/2, H-8, {align:"center"});
-  return doc.output("datauristring").split(",")[1];
+  return doc;
+}
+function ocGerarPDFBase64(o){ return ocMontarDoc(o).output("datauristring").split(",")[1]; }
+async function ocBaixarPDF(id){
+  const o=ordens.find(x=>x.id===id); if(!o){ alert("OC não encontrada."); return; }
+  try{ await carregarJsPDF(); const doc=ocMontarDoc(o); doc.save("OC-"+o.id+".pdf"); }
+  catch(e){ alert("❌ "+(e.message||e)); }
 }
 async function enviarOCEmail(id){
   const o=ordens.find(x=>x.id===id); if(!o){ alert("OC não encontrada."); return; }
