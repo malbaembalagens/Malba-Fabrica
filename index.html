@@ -2526,8 +2526,8 @@ function carregarJsPDF(){
   });
 }
 function ocMontarDoc(o){
-  const { jsPDF }=window.jspdf; const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"}); const emp=empresaOC(o);
-  const W=210, H=297, M=14;
+  const { jsPDF }=window.jspdf; const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"}); const emp=empresaOC(o);
+  const W=297, H=210, M=14;
   const ink=[23,21,15], kraft=[168,120,63], paper=[242,238,230], amareloA=[242,211,116], escuroM=[22,30,42];
   // faixa de topo
   doc.setFillColor(paper[0],paper[1],paper[2]); doc.rect(0,0,W,32,"F");
