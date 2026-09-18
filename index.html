@@ -2525,8 +2525,8 @@ function carregarJsPDF(){
   });
 }
 function ocMontarDoc(o){
-  const { jsPDF }=window.jspdf; const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"}); const emp=empresaOC(o);
-  const W=297, H=210, M=14;
+  const { jsPDF }=window.jspdf; const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"}); const emp=empresaOC(o);
+  const W=210, H=297, M=14;
   const ink=[23,21,15], kraft=[168,120,63], paper=[242,238,230], amareloA=[242,211,116], escuroM=[22,30,42];
   // faixa de topo
   doc.setFillColor(paper[0],paper[1],paper[2]); doc.rect(0,0,W,32,"F");
@@ -2551,18 +2551,17 @@ function ocMontarDoc(o){
   const body=(o.itens||[]).map(i=>[
     i.sku||"—",
     (i.ondaNome||"")+(i.gram?" · "+i.gram+" g/m²":""),
-    (i.c+" x "+i.l+" x "+i.a+" mm"),
     (i.chapaLarg+" x "+i.chapaComp+" mm"),
     ((i.vincos||[]).map(v=>+v||0).join(" | ")||"—"),
     (+i.qtd||0).toLocaleString("pt-BR"),
     brl(i.custoUnit||0),
     brl(i.valor||0)
   ]);
-  doc.autoTable({ startY:53, head:[["SKU","Qualidade","Caixa (C x L x A)","Chapa (L x C)","Vincos","Qtd","Valor un.","Total"]], body,
+  doc.autoTable({ startY:53, head:[["SKU","Qualidade","Chapa (L x C)","Vincos","Qtd","Valor un.","Total"]], body,
     styles:{fontSize:9,cellPadding:2.5,textColor:[45,45,45]},
     headStyles:{fillColor:ink,textColor:[255,255,255],fontStyle:"bold"},
     alternateRowStyles:{fillColor:[248,246,242]},
-    columnStyles:{5:{halign:"right"},6:{halign:"right"},7:{halign:"right"}},
+    columnStyles:{4:{halign:"right"},5:{halign:"right"},6:{halign:"right"}},
     margin:{left:M,right:M} });
   const t=ocTotais(o); let y=(doc.lastAutoTable?doc.lastAutoTable.finalY:70)+10;
   if(y>H-42) y=H-42;
