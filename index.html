@@ -614,6 +614,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
   @page{margin:14mm}
   *,*::before,*::after{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
   .app{display:none}
+  .modal-wrap,.scrim,.drawer{display:none!important}   /* esconde o modal/overlays: só o #print sai na folha */
   /* fallback sólido caso o gradiente não saia na impressão */
   #print .colbar,#print .barfill{background:#2b7fff!important}
   #print .colbar.acab{background:#1f9d57!important}
@@ -704,7 +705,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
-    <div class="foot">v115 · dados salvos neste aparelho</div>
+    <div class="foot">v116 · dados salvos neste aparelho</div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
