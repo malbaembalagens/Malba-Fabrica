@@ -2571,8 +2571,7 @@ function ocMontarDoc(o){
   doc.text("Peso total", bx, y); doc.text((+o.peso||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})+" kg", bx+bw, y, {align:"right"});
   doc.text("Subtotal", bx, y+6); doc.text(brl(t.sub), bx+bw, y+6, {align:"right"});
   doc.text("IPI (3,25%)", bx, y+12); doc.text(brl(t.ipi), bx+bw, y+12, {align:"right"});
-  doc.setFillColor(ink[0],ink[1],ink[2]); doc.roundedRect(bx-4, y+16, bw+8, 11, 1.5,1.5,"F");
-  doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(11);
+  doc.setTextColor(ink[0],ink[1],ink[2]); doc.setFont("helvetica","bold"); doc.setFontSize(11);
   doc.text("Total", bx, y+23); doc.text(brl(t.total), bx+bw, y+23, {align:"right"});
   // rodapé
   doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(150,150,150);
