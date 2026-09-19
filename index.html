@@ -2021,6 +2021,7 @@ function render(){
         <button onclick="editar(${o.id})">✏️ Editar</button>
         <button onclick="imprimir(${o.id})">📄 PDF</button>
         ${aprov?`<button class="rp" onclick="mudarStatus(${o.id},'pendente')">↩︎ Reabrir</button>`:`<button class="ap" onclick="mudarStatus(${o.id},'aprovado')">✓ Aprovar</button>`}
+        <button onclick="abrirAmostraOrc(${o.id})">🧪 Amostra</button>
         <button class="dl" onclick="excluir(${o.id})">🗑️</button>
       </div></td></tr>`;
   }).join("");
@@ -3607,34 +3608,40 @@ function renderTerc(){
 }
 
 // ---------- Amostras ----------
-function amostraItensDisponiveis(){
-  return (typeof itensAtuais!=="undefined"?itensAtuais:[]).map((it,i)=>({i,it})).filter(x=>x.it && x.it.tipo!=="avulso");
-}
+let amostraCtx={itens:[],cliente:"",vendedor:""};
 function abrirAmostraModal(){
-  const disp=amostraItensDisponiveis();
-  if(!disp.length){ alert("Adicione ao menos um produto ao orçamento antes de solicitar amostra."); return; }
-  const linhas=disp.map(x=>{
-    const it=x.it;
-    const med=(it.c||0)+"×"+(it.l||0)+(it.a?("×"+it.a):"")+" mm";
-    const tec=[it.ondaNome||"", it.gram?(it.gram+" g/m²"):""].filter(Boolean).join(" · ");
-    return `<label class="amo-pick"><input type="checkbox" class="amo-it" value="${x.i}" checked>
-      <span><b>${esc(it.sku||it.produto||("Produto "+(x.i+1)))}</b><small>${esc(med)}${tec?(" · "+esc(tec)):""}</small></span></label>`;
+  const itens=(typeof itensAtuais!=="undefined"?itensAtuais:[]).filter(it=>it&&it.tipo!=="avulso");
+  if(!itens.length){ alert("Adicione ao menos um produto ao orçamento antes de solicitar amostra."); return; }
+  amostraCtx={ itens, cliente:($("f-cliente")&&$("f-cliente").value)||"", vendedor:($("f-vendedor")&&$("f-vendedor").value)||"" };
+  _renderAmostraModal();
+}
+function abrirAmostraOrc(id){
+  const o=orcamentos.find(x=>x.id===id); if(!o){ alert("Orçamento não encontrado."); return; }
+  const itens=(o.itens||[]).filter(it=>it&&it.tipo!=="avulso");
+  if(!itens.length){ alert("Este orçamento não tem produtos para amostrar."); return; }
+  amostraCtx={ itens, cliente:o.cliente||"", vendedor:o.vendedor||"" };
+  _renderAmostraModal();
+}
+function _renderAmostraModal(){
+  const linhas=amostraCtx.itens.map((it,i)=>{
+    const med=(it.c||0)+"\u00d7"+(it.l||0)+(it.a?("\u00d7"+it.a):"")+" mm";
+    const tec=[it.ondaNome||"", it.gram?(it.gram+" g/m\u00b2"):""].filter(Boolean).join(" \u00b7 ");
+    return `<label class="amo-pick"><input type="checkbox" class="amo-it" value="${i}" checked>
+      <span><b>${esc(it.sku||it.produto||("Produto "+(i+1)))}</b><small>${esc(med)}${tec?(" \u00b7 "+esc(tec)):""}</small></span></label>`;
   }).join("");
-  const cli=($("f-cliente")&&$("f-cliente").value)||"";
-  const vend=($("f-vendedor")&&$("f-vendedor").value)||"";
   $("ocmodal").innerHTML=`<div class="modal-card">
     <h3 class="modal-h">Deseja solicitar amostra?</h3>
     <div class="modal-sec">Itens para fabricar amostra</div>
     <div class="amo-list">${linhas}</div>
-    <div class="modal-sec" style="margin-top:16px">Endereço de entrega da amostra</div>
+    <div class="modal-sec" style="margin-top:16px">Endere\u00e7o de entrega da amostra</div>
     <div class="grid g2">
       <div class="field" style="grid-column:1/-1"><label>Rua</label><input id="amo-rua" placeholder="Rua / Avenida"></div>
-      <div class="field"><label>Número</label><input id="amo-num" placeholder="Nº"></div>
+      <div class="field"><label>N\u00famero</label><input id="amo-num" placeholder="N\u00ba"></div>
       <div class="field"><label>CEP</label><input id="amo-cep" placeholder="00000-000"></div>
       <div class="field"><label>Bairro</label><input id="amo-bairro" placeholder="Bairro"></div>
-      <div class="field"><label>Complemento</label><input id="amo-compl" placeholder="Apto, bloco, referência"></div>
+      <div class="field"><label>Complemento</label><input id="amo-compl" placeholder="Apto, bloco, refer\u00eancia"></div>
     </div>
-    <input type="hidden" id="amo-cli" value="${esc(cli)}"><input type="hidden" id="amo-vend" value="${esc(vend)}">
+    <input type="hidden" id="amo-cli" value="${esc(amostraCtx.cliente)}"><input type="hidden" id="amo-vend" value="${esc(amostraCtx.vendedor)}">
     <div class="modal-foot"><button class="btnlink" onclick="closeOcModal()">Cancelar</button><button class="btnprim" onclick="confirmarAmostra()">Solicitar amostra</button></div>
   </div>`;
   $("ocmodal").style.display="flex";
@@ -3642,7 +3649,7 @@ function abrirAmostraModal(){
 function confirmarAmostra(){
   const sel=[...document.querySelectorAll(".amo-it:checked")].map(c=>+c.value);
   if(!sel.length){ alert("Selecione ao menos um item."); return; }
-  const itens=sel.map(i=>{ const it=itensAtuais[i]||{}; return {
+  const itens=sel.map(i=>{ const it=amostraCtx.itens[i]||{}; return {
     sku:it.sku||"", produto:it.produto||"", c:it.c||0, l:it.l||0, a:it.a||0,
     ondaNome:it.ondaNome||"", gram:it.gram||0,
     chapaLarg:it.chapaLarg||"", chapaComp:it.chapaComp||"",
