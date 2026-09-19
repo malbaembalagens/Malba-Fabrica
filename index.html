@@ -407,6 +407,48 @@ tbody tr:hover{background:var(--surface-2)}
 .modal-meta .mv{font-weight:700;font-size:14px}
 .modal-sec{font-weight:800;font-size:14px;margin-bottom:10px}
 .modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+/* Amostras */
+.amo-list{display:flex;flex-direction:column;gap:8px}
+.amo-pick{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;cursor:pointer}
+.amo-pick input{width:18px;height:18px}
+.amo-pick span{display:flex;flex-direction:column}
+.amo-pick small{color:var(--muted-2);font-size:12px}
+.amo-search{margin-bottom:14px}
+.amo-search input{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:12px;font-size:15px}
+.amo-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.amo-cols{grid-template-columns:1fr}}
+.amo-col-h{font-weight:800;font-size:15px;padding:10px 12px;border-radius:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.amo-col-h span{background:rgba(0,0,0,.08);border-radius:20px;padding:1px 10px;font-size:13px}
+.amo-col-h.afazer{background:#fff3e0;color:#b45c00}
+.amo-col-h.feita{background:#e7f6ec;color:#1a7f3c}
+.amo-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px}
+.amo-card.done{opacity:.82}
+.amo-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.amo-head small{color:var(--muted-2)}
+.amo-date{font-size:12px;color:var(--muted-2)}
+.amo-item{border-top:1px dashed var(--border);padding:8px 0}
+.amo-item:first-child{border-top:none}
+.amo-item-sku{font-weight:800;margin-bottom:3px}
+.amo-item-tec{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--muted-2)}
+.amo-end{margin-top:10px;font-size:13px;background:rgba(0,0,0,.04);border-radius:10px;padding:8px 10px}
+.amo-end.muted{color:var(--muted-2)}
+.amo-btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.amo-empty{color:var(--muted-2);text-align:center;padding:26px;border:1px dashed var(--border);border-radius:12px}
+@media print{
+  #print .etiqueta{gap:0;min-height:auto;padding:0;font-size:13px}
+  #print .et-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  #print .et-tag{background:#111;color:#fff;font-weight:800;font-size:14px;padding:2px 10px;border-radius:6px;letter-spacing:1px}
+  #print .et-date{font-size:12px;color:#555}
+  #print .et-cli{font-size:18px;font-weight:800;line-height:1.1}
+  #print .et-vend{font-size:12px;color:#555;margin-bottom:6px}
+  #print .et-item{border-top:1px solid #000;padding:6px 0}
+  #print .et-sku{font-weight:800;font-size:15px;margin-bottom:3px}
+  #print .et-row{display:flex;justify-content:space-between;font-size:12.5px;padding:1px 0}
+  #print .et-row span{color:#555}
+  #print .et-end{margin-top:8px;border-top:1px solid #000;padding-top:6px;font-size:12.5px}
+  #print .et-end span{display:block;font-weight:800;font-size:11px;letter-spacing:.5px;color:#555}
+  #print .et-foot{margin-top:auto;padding-top:8px;text-align:center;font-size:10px;color:#888}
+}
 /* PDF ordem */
 #print .pordtab{width:100%;border-collapse:collapse;margin-top:14px;font-size:11px}
 #print .pordtab th{text-align:left;border-bottom:1px solid #e6e8ec;padding:8px 6px;font-size:10px;text-transform:uppercase;color:#6b7280;font-weight:700}
@@ -849,6 +891,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
         <button class="rail-btn only-gestor" onclick="railOpen('tpm')" title="TPM"><span class="ri">🔧</span><small>TPM</small></button>
         <button class="rail-btn only-gestor" onclick="railOpen('base')" title="Base de dados"><span class="ri">📁</span><small>Base</small></button>
         <button class="rail-btn" onclick="railOpen('dashboard')" title="Dashboards"><span class="ri">📊</span><small>Dashboards</small></button>
+        <button class="rail-btn" onclick="railOpen('amostras')" title="Amostras"><span class="ri">🧪</span><small>Amostras</small></button>
       </nav>
       <aside class="drawer">
         <div class="drawer-head"><span id="gestor-drawer-title">Gestor</span> <button class="menucollapse" onclick="toggleDeskMenu()" title="Recolher menu">«</button></div>
@@ -878,6 +921,10 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
           <button class="navitem subitem" data-v="dash-pcp" onclick="irViewG('dash-pcp')">PCP</button>
           <button class="navitem subitem only-gestor" data-v="dash-vendas" onclick="irViewG('dash-vendas')">Vendas</button>
         </div>
+        <button class="navgroup collapsed" data-g="amostras" onclick="toggleGroup(this)">🧪 Amostras <span class="chev">▾</span></button>
+        <div class="navsub collapsed">
+          <button class="navitem subitem" data-v="amostras" onclick="irViewG('amostras')">Quadro de amostras</button>
+        </div>
         <button class="navgroup collapsed only-gestor" data-g="opcoes" onclick="toggleGroup(this)">⚙️ Opções <span class="chev">▾</span></button>
         <div class="navsub collapsed only-gestor">
           <button class="navitem subitem only-gestor" data-v="opc-fornecedores" onclick="irViewG('opc-fornecedores')">Integrações</button>
@@ -887,6 +934,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <main class="content">
         <div class="vview" id="gview-dash-prod" style="display:none"><h2 class="viewtitle">Dashboard · Produção</h2><div id="dashprod-c"></div></div>
         <div class="vview" id="gview-dash-pcp" style="display:none"><h2 class="viewtitle">PCP · Planejamento e Controle</h2><div id="pcp-box"></div></div>
+        <div class="vview" id="gview-amostras" style="display:none"><h2 class="viewtitle">Amostras</h2><div id="amostras-box"></div></div>
         <div class="vview" id="gview-dash-agenda" style="display:none"><h2 class="viewtitle">Agenda de Ordens de Compra</h2><div id="agenda-c"></div></div>
         <div class="vview" id="gview-opc-fornecedores" style="display:none"><h2 class="viewtitle">Opções · Integrações</h2><div id="opcforn-box"></div></div>
 
@@ -1054,6 +1102,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
     <div id="itens"></div>
     <button class="newprod" onclick="novoProduto()">＋ Novo produto</button>
     <button class="linkbtn" onclick="toggleAvulso()">＋ Adicionar item avulso (frete, clichê, faca)</button>
+    <button class="linkbtn" onclick="abrirAmostraModal()">🧪 Solicitar amostra</button>
     <div id="avulso-box" style="display:none">
       <div class="formcard"><div class="grid g3">
         <div class="field" style="grid-column:1/-1"><label>Descrição</label><input id="a-desc" placeholder="Ex.: Frete"></div>
@@ -1146,7 +1195,7 @@ const DEF_ONDAS = [
   { nome:"Onda TT", gramaturas:[470],         comp:compPadrao("Onda TT") },
 ];
 
-const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1", oms:"malba_os_oms_v1" };
+const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1", oms:"malba_os_oms_v1", amostras:"malba_os_amostras_v1" };
 
 // util
 function carregar(k,def){ try{ const v=JSON.parse(localStorage.getItem(k)); return (v===null||v===undefined)?def:v }catch(e){ return def } }
@@ -1183,6 +1232,7 @@ let compras = carregar(LS.compras, []);
 let ocTab="nao", ocPage=1, ocForm=null;
 let agendaRef=hojeStr(), agendaView="mensal";
 let producao = carregar(LS.prodflow, []);
+let amostras = carregar(LS.amostras, []);
 const DEFAULT_RECORDS = {
   coladeira:{ pesoVal:"3,39 ton", pesoData:"13/01/2026", pesoNomes:"Luzimar, Helenice e Jonathan", qtdVal:"38550 un", qtdData:"15/01/2026", qtdNomes:"Luzimar, Helenice e Jonathan" },
   impressora:{ pesoVal:"", pesoData:"", pesoNomes:"", qtdVal:"40118 un", qtdData:"15/01/2026", qtdNomes:"João e Ahmet" },
@@ -1891,6 +1941,7 @@ function irViewG(v){
   else if(v==="cad-vendedores") renderVendedores("g");
   else if(v==="cad-ondas") renderOndas("g");
   else if(v==="dash-pcp") renderPCP();
+  else if(v==="amostras") renderAmostras();
   window.scrollTo(0,0);
 }
 
@@ -3511,7 +3562,155 @@ function renderTerc(){
   box.innerHTML=`<div class="tablewrap"><table class="htab">${head}<tbody>${rows}</tbody></table></div>`;
 }
 
-// ---------- Assistente de desenvolvimento (5 etapas) ----------
+// ---------- Amostras ----------
+function amostraItensDisponiveis(){
+  return (typeof itensAtuais!=="undefined"?itensAtuais:[]).map((it,i)=>({i,it})).filter(x=>x.it && x.it.tipo!=="avulso");
+}
+function abrirAmostraModal(){
+  const disp=amostraItensDisponiveis();
+  if(!disp.length){ alert("Adicione ao menos um produto ao orçamento antes de solicitar amostra."); return; }
+  const linhas=disp.map(x=>{
+    const it=x.it;
+    const med=(it.c||0)+"×"+(it.l||0)+(it.a?("×"+it.a):"")+" mm";
+    const tec=[it.ondaNome||"", it.gram?(it.gram+" g/m²"):""].filter(Boolean).join(" · ");
+    return `<label class="amo-pick"><input type="checkbox" class="amo-it" value="${x.i}" checked>
+      <span><b>${esc(it.sku||it.produto||("Produto "+(x.i+1)))}</b><small>${esc(med)}${tec?(" · "+esc(tec)):""}</small></span></label>`;
+  }).join("");
+  const cli=($("f-cliente")&&$("f-cliente").value)||"";
+  const vend=($("f-vendedor")&&$("f-vendedor").value)||"";
+  $("ocmodal").innerHTML=`<div class="modal-card">
+    <h3 class="modal-h">Deseja solicitar amostra?</h3>
+    <div class="modal-sec">Itens para fabricar amostra</div>
+    <div class="amo-list">${linhas}</div>
+    <div class="modal-sec" style="margin-top:16px">Endereço de entrega da amostra</div>
+    <div class="grid g2">
+      <div class="field" style="grid-column:1/-1"><label>Rua</label><input id="amo-rua" placeholder="Rua / Avenida"></div>
+      <div class="field"><label>Número</label><input id="amo-num" placeholder="Nº"></div>
+      <div class="field"><label>CEP</label><input id="amo-cep" placeholder="00000-000"></div>
+      <div class="field"><label>Bairro</label><input id="amo-bairro" placeholder="Bairro"></div>
+      <div class="field"><label>Complemento</label><input id="amo-compl" placeholder="Apto, bloco, referência"></div>
+    </div>
+    <input type="hidden" id="amo-cli" value="${esc(cli)}"><input type="hidden" id="amo-vend" value="${esc(vend)}">
+    <div class="modal-foot"><button class="btnlink" onclick="closeOcModal()">Cancelar</button><button class="btnprim" onclick="confirmarAmostra()">Solicitar amostra</button></div>
+  </div>`;
+  $("ocmodal").style.display="flex";
+}
+function confirmarAmostra(){
+  const sel=[...document.querySelectorAll(".amo-it:checked")].map(c=>+c.value);
+  if(!sel.length){ alert("Selecione ao menos um item."); return; }
+  const itens=sel.map(i=>{ const it=itensAtuais[i]||{}; return {
+    sku:it.sku||"", produto:it.produto||"", c:it.c||0, l:it.l||0, a:it.a||0,
+    ondaNome:it.ondaNome||"", gram:it.gram||0,
+    chapaLarg:it.chapaLarg||"", chapaComp:it.chapaComp||"",
+    vincos:Array.isArray(it.vincos)?it.vincos.slice():[]
+  };});
+  const rec={ id:uid(), criadoEm:new Date().toISOString(), status:"afazer", concluidoEm:null,
+    cliente:($("amo-cli")?$("amo-cli").value:""), vendedor:($("amo-vend")?$("amo-vend").value:""),
+    endereco:{ rua:val("amo-rua"), numero:val("amo-num"), cep:val("amo-cep"), bairro:val("amo-bairro"), complemento:val("amo-compl") },
+    itens };
+  amostras.push(rec); salvar(LS.amostras, amostras); closeOcModal();
+  alert("✅ Amostra solicitada! Ela já aparece no quadro de Amostras.");
+}
+function val(id){ const e=$(id); return e?e.value.trim():""; }
+function concluirAmostra(id){
+  const a=amostras.find(x=>x.id===id); if(!a) return;
+  a.status="concluida"; a.concluidoEm=new Date().toISOString();
+  salvar(LS.amostras, amostras); renderAmostras();
+}
+function reabrirAmostra(id){
+  const a=amostras.find(x=>x.id===id); if(!a) return;
+  a.status="afazer"; a.concluidoEm=null; salvar(LS.amostras, amostras); renderAmostras();
+}
+function excluirAmostra(id){
+  if(!confirm("Excluir esta amostra?")) return;
+  amostras=amostras.filter(x=>x.id!==id); salvar(LS.amostras, amostras); renderAmostras();
+}
+function amostraEndTxt(e){
+  if(!e) return "";
+  const l1=[e.rua, e.numero].filter(Boolean).join(", ");
+  const l2=[e.bairro, e.cep].filter(Boolean).join(" · ");
+  return [l1, e.complemento, l2].filter(Boolean).join(" — ");
+}
+function renderAmostras(){
+  const box=$("amostras-box"); if(!box) return;
+  const busca=(val("amostra-busca")||"").toLowerCase();
+  const match=a=>{ if(!busca) return true;
+    const txt=[a.cliente, a.vendedor, ...(a.itens||[]).map(i=>i.sku+" "+i.produto+" "+i.ondaNome)].join(" ").toLowerCase();
+    return txt.includes(busca); };
+  const afazer=amostras.filter(a=>a.status!=="concluida" && match(a)).sort((x,y)=>(x.criadoEm||"").localeCompare(y.criadoEm||""));
+  const feitas=amostras.filter(a=>a.status==="concluida" && match(a)).sort((x,y)=>(y.concluidoEm||"").localeCompare(x.concluidoEm||""));
+  const card=(a,done)=>{
+    const itens=(a.itens||[]).map(i=>{
+      const med=(i.c||0)+"×"+(i.l||0)+(i.a?("×"+i.a):"")+" mm";
+      const chapa=(i.chapaLarg&&i.chapaComp)?(i.chapaLarg+" × "+i.chapaComp+" mm"):"";
+      const vinc=(i.vincos&&i.vincos.length)?i.vincos.map(v=>+v||0).join(" | "):"";
+      return `<div class="amo-item">
+        <div class="amo-item-sku">${esc(i.sku||i.produto||"—")}</div>
+        <div class="amo-item-tec">
+          <span>Onda: <b>${esc(i.ondaNome||"—")}</b></span>
+          <span>Gramatura: <b>${i.gram?esc(i.gram+" g/m²"):"—"}</b></span>
+          <span>Caixa: <b>${esc(med)}</b></span>
+          ${chapa?`<span>Chapa: <b>${esc(chapa)}</b></span>`:""}
+          ${vinc?`<span>Vincos: <b>${esc(vinc)}</b></span>`:""}
+        </div></div>`;
+    }).join("");
+    const end=amostraEndTxt(a.endereco);
+    return `<div class="amo-card ${done?"done":""}">
+      <div class="amo-head">
+        <div><b>${esc(a.cliente||"Cliente não informado")}</b>${a.vendedor?`<small> · ${esc(a.vendedor)}</small>`:""}</div>
+        <div class="amo-date">${a.criadoEm?fmtData(a.criadoEm):""}</div>
+      </div>
+      <div class="amo-itens">${itens}</div>
+      ${end?`<div class="amo-end">📍 ${esc(end)}</div>`:`<div class="amo-end muted">Sem endereço informado</div>`}
+      <div class="amo-btns">
+        <button class="btnghost" onclick="imprimirEtiquetaAmostra('${a.id}')">🏷️ Etiqueta 100×150</button>
+        ${done
+          ? `<button class="btnlink" onclick="reabrirAmostra('${a.id}')">↩︎ Reabrir</button>`
+          : `<button class="btnprim" onclick="concluirAmostra('${a.id}')">✔ Concluir amostra</button>`}
+        <button class="btnlink" onclick="excluirAmostra('${a.id}')" title="Excluir">🗑️</button>
+      </div>
+    </div>`;
+  };
+  const colHtml=(arr,done)=> arr.length? arr.map(a=>card(a,done)).join("") : `<div class="amo-empty">Nenhuma amostra aqui.</div>`;
+  box.innerHTML=`
+    <div class="amo-search"><input id="amostra-busca" placeholder="🔎 Buscar por cliente, vendedor ou SKU" oninput="renderAmostras()" value="${esc(busca)}"></div>
+    <div class="amo-cols">
+      <div class="amo-col"><div class="amo-col-h afazer">🛠️ A fazer <span>${afazer.length}</span></div>${colHtml(afazer,false)}</div>
+      <div class="amo-col"><div class="amo-col-h feita">✅ Concluídas <span>${feitas.length}</span></div>${colHtml(feitas,true)}</div>
+    </div>`;
+  const inp=$("amostra-busca"); if(inp && busca){ inp.focus(); inp.setSelectionRange(inp.value.length,inp.value.length); }
+}
+function imprimirEtiquetaAmostra(id){
+  const a=amostras.find(x=>x.id===id); if(!a){ alert("Amostra não encontrada."); return; }
+  const end=amostraEndTxt(a.endereco);
+  const itensHtml=(a.itens||[]).map(i=>{
+    const med=(i.c||0)+"×"+(i.l||0)+(i.a?("×"+i.a):"")+" mm";
+    const chapa=(i.chapaLarg&&i.chapaComp)?(i.chapaLarg+" × "+i.chapaComp+" mm"):"";
+    const vinc=(i.vincos&&i.vincos.length)?i.vincos.map(v=>+v||0).join(" | "):"";
+    return `<div class="et-item">
+      <div class="et-sku">${esc(i.sku||i.produto||"—")}</div>
+      <div class="et-row"><span>Onda</span><b>${esc(i.ondaNome||"—")}</b></div>
+      <div class="et-row"><span>Gramatura</span><b>${i.gram?esc(i.gram+" g/m²"):"—"}</b></div>
+      <div class="et-row"><span>Caixa</span><b>${esc(med)}</b></div>
+      ${chapa?`<div class="et-row"><span>Chapa</span><b>${esc(chapa)}</b></div>`:""}
+      ${vinc?`<div class="et-row"><span>Vincos</span><b>${esc(vinc)}</b></div>`:""}
+    </div>`;
+  }).join("");
+  const st=document.createElement("style"); st.id="et-size";
+  st.textContent="@media print{@page{size:100mm 150mm;margin:4mm}}";
+  document.head.appendChild(st);
+  $("print").innerHTML=`<div class="etiqueta">
+    <div class="et-top"><span class="et-tag">AMOSTRA</span><span class="et-date">${a.criadoEm?fmtData(a.criadoEm):""}</span></div>
+    <div class="et-cli">${esc(a.cliente||"—")}</div>
+    ${a.vendedor?`<div class="et-vend">Vendedor: ${esc(a.vendedor)}</div>`:""}
+    <div class="et-itens">${itensHtml}</div>
+    ${end?`<div class="et-end"><span>Entrega</span>${esc(end)}</div>`:""}
+    <div class="et-foot">MALBA Fábrica · Amostra</div>
+  </div>`;
+  window.print();
+  setTimeout(()=>{ const s=$("et-size"); if(s) s.remove(); $("print").innerHTML=""; },600);
+}
+
 const DEV_LABELS=["Conferências","Critérios","Compensações","Chapa","Clichê"];
 function abrirDesenvWizard(key){
   const x=devItems().find(d=>d.key===key); if(!x) return;
