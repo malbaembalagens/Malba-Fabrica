@@ -791,6 +791,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
     <div class="topbar">
       <button class="back" onclick="irPerfis()">‹</button>
       <div class="tt"><small>MALBA Fábrica</small><h2>Vendas</h2></div>
+      <button id="vend-sair-btn" onclick="sairVend()" style="display:none;margin-left:auto;border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:8px 14px;font-size:14px;cursor:pointer">Sair ⎋</button>
     </div>
     <div class="vlayout">
       <div class="scrim" onclick="closeDrawer()"></div>
@@ -1233,6 +1234,9 @@ let ocTab="nao", ocPage=1, ocForm=null;
 let agendaRef=hojeStr(), agendaView="mensal";
 let producao = carregar(LS.prodflow, []);
 let amostras = carregar(LS.amostras, []);
+let vendedorLogado = localStorage.getItem("malba_os_vend_sessao")||"";
+function primeiroNome(n){ return (String(n||"").trim().split(/\s+/)[0]||"").toLowerCase(); }
+function vendSenha(v){ return (v&&v.senha)?String(v.senha):primeiroNome(v&&v.nome); }
 const DEFAULT_RECORDS = {
   coladeira:{ pesoVal:"3,39 ton", pesoData:"13/01/2026", pesoNomes:"Luzimar, Helenice e Jonathan", qtdVal:"38550 un", qtdData:"15/01/2026", qtdNomes:"Luzimar, Helenice e Jonathan" },
   impressora:{ pesoVal:"", pesoData:"", pesoNomes:"", qtdVal:"40118 un", qtdData:"15/01/2026", qtdNomes:"João e Ahmet" },
@@ -1878,7 +1882,45 @@ function calcCaixa(c,l,a,onda){
 // navegação
 function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on")); $(id).classList.add("on"); window.scrollTo(0,0); }
 function irPerfis(){ show("tela-perfis"); }
-function abrirVendas(){ show("tela-vendas"); irView("orcamentos"); }
+function abrirVendas(){ if(!vendedorLogado){ abrirVendaLogin(); return; } show("tela-vendas"); marcarVendLogado(); irView("orcamentos"); }
+function abrirVendaLogin(){
+  if(!vendedores.length){ alert("Nenhum vendedor cadastrado. Peça ao gestor para cadastrar."); return; }
+  const opts=vendedores.map(v=>`<option value="${esc(v.nome)}">${esc(v.nome)}</option>`).join("");
+  $("ocmodal").innerHTML=`<div class="modal-card" style="max-width:380px">
+    <h3 class="modal-h">Entrar · Vendas</h3>
+    <div class="field"><label>Vendedor</label><select id="login-vend">${opts}</select></div>
+    <div class="field" style="margin-top:12px"><label>Senha</label><input id="login-senha" type="password" placeholder="Sua senha" onkeydown="if(event.key==='Enter')fazerLoginVend()"></div>
+    <div id="login-erro" style="color:#d92d20;font-size:13px;margin-top:8px;display:none"></div>
+    <div class="modal-foot"><button class="btnlink" onclick="closeOcModal()">Cancelar</button><button class="btnprim" onclick="fazerLoginVend()">Entrar</button></div>
+    <div style="text-align:center;margin-top:10px"><button class="btnlink" style="font-size:12px" onclick="loginGestorVendas()">🔓 Entrar como gestor (ver todos)</button></div>
+  </div>`;
+  $("ocmodal").style.display="flex";
+  setTimeout(()=>{ const s=$("login-senha"); if(s) s.focus(); },50);
+}
+function loginGestorVendas(){
+  vendedorLogado=""; try{ localStorage.removeItem("malba_os_vend_sessao"); }catch(e){}
+  closeOcModal(); show("tela-vendas"); marcarVendLogado(); irView("orcamentos");
+}
+function fazerLoginVend(){
+  const nome=$("login-vend")?$("login-vend").value:""; const senha=$("login-senha")?$("login-senha").value:"";
+  const v=vendedores.find(x=>x.nome===nome);
+  if(!v || senha!==vendSenha(v)){ const e=$("login-erro"); if(e){ e.textContent="Senha incorreta."; e.style.display="block"; } return; }
+  vendedorLogado=nome; try{ localStorage.setItem("malba_os_vend_sessao", nome); }catch(e){}
+  closeOcModal(); show("tela-vendas"); marcarVendLogado(); irView("orcamentos");
+}
+function sairVend(){ vendedorLogado=""; try{ localStorage.removeItem("malba_os_vend_sessao"); }catch(e){} irPerfis(); }
+function marcarVendLogado(){
+  const tt=document.querySelector("#tela-vendas .topbar .tt small");
+  if(tt) tt.textContent = vendedorLogado ? ("Vendedor · "+vendedorLogado) : "MALBA Fábrica";
+  const btn=$("vend-sair-btn"); if(btn) btn.style.display = vendedorLogado ? "inline-flex" : "none";
+}
+function mudarSenhaVend(i,scope){
+  const v=vendedores[i]; if(!v) return;
+  const nova=prompt("Nova senha para "+v.nome+":", vendSenha(v)); if(nova==null) return;
+  const t=nova.trim(); if(!t){ alert("A senha não pode ficar vazia."); return; }
+  v.senha=t; salvar(LS.vend,vendedores); renderVendedores(scope);
+  alert("Senha de "+v.nome+" atualizada.");
+}
 function toggleSide(){ const v=document.querySelector(".screen.on .vlayout"); if(v) v.classList.toggle("sidehidden"); }
 function toggleGroup(el){ const sub=el.nextElementSibling; if(sub&&sub.classList.contains("navsub")){ sub.classList.toggle("collapsed"); el.classList.toggle("collapsed"); } }
 function openDrawer(){ const v=document.querySelector(".screen.on .vlayout"); if(v) v.classList.add("menuopen"); }
@@ -1955,11 +1997,13 @@ function dentroFiltro(iso){
 }
 function render(){
   const fm=$("filtro-mes"); if(fm) popularMeses(fm, fm.value);
-  $("cont-pend").textContent  = orcamentos.filter(o=>o.status==="pendente").length;
-  $("cont-aprov").textContent = orcamentos.filter(o=>o.status==="aprovado").length;
+  const meu=o=> !vendedorLogado || o.vendedor===vendedorLogado;
+  $("cont-pend").textContent  = orcamentos.filter(o=>meu(o)&&o.status==="pendente").length;
+  $("cont-aprov").textContent = orcamentos.filter(o=>meu(o)&&o.status==="aprovado").length;
   const busca=($("busca").value||"").toLowerCase().trim();
   const ym=fm?fm.value:"all";
   let lst=orcamentos.filter(o=>o.status===tab)
+    .filter(meu)
     .filter(o=> ym==="all" || o.data.slice(0,7)===ym)
     .filter(o=>dentroFiltro(o.data))
     .filter(o=>!busca || (o.cliente||"").toLowerCase().includes(busca) || String(o.id).includes(busca))
@@ -2001,10 +2045,10 @@ function delCliente(i,scope){ if(confirm("Remover cliente?")){ clientes.splice(i
 // ---------- Cadastro: Vendedores ----------
 function renderVendedores(scope){ const p=scope==="g"?"g-":"";
   $(p+"vendedores-list").innerHTML = vendedores.length
-    ? vendedores.map((v,i)=>`<div class="listrow"><span>${esc(v.nome)}${v.fone?` <small style="color:var(--muted-2)">· ${esc(v.fone)}</small>`:` <small style="color:var(--muted-2)">· sem telefone</small>`}</span><div class="rowbtns"><button class="ed" onclick="editVendedor(${i},'${scope}')" title="Editar">✏️</button><button class="rm" onclick="delVendedor(${i},'${scope}')" title="Remover">×</button></div></div>`).join("")
+    ? vendedores.map((v,i)=>`<div class="listrow"><span>${esc(v.nome)}${v.fone?` <small style="color:var(--muted-2)">· ${esc(v.fone)}</small>`:` <small style="color:var(--muted-2)">· sem telefone</small>`}</span><div class="rowbtns"><button class="ed" onclick="mudarSenhaVend(${i},'${scope}')" title="Alterar senha">🔑</button><button class="ed" onclick="editVendedor(${i},'${scope}')" title="Editar">✏️</button><button class="rm" onclick="delVendedor(${i},'${scope}')" title="Remover">×</button></div></div>`).join("")
     : `<p class="muted-note">Nenhum vendedor cadastrado.</p>`;
 }
-function addVendedor(scope){ const p=scope==="g"?"g-":""; const n=$(p+"vend-novo").value.trim(); if(!n)return; const f=$(p+"vend-fone").value.trim(); if(!vendedores.some(v=>v.nome===n)){ vendedores.push({nome:n,fone:f}); salvar(LS.vend,vendedores);} $(p+"vend-novo").value=""; $(p+"vend-fone").value=""; renderVendedores(scope); }
+function addVendedor(scope){ const p=scope==="g"?"g-":""; const n=$(p+"vend-novo").value.trim(); if(!n)return; const f=$(p+"vend-fone").value.trim(); if(!vendedores.some(v=>v.nome===n)){ vendedores.push({nome:n,fone:f,senha:primeiroNome(n)}); salvar(LS.vend,vendedores);} $(p+"vend-novo").value=""; $(p+"vend-fone").value=""; renderVendedores(scope); }
 function editVendedor(i,scope){
   const n=prompt("Nome do vendedor:", vendedores[i].nome); if(n==null)return;
   const f=prompt("Telefone do vendedor:", vendedores[i].fone||""); if(f==null)return;
@@ -3958,7 +4002,8 @@ function renderWizard(){
 
 // ---------- Orçamento (form) ----------
 function preencherSelects(){
-  $("f-vendedor").innerHTML=`<option value="">Selecione o vendedor</option>`+vendedores.map(v=>`<option>${esc(v.nome)}</option>`).join("");
+  $("f-vendedor").innerHTML=`<option value="">Selecione o vendedor</option>`+vendedores.map(v=>`<option>${esc(v.nome)}</option>`).join(""); 
+  if(vendedorLogado){ $("f-vendedor").value=vendedorLogado; $("f-vendedor").disabled=true; } else { $("f-vendedor").disabled=false; }
   $("clientes-dl").innerHTML=clientes.map(c=>`<option value="${esc(c)}">`).join("");
 }
 function produtoVazio(){ const o=ondas[0]||{nome:"",gramaturas:[]}; return {tipo:"caixa",produto:produtos[0],ondaNome:o.nome,gram:(o.gramaturas[0]||0),c:"",l:"",a:"",vkg:"",qtd:"",qtdEditado:false,preco:0,total:0,desc:"",detalhe:""}; }
@@ -3966,7 +4011,7 @@ function novoProduto(){ itensAtuais.push(produtoVazio()); renderItens(); const c
 function novoOrcamento(){
   editandoId=null; preencherSelects();
   $("oc-modo").textContent="Novo orçamento";
-  $("f-vendedor").value=""; $("f-cliente").value=""; $("f-obs").value=""; $("avulso-box").style.display="none";
+  $("f-vendedor").value=vendedorLogado||""; $("f-cliente").value=""; $("f-obs").value=""; $("avulso-box").style.display="none";
   itensAtuais=[produtoVazio()];
   renderItens(); show("tela-orcamento");
 }
