@@ -434,6 +434,32 @@ tbody tr:hover{background:var(--surface-2)}
 .amo-end.muted{color:var(--muted-2)}
 .amo-btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .amo-empty{color:var(--muted-2);text-align:center;padding:26px;border:1px dashed var(--border);border-radius:12px}
+/* PCP semanal */
+.pcp-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.pcp-tabs{display:flex;gap:6px}
+.pcp-tab{border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:8px 16px;font-size:14px;cursor:pointer}
+.pcp-tab.on{background:var(--dark);color:#fff;border-color:var(--dark)}
+.pcp-exp{display:flex;gap:8px;flex-wrap:wrap}
+.pw-hint{font-size:12.5px;color:var(--muted-2);margin-bottom:12px}
+.pw-backlog{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:14px}
+.pw-backlog h4,.pw-day h4{margin:0 0 8px;font-size:13px;font-weight:800;color:var(--muted);display:flex;justify-content:space-between}
+.pw-board{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px}
+.pw-day{flex:0 0 160px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:8px}
+.pw-drop{min-height:60px;border-radius:8px}
+.pw-drop.over{outline:2px dashed var(--dark);outline-offset:-3px}
+.pw-backlog .pw-drop{display:flex;flex-wrap:wrap;gap:8px}
+.pw-backlog .pw-card{width:200px}
+.pw-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;margin-bottom:8px;cursor:grab;font-size:12px}
+.pw-card.dragging{opacity:.4}
+.pw-card.oc{border:1px dashed #2b7fff;background:#eef4ff}
+.pw-top{display:flex;justify-content:space-between;align-items:center}
+.pw-sku{font-weight:800}
+.pw-seq{background:var(--dark);color:#fff;border-radius:20px;min-width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;padding:0 5px}
+.pw-meta{color:var(--muted-2);margin-top:3px}
+.pw-tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:6px;background:#e0ecff;color:#1b52b0;margin-top:4px}
+.pw-obs{width:100%;margin-top:6px;border:1px solid var(--border);border-radius:8px;padding:5px 7px;font-size:11.5px}
+.pw-empty{color:var(--muted-2);font-size:12px;padding:10px;text-align:center}
+.oc-fila{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#d92d20;color:#fff;font-size:13px;font-weight:800}
 @media print{
   #print .etiqueta{gap:0;min-height:auto;padding:0;font-size:13px}
   #print .et-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
@@ -1196,7 +1222,7 @@ const DEF_ONDAS = [
   { nome:"Onda TT", gramaturas:[470],         comp:compPadrao("Onda TT") },
 ];
 
-const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1", oms:"malba_os_oms_v1", amostras:"malba_os_amostras_v1" };
+const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1", oms:"malba_os_oms_v1", amostras:"malba_os_amostras_v1", pcpsem:"malba_os_pcpsemana_v1" };
 
 // util
 function carregar(k,def){ try{ const v=JSON.parse(localStorage.getItem(k)); return (v===null||v===undefined)?def:v }catch(e){ return def } }
@@ -1234,6 +1260,8 @@ let ocTab="nao", ocPage=1, ocForm=null;
 let agendaRef=hojeStr(), agendaView="mensal";
 let producao = carregar(LS.prodflow, []);
 let amostras = carregar(LS.amostras, []);
+let pcpSemana = carregar(LS.pcpsem, {dias:{},obs:{}});
+let pcpModo = "quadro";
 let vendedorLogado = localStorage.getItem("malba_os_vend_sessao")||"";
 function primeiroNome(n){ return (String(n||"").trim().split(/\s+/)[0]||"").toLowerCase(); }
 function vendSenha(v){ return (v&&v.senha)?String(v.senha):primeiroNome(v&&v.nome); }
@@ -2506,13 +2534,14 @@ function renderOC(){
 // ----- detalhes (modal) -----
 function ocDetalhes(id){
   const o=ordens.find(x=>x.id===id); if(!o)return; const st=OC_ST[ocStatus(o)];
-  const rows=(o.itens||[]).map(i=>`<tr>
+  const rows=(o.itens||[]).map((i,idx)=>{ const fila=pcpFilaOCItem(o.id,idx); return `<tr>
+    <td style="text-align:center">${fila?`<span class="oc-fila">${fila}</span>`:'<span style="color:var(--muted-2)">—</span>'}</td>
     <td><b>${esc(i.sku||"—")}</b></td>
     <td class="num">${i.chapaComp}×${i.chapaLarg}mm</td>
     <td class="num">${(i.vincos||[]).map(v=>+v||0).join(" | ")||"—"}</td>
     <td class="num">${(+i.qtd||0).toLocaleString("pt-BR")}</td>
     <td class="num">${brl(i.custoUnit||0)}</td>
-    <td class="num">${brl(i.valor||0)}</td></tr>`).join("");
+    <td class="num">${brl(i.valor||0)}</td></tr>`; }).join("");
   $("ocmodal").innerHTML=`<div class="modal-card">
     <h3 class="modal-h">Detalhes da Ordem de Compra</h3>
     <div class="modal-meta">
@@ -2521,7 +2550,7 @@ function ocDetalhes(id){
       <div><div class="ml">STATUS</div><div class="mv"><span class="stb ${st[1]}">${st[0]}</span></div></div>
     </div>
     <div class="modal-sec">Itens do Pedido</div>
-    <div class="tablewrap" style="box-shadow:none"><table class="htab"><thead><tr><th>SKU</th><th class="num">Dimensões</th><th class="num">Vincos</th><th class="num">Quantidade</th><th class="num">Valor Unitário</th><th class="num">Total</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="tablewrap" style="box-shadow:none"><table class="htab"><thead><tr><th style="text-align:center">Fila</th><th>SKU</th><th class="num">Dimensões</th><th class="num">Vincos</th><th class="num">Quantidade</th><th class="num">Valor Unitário</th><th class="num">Total</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="octotais octotais2" style="margin-top:14px">
       <div>Peso total: <b>${(+o.peso||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})} kg</b></div>
       <div>Subtotal: <b>${brl(ocTotais(o).sub)}</b></div>
@@ -3557,7 +3586,16 @@ function pcpTog(k){ pcpOpen[k]=!pcpOpen[k]; renderPCP(); }
 function pcpFmtPeso(kg){ kg=+kg||0; return kg/1000>=1 ? (kg/1000).toLocaleString("pt-BR",{maximumFractionDigits:2})+" t" : kg.toLocaleString("pt-BR",{maximumFractionDigits:0})+" kg"; }
 function entregarPCP(id){ const p=producao.find(x=>x.id===id); if(!p)return; if(!confirm("Confirmar a entrega deste item? Ele sai do PCP e da Expedição.")) return; p.entregue=true; tocaProd(p); salvar(LS.prodflow,producao); renderPCP(); }
 function renderPCP(){
-  const box=$("pcp-box"); if(!box) return;
+  const box=$("pcp-box"); if(!box) return; pcpSemGuard();
+  box.innerHTML=`<div class="pcp-bar">
+    <div class="pcp-tabs"><button class="pcp-tab ${pcpModo==='quadro'?'on':''}" onclick="pcpSetModo('quadro')">Quadro</button><button class="pcp-tab ${pcpModo==='semana'?'on':''}" onclick="pcpSetModo('semana')">Semana</button></div>
+    <div class="pcp-exp"><button class="btnghost" onclick="pcpExportGeral()">📄 PCP geral</button><button class="btnprim" onclick="pcpExportSemana()">📄 PCP semanal</button></div>
+  </div><div id="pcp-inner"></div>`;
+  if(pcpModo==="semana") renderPCPSemana(); else renderPCPKanban();
+}
+function pcpSetModo(m){ pcpModo=m; renderPCP(); }
+function renderPCPKanban(){
+  const box=$("pcp-inner"); if(!box) return;
   const f1=[];
   ordens.filter(o=>!o.recebida && !o.excluida).forEach(o=>{ (o.itens||[]).forEach(it=>{ const rest=(+it.qtd||0)-(+it.recebido||0); if(rest>0) f1.push({sku:it.sku, qtd:rest, peso:(it.pesoUnit||0)*rest, oc:o.id, info:o.fornecedor}); }); });
   const prod=producao.filter(p=>!p.terceirizado && !p.entregue && !p.excluido);
@@ -3587,6 +3625,117 @@ function renderPCP(){
     col("✨","Acabamento","#8b5cf6",f3,false)+
     col("✅","Pronto","#16a34a",f4,true)+
   `</div>`;
+}
+// ---------- PCP Semanal ----------
+const PCP_DIAS=[["seg","Segunda"],["ter","Terça"],["qua","Quarta"],["qui","Quinta"],["sex","Sexta"],["sab","Sábado"]];
+function pcpSemGuard(){
+  if(!pcpSemana||typeof pcpSemana!=="object") pcpSemana={dias:{},obs:{}};
+  if(!pcpSemana.dias) pcpSemana.dias={};
+  PCP_DIAS.forEach(d=>{ if(!Array.isArray(pcpSemana.dias[d[0]])) pcpSemana.dias[d[0]]=[]; });
+  if(!pcpSemana.obs||typeof pcpSemana.obs!=="object") pcpSemana.obs={};
+}
+function pcpSalvarSem(){ salvar(LS.pcpsem, pcpSemana); }
+function pcpItensCandidatos(){
+  const out=[];
+  producao.filter(p=>!p.entregue && !p.excluido).forEach(p=>{
+    out.push({ref:"p:"+p.id, sku:p.sku||"—", qtd:+p.qtd||0, peso:(+p.pesoUnit||0)*(+p.qtd||0), oc:false, info:p.ocId?("OC "+p.ocId):"Produção"});
+  });
+  ordens.filter(o=>!o.recebida && !o.excluida).forEach(o=>{
+    (o.itens||[]).forEach((it,idx)=>{ const rest=(+it.qtd||0)-(+it.recebido||0); if(rest>0){
+      out.push({ref:"o:"+o.id+"|"+idx, sku:it.sku||"—", qtd:rest, peso:(+it.pesoUnit||0)*rest, oc:true, info:"OC "+o.id});
+    }});
+  });
+  return out;
+}
+function pcpFilaMap(){
+  pcpSemGuard();
+  const cand={}; pcpItensCandidatos().forEach(c=>cand[c.ref]=c);
+  const map={}; let n=0;
+  PCP_DIAS.forEach(d=>{ (pcpSemana.dias[d[0]]||[]).forEach(ref=>{ if(cand[ref]){ n++; map[ref]=n; } }); });
+  return map;
+}
+function pcpFilaOCItem(ocId,idx){ return pcpFilaMap()["o:"+ocId+"|"+idx]||null; }
+let pcpDrag=null;
+function renderPCPSemana(){
+  const box=$("pcp-inner"); if(!box) return; pcpSemGuard();
+  const cand={}; const lista=pcpItensCandidatos(); lista.forEach(c=>cand[c.ref]=c);
+  const alocados=new Set(); PCP_DIAS.forEach(d=>{ (pcpSemana.dias[d[0]]||[]).forEach(r=>alocados.add(r)); });
+  const backlog=lista.filter(c=>!alocados.has(c.ref));
+  const fila=pcpFilaMap();
+  const cardHTML=(ref)=>{ const c=cand[ref]; if(!c) return "";
+    const obs=pcpSemana.obs[ref]||"";
+    return `<div class="pw-card${c.oc?' oc':''}" draggable="true" data-ref="${esc(ref)}">
+      <div class="pw-top"><span class="pw-sku">${esc(c.sku)}</span>${fila[ref]?`<span class="pw-seq">${fila[ref]}</span>`:""}</div>
+      <div class="pw-meta">${c.qtd.toLocaleString("pt-BR")} un · ${pcpFmtPeso(c.peso)}</div>
+      ${c.oc?`<span class="pw-tag">Em OC · não chegou</span>`:""}
+      <input class="pw-obs" placeholder="Observação…" value="${esc(obs)}" data-ref="${esc(ref)}" onchange="pcpSetObs(this)">
+    </div>`;
+  };
+  const cols=PCP_DIAS.map(d=>{
+    const refs=(pcpSemana.dias[d[0]]||[]).filter(r=>cand[r]);
+    const cards=refs.length?refs.map(cardHTML).join(""):`<div class="pw-empty">—</div>`;
+    return `<div class="pw-day" data-day="${d[0]}"><h4>${d[1]} <span>${refs.length}</span></h4><div class="pw-drop" data-day="${d[0]}">${cards}</div></div>`;
+  }).join("");
+  const backHTML=backlog.length?backlog.map(c=>cardHTML(c.ref)).join(""):`<div class="pw-empty">Tudo alocado.</div>`;
+  box.innerHTML=`
+    <div class="pw-hint">Arraste os itens para os dias para montar a sequência. Cards tracejados são itens em OC que ainda não chegaram. O nº muda sozinho conforme a ordem.</div>
+    <div class="pw-backlog"><h4>Não alocados <span>${backlog.length}</span></h4><div class="pw-drop" data-day="__backlog">${backHTML}</div></div>
+    <div class="pw-board">${cols}</div>`;
+  box.querySelectorAll(".pw-card").forEach(el=>{
+    el.addEventListener("dragstart",e=>{ pcpDrag=el.dataset.ref; setTimeout(()=>el.classList.add("dragging"),0); });
+    el.addEventListener("dragend",()=>{ el.classList.remove("dragging"); });
+  });
+  box.querySelectorAll(".pw-drop").forEach(z=>{
+    z.addEventListener("dragover",e=>{ e.preventDefault(); z.classList.add("over"); });
+    z.addEventListener("dragleave",()=>z.classList.remove("over"));
+    z.addEventListener("drop",e=>{ e.preventDefault(); z.classList.remove("over"); if(!pcpDrag) return; pcpMover(pcpDrag, z.dataset.day); pcpDrag=null; });
+  });
+}
+function pcpMover(ref, dia){
+  pcpSemGuard();
+  PCP_DIAS.forEach(d=>{ pcpSemana.dias[d[0]]=(pcpSemana.dias[d[0]]||[]).filter(r=>r!==ref); });
+  if(dia!=="__backlog"){ if(!pcpSemana.dias[dia]) pcpSemana.dias[dia]=[]; pcpSemana.dias[dia].push(ref); }
+  pcpSalvarSem(); renderPCPSemana();
+}
+function pcpSetObs(inp){ pcpSemGuard(); const ref=inp.dataset.ref; const v=inp.value.trim(); if(v) pcpSemana.obs[ref]=v; else delete pcpSemana.obs[ref]; pcpSalvarSem(); }
+function relHeaderHTML(titulo, sub){
+  return `<div class="ph" style="border-bottom:2px solid #a8783f">
+    <div class="phl">
+      <svg viewBox="0 0 64 64" width="44" height="44" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="14" width="40" height="40" rx="7" fill="#F2D374"/><rect x="18" y="10" width="40" height="40" rx="7" fill="#161e2a"/><text x="38" y="38" text-anchor="middle" font-family="Archivo,Arial" font-weight="800" font-size="30" fill="#fff">M</text></svg>
+      <div><div class="pht">${esc(titulo)}</div><div class="phs">MALBA Fábrica${sub?(" · "+esc(sub)):""}</div></div>
+    </div>
+    <div class="phr"><div class="phlabel">Emitido em</div><div class="phnum" style="font-size:14px">${fmtData(new Date().toISOString())}</div></div>
+  </div>`;
+}
+function pcpPrintExec(html){
+  $("print").innerHTML=`<div class="ptop">${html}</div><div class="pbottom"><div class="pfoot">MALBA Fábrica · PCP</div></div>`;
+  const st=document.createElement("style"); st.id="ll-land"; st.textContent="@media print{@page{size:A4 portrait;margin:10mm}}"; document.head.appendChild(st);
+  window.print();
+  setTimeout(()=>{ const s=$("ll-land"); if(s) s.remove(); $("print").innerHTML=""; },600);
+}
+function pcpExportGeral(){
+  const prod=producao.filter(p=>!p.terceirizado && !p.entregue && !p.excluido);
+  const f1=[]; ordens.filter(o=>!o.recebida && !o.excluida).forEach(o=>{ (o.itens||[]).forEach(it=>{ const rest=(+it.qtd||0)-(+it.recebido||0); if(rest>0) f1.push({sku:it.sku,qtd:rest,peso:(+it.pesoUnit||0)*rest,info:"OC "+o.id}); }); });
+  const f2=prod.filter(p=>!p.imp.done).map(p=>({sku:p.sku,qtd:p.qtd,peso:(+p.pesoUnit||0)*(+p.qtd||0)}));
+  const f3=prod.filter(p=>p.imp.done && !p.acab.done).map(p=>({sku:p.sku,qtd:p.imp.feito,peso:(+p.pesoUnit||0)*(+p.imp.feito||0)}));
+  const f4=producao.filter(p=>p.acab.done && !p.entregue && !p.excluido).map(p=>({sku:p.sku,qtd:p.acab.feito,peso:(+p.pesoUnit||0)*(+p.acab.feito||0)}));
+  const sec=(titulo,arr)=>{ const tot=arr.reduce((s,x)=>s+(x.peso||0),0);
+    const rows=arr.length?arr.map(x=>`<tr><td><b>${esc(x.sku||"—")}</b></td><td style="text-align:right">${(+x.qtd||0).toLocaleString("pt-BR")}</td><td style="text-align:right">${pcpFmtPeso(x.peso)}</td><td>${esc(x.info||"")}</td></tr>`).join(""):`<tr><td colspan="4" style="color:#888">Sem itens.</td></tr>`;
+    return `<div class="frow" style="border:none;padding:10px 0 4px"><span>${esc(titulo)}</span><b>${pcpFmtPeso(tot)}</b></div><table class="pordtab"><thead><tr><th>SKU</th><th style="text-align:right">Qtd</th><th style="text-align:right">Peso</th><th>Origem</th></tr></thead><tbody>${rows}</tbody></table>`;
+  };
+  pcpPrintExec(relHeaderHTML("PCP · Quadro geral","Planejamento e controle")+sec("🛒 A receber",f1)+sec("🖨️ Impressão",f2)+sec("✨ Acabamento",f3)+sec("✅ Pronto",f4));
+}
+function pcpExportSemana(){
+  pcpSemGuard(); const cand={}; pcpItensCandidatos().forEach(c=>cand[c.ref]=c); const fila=pcpFilaMap();
+  const secs=PCP_DIAS.map(d=>{
+    const refs=(pcpSemana.dias[d[0]]||[]).filter(r=>cand[r]);
+    if(!refs.length) return "";
+    const rows=refs.map(r=>{ const c=cand[r]; const obs=pcpSemana.obs[r]||"";
+      return `<tr><td style="text-align:center"><b style="color:#d92d20">${fila[r]||""}</b></td><td><b>${esc(c.sku)}</b>${c.oc?' <span style="color:#d92d20;font-size:10px">(em OC)</span>':""}</td><td style="text-align:right">${c.qtd.toLocaleString("pt-BR")}</td><td style="text-align:right">${pcpFmtPeso(c.peso)}</td><td>${esc(obs)}</td></tr>`;
+    }).join("");
+    return `<div class="frow" style="border:none;padding:10px 0 4px"><span>${d[1]}</span><b>${refs.length} itens</b></div><table class="pordtab"><thead><tr><th style="text-align:center">Fila</th><th>SKU</th><th style="text-align:right">Qtd</th><th style="text-align:right">Peso</th><th>Observação</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }).join("");
+  pcpPrintExec(relHeaderHTML("PCP · Semana","Sequência de produção")+(secs||`<p style="color:#888;padding:20px 0">Nenhum item alocado na semana ainda.</p>`));
 }
 function renderTerc(){
   let lst=producao.filter(p=>p.terceirizado && !p.excluido);
