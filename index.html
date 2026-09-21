@@ -458,11 +458,13 @@ tbody tr:hover{background:var(--surface-2)}
 .pw-meta{color:var(--muted-2);margin-top:3px}
 .pw-tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:6px;background:#e0ecff;color:#1b52b0;margin-top:4px}
 .pw-obs{width:100%;margin-top:6px;border:1px solid var(--border);border-radius:8px;padding:5px 7px;font-size:11.5px}
+.pw-move{width:100%;margin-top:6px;border:1px solid var(--border);border-radius:8px;padding:5px 7px;font-size:11.5px;background:var(--surface)}
 .pw-empty{color:var(--muted-2);font-size:12px;padding:10px;text-align:center}
 .oc-fila{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#d92d20;color:#fff;font-size:13px;font-weight:800}
 @media print{
   #print .etiqueta{gap:0;min-height:auto;padding:0;font-size:13px}
   #print .et-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  #print .et-brand{display:inline-flex;align-items:center;gap:6px}
   #print .et-tag{background:#111;color:#fff;font-weight:800;font-size:14px;padding:2px 10px;border-radius:6px;letter-spacing:1px}
   #print .et-date{font-size:12px;color:#555}
   #print .et-cli{font-size:18px;font-weight:800;line-height:1.1}
@@ -3637,7 +3639,7 @@ function pcpSemGuard(){
 function pcpSalvarSem(){ salvar(LS.pcpsem, pcpSemana); }
 function pcpItensCandidatos(){
   const out=[];
-  producao.filter(p=>!p.entregue && !p.excluido).forEach(p=>{
+  producao.filter(p=>!p.entregue && !p.excluido && !p.terceirizado).forEach(p=>{
     out.push({ref:"p:"+p.id, sku:p.sku||"—", qtd:+p.qtd||0, peso:(+p.pesoUnit||0)*(+p.qtd||0), oc:false, info:p.ocId?("OC "+p.ocId):"Produção"});
   });
   ordens.filter(o=>!o.recebida && !o.excluida).forEach(o=>{
@@ -3662,21 +3664,23 @@ function renderPCPSemana(){
   const alocados=new Set(); PCP_DIAS.forEach(d=>{ (pcpSemana.dias[d[0]]||[]).forEach(r=>alocados.add(r)); });
   const backlog=lista.filter(c=>!alocados.has(c.ref));
   const fila=pcpFilaMap();
-  const cardHTML=(ref)=>{ const c=cand[ref]; if(!c) return "";
+  const cardHTML=(ref,curDay)=>{ const c=cand[ref]; if(!c) return "";
     const obs=pcpSemana.obs[ref]||"";
+    const optDias=PCP_DIAS.map(d=>`<option value="${d[0]}"${curDay===d[0]?" selected":""}>${d[1]}</option>`).join("");
     return `<div class="pw-card${c.oc?' oc':''}" draggable="true" data-ref="${esc(ref)}">
       <div class="pw-top"><span class="pw-sku">${esc(c.sku)}</span>${fila[ref]?`<span class="pw-seq">${fila[ref]}</span>`:""}</div>
       <div class="pw-meta">${c.qtd.toLocaleString("pt-BR")} un · ${pcpFmtPeso(c.peso)}</div>
       ${c.oc?`<span class="pw-tag">Em OC · não chegou</span>`:""}
+      <select class="pw-move" onchange="pcpMover('${ref}',this.value)"><option value="__backlog"${curDay==='__backlog'?" selected":""}>— dia —</option>${optDias}</select>
       <input class="pw-obs" placeholder="Observação…" value="${esc(obs)}" data-ref="${esc(ref)}" onchange="pcpSetObs(this)">
     </div>`;
   };
   const cols=PCP_DIAS.map(d=>{
     const refs=(pcpSemana.dias[d[0]]||[]).filter(r=>cand[r]);
-    const cards=refs.length?refs.map(cardHTML).join(""):`<div class="pw-empty">—</div>`;
+    const cards=refs.length?refs.map(r=>cardHTML(r,d[0])).join(""):`<div class="pw-empty">—</div>`;
     return `<div class="pw-day" data-day="${d[0]}"><h4>${d[1]} <span>${refs.length}</span></h4><div class="pw-drop" data-day="${d[0]}">${cards}</div></div>`;
   }).join("");
-  const backHTML=backlog.length?backlog.map(c=>cardHTML(c.ref)).join(""):`<div class="pw-empty">Tudo alocado.</div>`;
+  const backHTML=backlog.length?backlog.map(c=>cardHTML(c.ref,"__backlog")).join(""):`<div class="pw-empty">Tudo alocado.</div>`;
   box.innerHTML=`
     <div class="pw-hint">Arraste os itens para os dias para montar a sequência. Cards tracejados são itens em OC que ainda não chegaram. O nº muda sozinho conforme a ordem.</div>
     <div class="pw-backlog"><h4>Não alocados <span>${backlog.length}</span></h4><div class="pw-drop" data-day="__backlog">${backHTML}</div></div>
@@ -3900,7 +3904,7 @@ function imprimirEtiquetaAmostra(id){
   st.textContent="@media print{@page{size:100mm 150mm;margin:4mm}}";
   document.head.appendChild(st);
   $("print").innerHTML=`<div class="etiqueta">
-    <div class="et-top"><span class="et-tag">AMOSTRA</span><span class="et-date">${a.criadoEm?fmtData(a.criadoEm):""}</span></div>
+    <div class="et-top"><span class="et-brand"><svg viewBox="0 0 64 64" width="26" height="26" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="14" width="40" height="40" rx="7" fill="#F2D374"/><rect x="18" y="10" width="40" height="40" rx="7" fill="#161e2a"/><text x="38" y="38" text-anchor="middle" font-family="Archivo,Arial" font-weight="800" font-size="30" fill="#fff">M</text></svg><span class="et-tag">AMOSTRA</span></span><span class="et-date">${a.criadoEm?fmtData(a.criadoEm):""}</span></div>
     <div class="et-cli">${esc(a.cliente||"—")}</div>
     ${a.vendedor?`<div class="et-vend">Vendedor: ${esc(a.vendedor)}</div>`:""}
     <div class="et-itens">${itensHtml}</div>
