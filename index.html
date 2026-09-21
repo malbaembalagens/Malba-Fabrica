@@ -3639,7 +3639,7 @@ function pcpSemGuard(){
 function pcpSalvarSem(){ salvar(LS.pcpsem, pcpSemana); }
 function pcpItensCandidatos(){
   const out=[];
-  producao.filter(p=>!p.entregue && !p.excluido && !p.terceirizado).forEach(p=>{
+  producao.filter(p=>!p.entregue && !p.excluido && !p.terceirizado && !(p.acab&&p.acab.done)).forEach(p=>{
     out.push({ref:"p:"+p.id, sku:p.sku||"—", qtd:+p.qtd||0, peso:(+p.pesoUnit||0)*(+p.qtd||0), oc:false, info:p.ocId?("OC "+p.ocId):"Produção"});
   });
   ordens.filter(o=>!o.recebida && !o.excluida).forEach(o=>{
