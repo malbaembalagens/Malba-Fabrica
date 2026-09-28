@@ -461,6 +461,17 @@ tbody tr:hover{background:var(--surface-2)}
 .pw-move{width:100%;margin-top:6px;border:1px solid var(--border);border-radius:8px;padding:5px 7px;font-size:11.5px;background:var(--surface)}
 .pw-empty{color:var(--muted-2);font-size:12px;padding:10px;text-align:center}
 .oc-fila{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#d92d20;color:#fff;font-size:13px;font-weight:800}
+/* Gráfico agrupado (histórico unificado) */
+.gc-leg{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted-2);margin-bottom:10px}
+.gc-leg span{display:inline-flex;align-items:center;gap:5px}
+.gc-dot{width:10px;height:10px;border-radius:2px;display:inline-block}
+.gc-chart{display:flex;gap:12px;align-items:flex-end;height:170px;overflow-x:auto;padding-bottom:4px}
+.gc-mo{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%}
+.gc-grp{flex:1;display:flex;gap:3px;align-items:flex-end;height:100%}
+.gc-col{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
+.gc-v{font-size:9px;color:var(--muted-2);margin-bottom:2px;white-space:nowrap}
+.gc-bar{width:10px;border-radius:3px 3px 0 0;min-height:2px}
+.gc-mlbl{font-size:10px;color:var(--muted-2)}
 @media print{
   #print .etiqueta{gap:0;min-height:auto;padding:0;font-size:13px}
   #print .et-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
@@ -1738,31 +1749,40 @@ function renderDashProd(){
     </div>
   </div>`;
 
-  // gráfico 4 — histórico de produção (mensal no ano, só acabamento)
+  // gráfico 4 — histórico de produção UNIFICADO (t, unidades, terceirizado t) por mês
   let anos=[...new Set(histAtivo().map(h=>(h.data||"").slice(0,4)).filter(Boolean))];
   const anoAtual=String(new Date().getFullYear()); if(!anos.includes(anoAtual)) anos.push(anoAtual);
   anos.sort().reverse();
   if(!anos.includes(dashAnoHist)) dashAnoHist=anos[0];
   const mesesL=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-  const mvals=mesesL.map((m,i)=>{ const ym=dashAnoHist+"-"+String(i+1).padStart(2,"0"); const kg=histAtivo().filter(h=>(h.data||"").slice(0,7)===ym && h.processo==="Acabamento").reduce((s,h)=>s+(+h.pesoTotalProd||0),0); return {label:m, val:kg/1000}; });
-  const totAno=mvals.reduce((s,d)=>s+d.val,0), maxM=Math.max(0.001,...mvals.map(d=>d.val));
+  const fmtU=v=> (+v||0)>=1000 ? ((v/1000).toLocaleString("pt-BR",{maximumFractionDigits:1})+"k") : (+v||0).toLocaleString("pt-BR");
+  const fmtT=v=> (+v||0).toLocaleString("pt-BR",{maximumFractionDigits:1});
+  const dados=mesesL.map((m,i)=>{
+    const ym=dashAnoHist+"-"+String(i+1).padStart(2,"0");
+    const ac=histAtivo().filter(h=>(h.data||"").slice(0,7)===ym && h.processo==="Acabamento");
+    const t=ac.reduce((s,h)=>s+(+h.pesoTotalProd||0),0)/1000;
+    const q=ac.reduce((s,h)=>s+(+h.qtdProd||0),0);
+    const terc=producao.filter(p=>p.terceirizado && !p.excluido && ((p.entradaEm||p.prev||"").slice(0,7)===ym)).reduce((s,p)=>s+(+p.pesoUnit||0)*(+p.qtd||0),0)/1000;
+    return {label:m, t, q, terc};
+  });
+  const totT=dados.reduce((s,d)=>s+d.t,0), totQ=dados.reduce((s,d)=>s+d.q,0), totTerc=dados.reduce((s,d)=>s+d.terc,0);
+  const maxT=Math.max(0.001,...dados.map(d=>d.t)), maxQ=Math.max(1,...dados.map(d=>d.q)), maxTc=Math.max(0.001,...dados.map(d=>d.terc));
+  const grupos=dados.map(d=>`<div class="gc-mo">
+    <div class="gc-grp">
+      <div class="gc-col"><div class="gc-v">${d.t>0?fmtT(d.t):""}</div><div class="gc-bar" style="height:${(d.t/maxT*100).toFixed(1)}%;background:#2a78d6" title="Produção ${d.label}: ${fmtT(d.t)} t"></div></div>
+      <div class="gc-col"><div class="gc-v">${d.q>0?fmtU(d.q):""}</div><div class="gc-bar" style="height:${(d.q/maxQ*100).toFixed(1)}%;background:#1baf7a" title="Quantidade ${d.label}: ${d.q.toLocaleString("pt-BR")} un"></div></div>
+      <div class="gc-col"><div class="gc-v">${d.terc>0?fmtT(d.terc):""}</div><div class="gc-bar" style="height:${(d.terc/maxTc*100).toFixed(1)}%;background:#eda100" title="Terceirizado ${d.label}: ${fmtT(d.terc)} t"></div></div>
+    </div>
+    <div class="gc-mlbl">${d.label}</div>
+  </div>`).join("");
   const c4=`<div class="chartcard">
     <div class="charthead"><h3>Histórico de produção</h3>
       <select class="selmes" onchange="dashAnoHist=this.value;renderDashProd()">${anos.map(a=>`<option ${a===dashAnoHist?"selected":""}>${a}</option>`).join("")}</select></div>
-    <div class="colchart">${mvals.map(d=>`<div class="col" title="${d.label} ${dashAnoHist}: ${d.val.toLocaleString("pt-BR",{minimumFractionDigits:3,maximumFractionDigits:3})} t"><div class="colval">${d.val>0?d.val.toLocaleString("pt-BR",{maximumFractionDigits:1}):""}</div><div class="colbar acab" style="height:${(d.val/maxM*100).toFixed(1)}%"></div><div class="collbl">${d.label}</div></div>`).join("")}</div>
-    <div class="hint">Produção mensal (toneladas) que passou pelo Acabamento em ${dashAnoHist} · total no ano: <b>${totAno.toLocaleString("pt-BR",{minimumFractionDigits:3,maximumFractionDigits:3})} t</b>.</div>
+    <div class="gc-leg"><span><i class="gc-dot" style="background:#2a78d6"></i>Produção (t)</span><span><i class="gc-dot" style="background:#1baf7a"></i>Quantidade (un)</span><span><i class="gc-dot" style="background:#eda100"></i>Terceirizado (t)</span></div>
+    <div class="gc-chart">${grupos}</div>
+    <div class="hint">Em ${dashAnoHist} · Produção: <b>${fmtT(totT)} t</b> · Quantidade: <b>${totQ.toLocaleString("pt-BR")} un</b> · Terceirizado: <b>${fmtT(totTerc)} t</b>. Cada série tem sua própria escala.</div>
   </div>`;
-  // Histórico de produção — QUANTIDADE (unidades) por mês
-  const mqtd=mesesL.map((m,i)=>{ const ym=dashAnoHist+"-"+String(i+1).padStart(2,"0"); const q=histAtivo().filter(h=>(h.data||"").slice(0,7)===ym && h.processo==="Acabamento").reduce((s,h)=>s+(+h.qtdProd||0),0); return {label:m, val:q}; });
-  const totAnoQ=mqtd.reduce((s,d)=>s+d.val,0), maxMQ=Math.max(1,...mqtd.map(d=>d.val));
-  const fmtU=v=> (+v||0)>=1000 ? ((v/1000).toLocaleString("pt-BR",{maximumFractionDigits:1})+"k") : (+v||0).toLocaleString("pt-BR");
-  const c4b=`<div class="chartcard">
-    <div class="charthead"><h3>Histórico de produção · Quantidade</h3>
-      <select class="selmes" onchange="dashAnoHist=this.value;renderDashProd()">${anos.map(a=>`<option ${a===dashAnoHist?"selected":""}>${a}</option>`).join("")}</select></div>
-    <div class="colchart">${mqtd.map(d=>`<div class="col" title="${d.label} ${dashAnoHist}: ${d.val.toLocaleString("pt-BR")} un"><div class="colval">${d.val>0?fmtU(d.val):""}</div><div class="colbar" style="height:${(d.val/maxMQ*100).toFixed(1)}%"></div><div class="collbl">${d.label}</div></div>`).join("")}</div>
-    <div class="hint">Quantidade produzida (unidades) no Acabamento em ${dashAnoHist} · total no ano: <b>${totAnoQ.toLocaleString("pt-BR")} un</b>.</div>
-  </div>`;
-
+  const c4b="";
   // gráfico 5 — Malba Records (editável)
   const recCard=(proc,nome)=>{ const r=records[proc]||{};
     const meta=(dt,nm)=> (dt||nm)?`<div class="recmeta">${esc(dt||"")}${nm?(dt?" - ":"")+esc(nm):""}</div>`:"";
@@ -1793,7 +1813,7 @@ function renderDashProd(){
     <div class="hint">Ao alterar a meta aqui, o <b>gráfico Produção do dia</b> usa esse valor automaticamente.</div>
   </div>`;
 
-  $("dashprod-c").innerHTML=cards+carousel("car-prod",[c1,c2,cLC,c3,c4,c4b,c5,c6],"Dashboard · Produção");
+  $("dashprod-c").innerHTML=cards+carousel("car-prod",[c1,c2,cLC,c3,c4,c5,c6],"Dashboard · Produção");
   carScroll("car-prod");
 }
 // edição dos recordes e da meta
@@ -2475,8 +2495,8 @@ function aplicarReceber(){
     const jaProd=(p && !p.excluido)?(+p.qtd||0):0;
     const rest=(+i.qtd||0)-jaProd; if(x>rest)x=rest; if(x<=0)return;
     algum=true;
-    if(p){ p.qtd=jaProd+x; p.excluido=false; tocaProd(p); }
-    else { producao.push(tocaProd({ id:pid, ocId:o.id, prev:ocPrevista(o), sku:i.sku, produto:i.produto, c:i.c,l:i.l,a:i.a,
+    if(p){ p.qtd=jaProd+x; p.excluido=false; if(!p.entradaEm) p.entradaEm=hojeStr(); tocaProd(p); }
+    else { producao.push(tocaProd({ id:pid, ocId:o.id, entradaEm:hojeStr(), prev:ocPrevista(o), sku:i.sku, produto:i.produto, c:i.c,l:i.l,a:i.a,
       chapaComp:i.chapaComp, chapaLarg:i.chapaLarg, gram:i.gram, ondaNome:i.ondaNome, vincos:(i.vincos||[]).slice(),
       pesoUnit:i.pesoUnit, qtd:x, imp:{feito:0,desp:0,done:false}, acab:{feito:0,desp:0,done:false} })); }
     i.recebido=jaProd+x;
@@ -3703,7 +3723,7 @@ function pcpMover(ref, dia){
 }
 function pcpSetObs(inp){ pcpSemGuard(); const ref=inp.dataset.ref; const v=inp.value.trim(); if(v) pcpSemana.obs[ref]=v; else delete pcpSemana.obs[ref]; pcpSalvarSem(); }
 function relHeaderHTML(titulo, sub){
-  return `<div class="ph" style="border-bottom:2px solid #a8783f">
+  return `<div class="ph" style="border-bottom:1px solid #000">
     <div class="phl">
       <svg viewBox="0 0 64 64" width="44" height="44" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="14" width="40" height="40" rx="7" fill="#F2D374"/><rect x="18" y="10" width="40" height="40" rx="7" fill="#161e2a"/><text x="38" y="38" text-anchor="middle" font-family="Archivo,Arial" font-weight="800" font-size="30" fill="#fff">M</text></svg>
       <div><div class="pht">${esc(titulo)}</div><div class="phs">MALBA Fábrica${sub?(" · "+esc(sub)):""}</div></div>
@@ -3729,17 +3749,46 @@ function pcpExportGeral(){
   };
   pcpPrintExec(relHeaderHTML("PCP · Quadro geral","Planejamento e controle")+sec("🛒 A receber",f1)+sec("🖨️ Impressão",f2)+sec("✨ Acabamento",f3)+sec("✅ Pronto",f4));
 }
+function pcpChartSemanaHTML(){
+  const cand={}; pcpItensCandidatos().forEach(c=>cand[c.ref]=c);
+  const paleta=["#2a78d6","#1baf7a","#eda100","#e87ba4","#6250d6","#e34948","#199e70","#d95926"];
+  const skuCor={}; let ci=0;
+  const dias=PCP_DIAS.map(d=>{
+    const refs=(pcpSemana.dias[d[0]]||[]).filter(r=>cand[r]);
+    const bySku={}; refs.forEach(r=>{ const c=cand[r]; bySku[c.sku]=(bySku[c.sku]||0)+(+c.qtd||0); });
+    Object.keys(bySku).forEach(sk=>{ if(!skuCor[sk]){ skuCor[sk]=paleta[ci%paleta.length]; ci++; } });
+    const tot=Object.values(bySku).reduce((a,b)=>a+b,0);
+    return {dia:d[1].slice(0,3), bySku, tot};
+  });
+  const maxTot=Math.max(1,...dias.map(d=>d.tot));
+  if(!dias.some(d=>d.tot>0)) return "";
+  const cols=dias.map(d=>{
+    const segs=Object.keys(d.bySku).map(sk=>{
+      const h=(d.bySku[sk]/maxTot*100).toFixed(1);
+      return `<div style="height:${h}%;background:${skuCor[sk]};font-size:8px;color:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden">${d.bySku[sk]>=maxTot*0.12?esc(sk):""}</div>`;
+    }).join("");
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%">
+      <div style="flex:1;display:flex;flex-direction:column-reverse;width:40px;border-radius:3px;overflow:hidden">${segs||'<div style="height:2px;background:#eee"></div>'}</div>
+      <div style="font-size:10px;color:#555;margin-top:5px">${d.dia}</div></div>`;
+  }).join("");
+  const leg=Object.keys(skuCor).map(sk=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:#555"><span style="width:9px;height:9px;border-radius:2px;background:${skuCor[sk]}"></span>${esc(sk)}</span>`).join("");
+  return `<div style="margin-top:22px">
+    <div style="font-size:12px;font-weight:600;margin-bottom:8px">Carga por dia (quantidade)</div>
+    <div style="display:flex;gap:14px;align-items:flex-end;height:150px">${cols}</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:10px">${leg}</div>
+  </div>`;
+}
 function pcpExportSemana(){
   pcpSemGuard(); const cand={}; pcpItensCandidatos().forEach(c=>cand[c.ref]=c); const fila=pcpFilaMap();
   const secs=PCP_DIAS.map(d=>{
     const refs=(pcpSemana.dias[d[0]]||[]).filter(r=>cand[r]);
     if(!refs.length) return "";
     const rows=refs.map(r=>{ const c=cand[r]; const obs=pcpSemana.obs[r]||"";
-      return `<tr><td style="text-align:center"><b style="color:#d92d20">${fila[r]||""}</b></td><td><b>${esc(c.sku)}</b>${c.oc?' <span style="color:#d92d20;font-size:10px">(em OC)</span>':""}</td><td style="text-align:right">${c.qtd.toLocaleString("pt-BR")}</td><td style="text-align:right">${pcpFmtPeso(c.peso)}</td><td>${esc(obs)}</td></tr>`;
+      return `<tr><td style="text-align:center"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#d92d20;color:#fff;font-size:12px;font-weight:700">${fila[r]||""}</span></td><td><b>${esc(c.sku)}</b>${c.oc?' <span style="color:#d92d20;font-size:10px">(em OC)</span>':""}</td><td style="text-align:right">${c.qtd.toLocaleString("pt-BR")}</td><td style="text-align:right">${pcpFmtPeso(c.peso)}</td><td>${esc(obs)}</td></tr>`;
     }).join("");
     return `<div class="frow" style="border:none;padding:10px 0 4px"><span>${d[1]}</span><b>${refs.length} itens</b></div><table class="pordtab"><thead><tr><th style="text-align:center">Fila</th><th>SKU</th><th style="text-align:right">Qtd</th><th style="text-align:right">Peso</th><th>Observação</th></tr></thead><tbody>${rows}</tbody></table>`;
   }).join("");
-  pcpPrintExec(relHeaderHTML("PCP · Semana","Sequência de produção")+(secs||`<p style="color:#888;padding:20px 0">Nenhum item alocado na semana ainda.</p>`));
+  pcpPrintExec(relHeaderHTML("Sequência de produção","Semana")+(secs||`<p style="color:#888;padding:20px 0">Nenhum item alocado na semana ainda.</p>`)+pcpChartSemanaHTML());
 }
 function renderTerc(){
   let lst=producao.filter(p=>p.terceirizado && !p.excluido);
