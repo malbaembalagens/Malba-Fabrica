@@ -493,6 +493,19 @@ tbody tr:hover{background:var(--surface-2)}
 .ponto-hoje{margin-bottom:16px}
 .ph-data{font-size:18px;font-weight:800;text-transform:capitalize}
 .ph-hint{font-size:13px;color:var(--muted-2);margin-top:2px}
+.pt-slots{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
+.pt-slot{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 4px;text-align:center}
+.pt-slot span{display:block;font-size:9px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.3px}
+.pt-slot b{font-size:14px}
+.pt-slot.ok{background:#e7f6ec;border-color:#1baf7a}
+.pt-done{color:#1a7f3c;font-weight:700;font-size:13px}
+.pt-resumo{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.pt-resumo div{background:var(--surface-2);border-radius:8px;padding:8px 10px}
+.pt-resumo span{display:block;font-size:10px;color:var(--muted-2)}
+.pt-resumo b{font-size:15px}
+.pt-resumo .ex b{color:#b45c00}
+.pt-resumo .ex2 b{color:#1b52b0}
+.pt-resumo .fal b,.pt-resumo .pen b{color:#b23}
 @media print{
   #print .etiqueta{gap:0;min-height:auto;padding:0;font-size:13px}
   #print .et-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
@@ -1275,7 +1288,7 @@ const DEF_ONDAS = [
   { nome:"Onda TT", gramaturas:[470],         comp:compPadrao("Onda TT") },
 ];
 
-const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1", oms:"malba_os_oms_v1", amostras:"malba_os_amostras_v1", pcpsem:"malba_os_pcpsemana_v1", colab:"malba_os_colaboradores_v1", ponto:"malba_os_ponto_v1" };
+const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1", oms:"malba_os_oms_v1", amostras:"malba_os_amostras_v1", pcpsem:"malba_os_pcpsemana_v1", colab:"malba_os_colaboradores_v1", ponto:"malba_os_ponto_v1", pontocfg:"malba_os_pontocfg_v1", feriados:"malba_os_feriados_v1" };
 
 // util
 function carregar(k,def){ try{ const v=JSON.parse(localStorage.getItem(k)); return (v===null||v===undefined)?def:v }catch(e){ return def } }
@@ -1319,6 +1332,8 @@ let colaboradores = carregar(LS.colab, []);
 let ponto = carregar(LS.ponto, []);
 let pontoModo = "bater";
 let pontoMes = (new Date()).toISOString().slice(0,7);
+let pontoCfg = carregar(LS.pontocfg, {tolMin:10});
+let feriadosCfg = carregar(LS.feriados, {add:[],rem:[]});
 let vendedorLogado = localStorage.getItem("malba_os_vend_sessao")||"";
 function primeiroNome(n){ return (String(n||"").trim().split(/\s+/)[0]||"").toLowerCase(); }
 function vendSenha(v){ return (v&&v.senha)?String(v.senha):primeiroNome(v&&v.nome); }
@@ -3679,109 +3694,221 @@ function renderPCPKanban(){
   `</div>`;
 }
 // ---------- Folha de ponto ----------
+const JORN_PADRAO={ent:"06:30",almI:"12:00",almF:"13:00",sai:"16:18"};
+const PT_LBL=["Entrada","Almoço","Retorno","Saída"];
+function hm2m(x){ const p=String(x||"").split(":"); return (+p[0]||0)*60+(+p[1]||0); }
+function m2hm(m){ m=Math.round(m); const neg=m<0; m=Math.abs(m); return (neg?"-":"")+Math.floor(m/60)+":"+String(m%60).padStart(2,"0"); }
+function colJorn(c){ return {ent:c.jEnt||JORN_PADRAO.ent, almI:c.jAlmI||JORN_PADRAO.almI, almF:c.jAlmF||JORN_PADRAO.almF, sai:c.jSai||JORN_PADRAO.sai}; }
+function devidaDia(c){ const j=colJorn(c); return Math.max(0,(hm2m(j.almI)-hm2m(j.ent)))+Math.max(0,(hm2m(j.sai)-hm2m(j.almF))); }
 function pontoColAtivos(){ return colaboradores.filter(c=>!c.excluido && c.ativo!==false); }
-function pontoBatidasDia(colId, ymd){ return ponto.filter(b=>b.colId===colId && (b.ts||"").slice(0,10)===ymd).sort((a,b)=>(a.ts||"").localeCompare(b.ts||"")); }
-function pontoHorasDia(colId, ymd){ const bs=pontoBatidasDia(colId,ymd); let ms=0; for(let i=0;i+1<bs.length;i+=2){ ms+=new Date(bs[i+1].ts)-new Date(bs[i].ts); } return ms/3600000; }
-function fmtHoras(h){ if(!h) return "0h"; const H=Math.floor(h); const M=Math.round((h-H)*60); return (H?H+"h":"")+(M?" "+M+"min":(H?"":"0h")); }
 function fmtHora(ts){ const d=new Date(ts); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
+function batidasDia(colId, ds){ return ponto.filter(b=>b.colId===colId && (b.ts||"").slice(0,10)===ds).sort((a,b)=>(a.ts||"").localeCompare(b.ts||"")); }
+// feriados SP (capital)
+function pascoa(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,g=Math.floor((b+8)/25),h=Math.floor((b-g+1)/3),i=(19*a+b-d-h+15)%30,k=Math.floor(c/4),l=c%4,mm=(32+2*e+2*k-i-l)%7,n=Math.floor((a+11*i+22*mm)/451),mes=Math.floor((i+mm-7*n+114)/31),dia=((i+mm-7*n+114)%31)+1; return new Date(y,mes-1,dia); }
+function addDias(dt,n){ const x=new Date(dt); x.setDate(x.getDate()+n); return x; }
+function dstr(dt){ return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0"); }
+function feriadosAuto(y){ const p=pascoa(y); const o={}; 
+  o[y+"-01-01"]="Confraternização"; o[y+"-01-25"]="Aniversário de São Paulo"; o[y+"-04-21"]="Tiradentes"; o[y+"-05-01"]="Dia do Trabalho"; o[y+"-07-09"]="Revolução Constitucionalista"; o[y+"-09-07"]="Independência"; o[y+"-10-12"]="N. Sra. Aparecida"; o[y+"-11-02"]="Finados"; o[y+"-11-15"]="Proclamação da República"; o[y+"-11-20"]="Consciência Negra"; o[y+"-12-25"]="Natal"; o[dstr(addDias(p,-2))]="Sexta-feira Santa"; o[dstr(addDias(p,60))]="Corpus Christi";
+  return o; }
+function ehFeriado(ds){ if(feriadosCfg.rem.includes(ds)) return false; return !!feriadosAuto(+ds.slice(0,4))[ds] || feriadosCfg.add.includes(ds); }
+function nomeFeriado(ds){ return feriadosAuto(+ds.slice(0,4))[ds] || (feriadosCfg.add.includes(ds)?"Feriado":""); }
+function pontoDiasDoMes(ym){ const [y,m]=ym.split("-").map(Number); const nd=new Date(y,m,0).getDate(); const out=[]; for(let d=1;d<=nd;d++) out.push(ym+"-"+String(d).padStart(2,"0")); return out; }
+// cálculo do dia
+function calcDia(c, ds){
+  const bs=batidasDia(c.id,ds);
+  const dow=new Date(ds+"T12:00:00").getDay();
+  const fer=ehFeriado(ds), fds=(dow===0||dow===6);
+  const devida=(fer||fds)?0:devidaDia(c);
+  let trab=0; for(let i=0;i+1<bs.length;i+=2){ trab+=(new Date(bs[i+1].ts)-new Date(bs[i].ts))/60000; } trab=Math.round(trab);
+  let e50=0,e100=0,falta=0,pend=0;
+  if(fer){ e100=trab; }
+  else if(fds){ e50=trab; }
+  else if(bs.length===0){ falta=devida; }
+  else { const diff=trab-devida; if(diff>0) e50=diff; else pend=Math.max(0,(-diff)-(pontoCfg.tolMin||0)); }
+  return {bs,dow,fer,fds,devida,trab,e50,e100,falta,pend};
+}
+function resumoMes(c, ym){
+  const dias=pontoDiasDoMes(ym); let devida=0,trab=0,e50=0,e100=0,faltaMin=0,faltaDias=0,pend=0;
+  const linhas=dias.map(ds=>{ const r=calcDia(c,ds); devida+=r.devida; trab+=r.trab; e50+=r.e50; e100+=r.e100; if(r.falta>0){faltaMin+=r.falta;faltaDias++;} pend+=r.pend; return {ds,...r}; });
+  return {linhas,devida,trab,e50,e100,faltaMin,faltaDias,pend};
+}
+// ----- render -----
 function renderFolhaPonto(){
   const box=$("folha-ponto-c"); if(!box) return;
-  if(pontoModo!=="colab") pontoModo="relatorio";
+  if(!["relatorio","colab","feriados"].includes(pontoModo)) pontoModo="relatorio";
   box.innerHTML=`<div class="pcp-bar">
     <div class="pcp-tabs">
       <button class="pcp-tab ${pontoModo==='relatorio'?'on':''}" onclick="pontoSetModo('relatorio')">Relatório</button>
       <button class="pcp-tab ${pontoModo==='colab'?'on':''}" onclick="pontoSetModo('colab')">Colaboradores</button>
+      <button class="pcp-tab ${pontoModo==='feriados'?'on':''}" onclick="pontoSetModo('feriados')">Feriados</button>
     </div>
-    ${pontoModo==='relatorio'?`<div class="pcp-exp"><button class="btnprim" onclick="pontoExportPDF()">📄 Exportar PDF</button></div>`:""}
+    ${pontoModo==='relatorio'?`<div class="pcp-exp"><button class="btnprim" onclick="pontoExportPDF()">📄 Folha para assinar</button></div>`:""}
   </div><div id="ponto-inner"></div>`;
   if(pontoModo==="colab") renderPontoColab();
+  else if(pontoModo==="feriados") renderPontoFeriados();
   else renderPontoRelatorio();
 }
-function abrirPonto(){ show("tela-ponto"); renderPontoKiosk(); }
 function pontoSetModo(m){ pontoModo=m; renderFolhaPonto(); }
+function abrirPonto(){ show("tela-ponto"); renderPontoKiosk(); }
+// ----- kiosk -----
 function renderPontoKiosk(){
   const box=$("ponto-kiosk-c"); if(!box) return;
   const hoje=hojeStr(); const ativos=pontoColAtivos();
-  const hd=$("ponto-hoje"); if(hd){ const d=new Date(); hd.innerHTML=`<div class="ph-data">${d.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"})}</div><div class="ph-hint">Toque no seu nome para registrar entrada ou saída.</div>`; }
-  if(!ativos.length){ box.innerHTML=`<div class="amo-empty">Nenhum colaborador cadastrado ainda. Peça ao gestor para cadastrar em Base de dados › Folha de ponto.</div>`; return; }
-  const cards=ativos.map(c=>{
-    const bs=pontoBatidasDia(c.id,hoje); const dentro=bs.length%2===1;
-    const ult=bs.length?fmtHora(bs[bs.length-1].ts):"—";
-    const hrs=pontoHorasDia(c.id,hoje);
-    const marcas=bs.map((b,i)=>`<span class="pt-marca ${i%2===0?'ent':'sai'}">${i%2===0?'▶':'■'} ${fmtHora(b.ts)}</span>`).join("");
-    return `<div class="pt-card ${dentro?'dentro':''}">
-      <div class="pt-head"><div><b>${esc(c.nome)}</b>${c.cargo?`<small> · ${esc(c.cargo)}</small>`:""}</div>
-        <span class="pt-status ${dentro?'in':'out'}">${dentro?'Dentro':'Fora'}</span></div>
-      <div class="pt-marcas">${marcas||'<span class="muted">Sem batidas hoje</span>'}</div>
-      <div class="pt-foot"><span class="muted">Hoje: <b>${fmtHoras(hrs)}</b> · última ${ult}</span>
-        <div class="pt-btns">
-          ${bs.length?`<button class="btnlink" onclick="pontoDesfazer('${c.id}')">↩︎ desfazer</button>`:""}
-          <button class="btnprim" onclick="baterPonto('${c.id}')">${dentro?'Registrar saída':'Registrar entrada'}</button>
-        </div></div>
+  const hd=$("ponto-hoje"); if(hd){ const d=new Date(); hd.innerHTML=`<div class="ph-data">${d.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"})}${ehFeriado(hoje)?' · <span style="color:#1b52b0">feriado</span>':""}</div><div class="ph-hint">Toque no seu nome e digite sua senha para registrar o ponto.</div>`; }
+  if(!ativos.length){ box.innerHTML=`<div class="amo-empty">Nenhum colaborador cadastrado. Peça ao gestor para cadastrar em Base de dados › Folha de ponto.</div>`; return; }
+  box.innerHTML=`<div class="pt-grid">`+ativos.map(c=>{
+    const bs=batidasDia(c.id,hoje);
+    const slots=PT_LBL.map((lb,i)=>`<div class="pt-slot ${bs[i]?'ok':''}"><span>${lb}</span><b>${bs[i]?fmtHora(bs[i].ts):"--:--"}</b></div>`).join("");
+    const completo=bs.length>=4;
+    const prox=PT_LBL[bs.length]||"";
+    return `<div class="pt-card ${bs.length%2===1?'dentro':''}">
+      <div class="pt-head"><div><b>${esc(c.nome)}</b>${c.cargo?`<small> · ${esc(c.cargo)}</small>`:""}</div></div>
+      <div class="pt-slots">${slots}</div>
+      <div class="pt-foot">${completo?`<span class="pt-done">✔ 4 pontos registrados</span>`:`<button class="btnprim" style="width:100%" onclick="abrirPontoSenha('${c.id}')">Registrar ${prox}</button>`}</div>
     </div>`;
-  }).join("");
-  box.innerHTML=`<div class="pt-grid">${cards}</div>`;
+  }).join("")+`</div>`;
 }
-function baterPonto(colId){
+function abrirPontoSenha(colId){
   const c=colaboradores.find(x=>x.id===colId); if(!c) return;
-  ponto.push({ id:uid(), colId, ts:new Date().toISOString() });
-  salvar(LS.ponto, ponto); renderPontoKiosk();
+  const bs=batidasDia(colId,hojeStr());
+  if(bs.length>=4){ alert("Os 4 pontos de hoje já foram registrados para "+c.nome+"."); return; }
+  const prox=PT_LBL[bs.length]; const agora=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+  $("ocmodal").innerHTML=`<div class="modal-card" style="max-width:340px">
+    <h3 class="modal-h">${esc(c.nome)}</h3>
+    <div class="modal-sec">Registrar <b>${prox}</b> às <b>${agora}</b></div>
+    <div class="field" style="margin-top:10px"><label>Senha</label><input id="pt-senha" type="password" onkeydown="if(event.key==='Enter')confirmarPontoSenha('${colId}')"></div>
+    <div id="pt-erro" style="color:#d92d20;font-size:13px;margin-top:6px;display:none">Senha incorreta.</div>
+    <div class="modal-foot"><button class="btnlink" onclick="closeOcModal()">Cancelar</button><button class="btnprim" onclick="confirmarPontoSenha('${colId}')">Registrar ${prox}</button></div>
+  </div>`; $("ocmodal").style.display="flex"; setTimeout(()=>{const e=$("pt-senha");if(e)e.focus();},50);
 }
-function pontoDesfazer(colId){
-  const hoje=hojeStr(); const bs=pontoBatidasDia(colId,hoje); if(!bs.length) return;
-  if(!confirm("Desfazer a última batida de hoje ("+fmtHora(bs[bs.length-1].ts)+")?")) return;
-  const last=bs[bs.length-1]; ponto=ponto.filter(b=>b.id!==last.id); salvar(LS.ponto, ponto); renderPontoKiosk();
+function confirmarPontoSenha(colId){
+  const c=colaboradores.find(x=>x.id===colId); const sn=val("pt-senha");
+  if(!c || sn!==(c.senha||primeiroNome(c.nome))){ const e=$("pt-erro"); if(e)e.style.display="block"; return; }
+  const bs=batidasDia(colId,hojeStr()); if(bs.length>=4){ closeOcModal(); return; }
+  ponto.push({id:uid(),colId,ts:new Date().toISOString()}); salvar(LS.ponto,ponto); closeOcModal(); renderPontoKiosk();
 }
+// ----- colaboradores -----
 function renderPontoColab(){
   const box=$("ponto-inner"); if(!box) return;
-  const rows=colaboradores.filter(c=>!c.excluido).map((c,i)=>`<div class="listrow"><span>${esc(c.nome)}${c.cargo?` <small style="color:var(--muted-2)">· ${esc(c.cargo)}</small>`:""}${c.ativo===false?' <small style="color:#d92d20">· inativo</small>':""}</span><div class="rowbtns"><button class="ed" onclick="editColab('${c.id}')" title="Editar">✏️</button><button class="rm" onclick="delColab('${c.id}')" title="Remover">×</button></div></div>`).join("")||`<div class="amo-empty">Nenhum colaborador ainda.</div>`;
-  box.innerHTML=`<div class="cadform"><div class="field"><label>Nome do colaborador</label><input id="colab-nome" placeholder="Nome completo"></div>
-    <div class="field"><label>Cargo / função</label><input id="colab-cargo" placeholder="Ex.: Impressor, Acabamento"></div>
+  const rows=colaboradores.filter(c=>!c.excluido).map(c=>{ const j=colJorn(c);
+    return `<div class="listrow"><span>${esc(c.nome)}${c.cargo?` <small style="color:var(--muted-2)">· ${esc(c.cargo)}</small>`:""}${c.ativo===false?' <small style="color:#d92d20">· inativo</small>':""}<br><small style="color:var(--muted-2)">${j.ent}–${j.almI} · ${j.almF}–${j.sai} (${m2hm(devidaDia(c))}/dia) · senha: ${esc(c.senha||primeiroNome(c.nome))}</small></span><div class="rowbtns"><button class="ed" onclick="editColab('${c.id}')" title="Editar">✏️</button><button class="rm" onclick="delColab('${c.id}')" title="Remover">×</button></div></div>`;
+  }).join("")||`<div class="amo-empty">Nenhum colaborador ainda.</div>`;
+  box.innerHTML=`<div class="cadform">
+    <div class="field" style="min-width:200px"><label>Nome</label><input id="colab-nome" placeholder="Nome completo"></div>
+    <div class="field"><label>Cargo</label><input id="colab-cargo" placeholder="Ex.: Impressor"></div>
+    <div class="field" style="min-width:120px"><label>Senha</label><input id="colab-senha" placeholder="(padrão: 1º nome)"></div>
+    <div class="field" style="max-width:90px"><label>Entrada</label><input id="colab-ent" type="time" value="06:30"></div>
+    <div class="field" style="max-width:90px"><label>Almoço</label><input id="colab-almI" type="time" value="12:00"></div>
+    <div class="field" style="max-width:90px"><label>Retorno</label><input id="colab-almF" type="time" value="13:00"></div>
+    <div class="field" style="max-width:90px"><label>Saída</label><input id="colab-sai" type="time" value="16:18"></div>
     <button class="btnprim" onclick="addColab()">＋ Adicionar</button></div>
     <div class="listbox">${rows}</div>`;
 }
 function addColab(){
   const nome=val("colab-nome"); if(!nome){ alert("Informe o nome."); return; }
-  colaboradores.push({ id:uid(), nome, cargo:val("colab-cargo"), ativo:true });
+  colaboradores.push({ id:uid(), nome, cargo:val("colab-cargo"), senha:(val("colab-senha")||primeiroNome(nome)), ativo:true,
+    jEnt:val("colab-ent")||JORN_PADRAO.ent, jAlmI:val("colab-almI")||JORN_PADRAO.almI, jAlmF:val("colab-almF")||JORN_PADRAO.almF, jSai:val("colab-sai")||JORN_PADRAO.sai });
   salvar(LS.colab, colaboradores); renderPontoColab();
 }
 function editColab(id){
+  const c=colaboradores.find(x=>x.id===id); if(!c) return; const j=colJorn(c);
+  $("ocmodal").innerHTML=`<div class="modal-card" style="max-width:420px">
+    <h3 class="modal-h">Editar colaborador</h3>
+    <div class="grid g2">
+      <div class="field" style="grid-column:1/-1"><label>Nome</label><input id="ec-nome" value="${esc(c.nome)}"></div>
+      <div class="field"><label>Cargo</label><input id="ec-cargo" value="${esc(c.cargo||'')}"></div>
+      <div class="field"><label>Senha</label><input id="ec-senha" value="${esc(c.senha||primeiroNome(c.nome))}"></div>
+      <div class="field"><label>Entrada</label><input id="ec-ent" type="time" value="${j.ent}"></div>
+      <div class="field"><label>Almoço</label><input id="ec-almI" type="time" value="${j.almI}"></div>
+      <div class="field"><label>Retorno</label><input id="ec-almF" type="time" value="${j.almF}"></div>
+      <div class="field"><label>Saída</label><input id="ec-sai" type="time" value="${j.sai}"></div>
+      <div class="field" style="grid-column:1/-1"><label><input type="checkbox" id="ec-ativo" ${c.ativo!==false?"checked":""}> Ativo</label></div>
+    </div>
+    <div class="modal-foot"><button class="btnlink" onclick="closeOcModal()">Cancelar</button><button class="btnprim" onclick="salvarColab('${id}')">Salvar</button></div>
+  </div>`; $("ocmodal").style.display="flex";
+}
+function salvarColab(id){
   const c=colaboradores.find(x=>x.id===id); if(!c) return;
-  const nome=prompt("Nome:", c.nome); if(nome==null) return;
-  const cargo=prompt("Cargo / função:", c.cargo||""); if(cargo==null) return;
-  const ativo=confirm("Colaborador ATIVO? (OK = ativo, Cancelar = inativo)");
-  c.nome=nome.trim()||c.nome; c.cargo=cargo.trim(); c.ativo=ativo;
-  salvar(LS.colab, colaboradores); renderPontoColab();
+  c.nome=val("ec-nome")||c.nome; c.cargo=val("ec-cargo"); c.senha=val("ec-senha")||primeiroNome(c.nome);
+  c.jEnt=val("ec-ent")||JORN_PADRAO.ent; c.jAlmI=val("ec-almI")||JORN_PADRAO.almI; c.jAlmF=val("ec-almF")||JORN_PADRAO.almF; c.jSai=val("ec-sai")||JORN_PADRAO.sai;
+  c.ativo=$("ec-ativo")?$("ec-ativo").checked:true;
+  salvar(LS.colab,colaboradores); closeOcModal(); renderPontoColab();
 }
 function delColab(id){
   const c=colaboradores.find(x=>x.id===id); if(!c) return;
-  if(!confirm("Remover "+c.nome+"? As batidas de ponto dele continuam guardadas no histórico.")) return;
-  c.excluido=true; salvar(LS.colab, colaboradores); renderPontoColab();
+  if(!confirm("Remover "+c.nome+"? As batidas dele continuam guardadas.")) return;
+  c.excluido=true; salvar(LS.colab,colaboradores); renderPontoColab();
 }
-function pontoDiasDoMes(ym){ const [y,m]=ym.split("-").map(Number); const nd=new Date(y,m,0).getDate(); const out=[]; for(let d=1;d<=nd;d++) out.push(ym+"-"+String(d).padStart(2,"0")); return out; }
+// ----- feriados -----
+function renderPontoFeriados(){
+  const box=$("ponto-inner"); if(!box) return; const y=+pontoMes.slice(0,4);
+  const auto=feriadosAuto(y);
+  const linhas=Object.keys(auto).sort().map(ds=>{ const rem=feriadosCfg.rem.includes(ds);
+    return `<div class="listrow"><span>${fmtData(ds+"T12:00:00")} · ${esc(auto[ds])}${rem?' <small style="color:#b23">(desativado)</small>':""}</span><div class="rowbtns"><button class="ed" onclick="toggleFeriadoRem('${ds}')">${rem?"Reativar":"Desativar"}</button></div></div>`;
+  }).join("");
+  const custom=feriadosCfg.add.filter(ds=>ds.slice(0,4)==String(y)).sort().map(ds=>`<div class="listrow"><span>${fmtData(ds+"T12:00:00")} · <small style="color:var(--muted-2)">personalizado</small></span><div class="rowbtns"><button class="rm" onclick="removeFeriadoCustom('${ds}')">×</button></div></div>`).join("");
+  box.innerHTML=`<div class="octop"><select class="selmes" onchange="pontoMes=this.value;renderFolhaPonto()">${optMeses(pontoMes)}</select></div>
+    <div class="cadform"><div class="field"><label>Adicionar feriado</label><input type="date" id="fer-data"></div><button class="btnprim" onclick="addFeriadoCustom()">＋ Adicionar</button></div>
+    <div class="hint">Feriados de São Paulo (capital) já vêm cadastrados — nacionais, estadual (9/7), municipal (25/1), Sexta-feira Santa e Corpus Christi. Desative os que sua fábrica não folga e adicione emendas.</div>
+    <div class="listbox">${linhas}${custom}</div>`;
+}
+function toggleFeriadoRem(ds){ if(feriadosCfg.rem.includes(ds)) feriadosCfg.rem=feriadosCfg.rem.filter(x=>x!==ds); else feriadosCfg.rem.push(ds); salvar(LS.feriados,feriadosCfg); renderPontoFeriados(); }
+function addFeriadoCustom(){ const d=val("fer-data"); if(!d) return; if(!feriadosCfg.add.includes(d)) feriadosCfg.add.push(d); salvar(LS.feriados,feriadosCfg); renderPontoFeriados(); }
+function removeFeriadoCustom(ds){ feriadosCfg.add=feriadosCfg.add.filter(x=>x!==ds); salvar(LS.feriados,feriadosCfg); renderPontoFeriados(); }
+// ----- relatório -----
 function renderPontoRelatorio(){
   const box=$("ponto-inner"); if(!box) return;
   const ativos=colaboradores.filter(c=>!c.excluido);
-  const dias=pontoDiasDoMes(pontoMes);
-  const linhas=ativos.map(c=>{
-    let tot=0; const porDia=dias.map(ds=>{ const h=pontoHorasDia(c.id,ds); tot+=h; return {ds,h}; }).filter(x=>x.h>0);
-    const det=porDia.map(x=>`${(+x.ds.slice(8)).toString()}: ${fmtHoras(x.h)}`).join(" · ")||'<span class="muted">sem registros</span>';
-    return `<tr><td><b>${esc(c.nome)}</b>${c.cargo?`<br><small style="color:var(--muted-2)">${esc(c.cargo)}</small>`:""}</td><td>${det}</td><td class="num"><b>${fmtHoras(tot)}</b></td></tr>`;
-  }).join("")||`<tr><td colspan="3" style="text-align:center;color:var(--muted-2);padding:30px">Nenhum colaborador.</td></tr>`;
-  box.innerHTML=`<div class="octop"><select class="selmes" onchange="pontoMes=this.value;renderFolhaPonto()">${optMeses(pontoMes)}</select></div>
-    <div class="tablewrap"><table class="htab"><thead><tr><th>Colaborador</th><th>Dias trabalhados (horas)</th><th class="num">Total no mês</th></tr></thead><tbody>${linhas}</tbody></table></div>`;
+  const cards=ativos.map(c=>{ const r=resumoMes(c,pontoMes);
+    return `<div class="chartcard" style="margin-bottom:14px"><div class="charthead"><h3>${esc(c.nome)}${c.cargo?` · <small style="font-weight:400;color:var(--muted-2)">${esc(c.cargo)}</small>`:""}</h3></div>
+      <div class="pt-resumo">
+        <div><span>Devidas</span><b>${m2hm(r.devida)}</b></div>
+        <div><span>Trabalhadas</span><b>${m2hm(r.trab)}</b></div>
+        <div class="ex"><span>Extra 50%</span><b>+${m2hm(r.e50)}</b></div>
+        <div class="ex2"><span>Extra feriado</span><b>+${m2hm(r.e100)}</b></div>
+        <div class="fal"><span>Faltas</span><b>${r.faltaDias}d · ${m2hm(r.faltaMin)}</b></div>
+        <div class="pen"><span>Pendentes</span><b>-${m2hm(r.pend)}</b></div>
+      </div></div>`;
+  }).join("")||`<div class="amo-empty">Nenhum colaborador cadastrado.</div>`;
+  box.innerHTML=`<div class="octop"><select class="selmes" onchange="pontoMes=this.value;renderFolhaPonto()">${optMeses(pontoMes)}</select><span class="hint" style="margin-left:10px">Tolerância de atraso: ${pontoCfg.tolMin||0} min/dia</span></div>${cards}`;
+}
+// ----- PDF folha para assinar -----
+function folhaColabHTML(c, quebra){
+  const r=resumoMes(c,pontoMes); const [y,m]=pontoMes.split("-");
+  const mesNome=["","Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"][+m]+"/"+y;
+  const dias=["dom","seg","ter","qua","qui","sex","sáb"];
+  const rows=r.linhas.map(l=>{
+    const dd=(+l.ds.slice(8))+" "+dias[l.dow];
+    if(l.fer) return `<tr style="background:#eef4ff"><td>${dd}</td><td colspan="4" style="text-align:center;color:#1b52b0">Feriado — ${esc(nomeFeriado(l.ds))}</td><td style="text-align:right">${l.trab?m2hm(l.trab):"—"}</td><td style="text-align:right;color:#1b52b0">${l.e100?("×2 "+m2hm(l.e100)):"—"}</td><td style="text-align:right">${l.e100?("+"+m2hm(l.e100)):"—"}</td></tr>`;
+    if(l.fds) return `<tr style="color:#999"><td>${dd}</td><td colspan="4" style="text-align:center">${l.trab?"":"folga"}</td><td style="text-align:right">${l.trab?m2hm(l.trab):"—"}</td><td style="text-align:right">${l.e50?("+"+m2hm(l.e50)):"—"}</td><td style="text-align:right">${l.e50?("+"+m2hm(l.e50)):"—"}</td></tr>`;
+    if(l.bs.length===0) return `<tr style="background:#fdeaea"><td>${dd}</td><td colspan="4" style="text-align:center;color:#b23;font-weight:600">FALTA</td><td style="text-align:right">0:00</td><td style="text-align:right">—</td><td style="text-align:right;color:#b23">-${m2hm(l.falta)}</td></tr>`;
+    const t=i=>l.bs[i]?fmtHora(l.bs[i].ts):"—";
+    const saldo = l.e50>0?("+"+m2hm(l.e50)) : (l.pend>0?("-"+m2hm(l.pend)):"0:00");
+    return `<tr><td>${dd}</td><td style="text-align:center">${t(0)}</td><td style="text-align:center">${t(1)}</td><td style="text-align:center">${t(2)}</td><td style="text-align:center">${t(3)}</td><td style="text-align:right">${m2hm(l.trab)}</td><td style="text-align:right">${l.e50?("+"+m2hm(l.e50)):"—"}</td><td style="text-align:right">${saldo}</td></tr>`;
+  }).join("");
+  const j=colJorn(c);
+  return `<div style="${quebra?'page-break-before:always;':''}">
+    ${relHeaderHTML("Folha de ponto",mesNome)}
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin:10px 0 6px"><div><b>${esc(c.nome)}</b>${c.cargo?" · "+esc(c.cargo):""}</div><div style="color:#555">Jornada: ${j.ent}–${j.almI} · ${j.almF}–${j.sai} (${m2hm(devidaDia(c))}/dia)</div></div>
+    <table class="pordtab" style="font-size:10.5px"><thead><tr><th>Dia</th><th style="text-align:center">Entr.</th><th style="text-align:center">Almoço</th><th style="text-align:center">Ret.</th><th style="text-align:center">Saída</th><th style="text-align:right">Trab.</th><th style="text-align:right">Extra</th><th style="text-align:right">Saldo</th></tr></thead><tbody>${rows}</tbody></table>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:11px">
+      <div style="background:#f6f6f4;border-radius:6px;padding:6px 10px">Devidas: <b>${m2hm(r.devida)}</b></div>
+      <div style="background:#f6f6f4;border-radius:6px;padding:6px 10px">Trabalhadas: <b>${m2hm(r.trab)}</b></div>
+      <div style="background:#fff4e5;border-radius:6px;padding:6px 10px;color:#b45c00">Extra 50%: <b>+${m2hm(r.e50)}</b></div>
+      <div style="background:#eef4ff;border-radius:6px;padding:6px 10px;color:#1b52b0">Extra feriado: <b>+${m2hm(r.e100)}</b></div>
+      <div style="background:#fdeaea;border-radius:6px;padding:6px 10px;color:#b23">Faltas: <b>${r.faltaDias}d · ${m2hm(r.faltaMin)}</b></div>
+      <div style="background:#f6f6f4;border-radius:6px;padding:6px 10px">Pendentes: <b>-${m2hm(r.pend)}</b></div>
+    </div>
+    <div style="display:flex;gap:40px;margin-top:34px">
+      <div style="flex:1;text-align:center"><div style="border-top:1px solid #000;padding-top:5px;font-size:11px;color:#555">Assinatura do colaborador</div></div>
+      <div style="flex:1;text-align:center"><div style="border-top:1px solid #000;padding-top:5px;font-size:11px;color:#555">Responsável · MALBA</div></div>
+    </div></div>`;
 }
 function pontoExportPDF(){
   const ativos=colaboradores.filter(c=>!c.excluido);
-  const dias=pontoDiasDoMes(pontoMes);
-  const [y,m]=pontoMes.split("-"); const mesNome=["","Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"][+m]+"/"+y;
-  const rows=ativos.map(c=>{
-    let tot=0; const porDia=dias.map(ds=>{ const h=pontoHorasDia(c.id,ds); tot+=h; return {ds,h}; }).filter(x=>x.h>0);
-    const det=porDia.map(x=>`${(+x.ds.slice(8))}: ${fmtHoras(x.h)}`).join(" · ")||"—";
-    return `<tr><td><b>${esc(c.nome)}</b>${c.cargo?` · ${esc(c.cargo)}`:""}</td><td>${det}</td><td style="text-align:right"><b>${fmtHoras(tot)}</b></td></tr>`;
-  }).join("");
-  const tabela=`<table class="pordtab"><thead><tr><th>Colaborador</th><th>Dias (horas)</th><th style="text-align:right">Total</th></tr></thead><tbody>${rows||'<tr><td colspan="3" style="color:#888">Sem colaboradores.</td></tr>'}</tbody></table>`;
-  pcpPrintExec(relHeaderHTML("Folha de ponto",mesNome)+tabela, "Folha de ponto");
+  if(!ativos.length){ alert("Nenhum colaborador cadastrado."); return; }
+  const html=ativos.map((c,i)=>folhaColabHTML(c,i>0)).join("");
+  pcpPrintExec(html,"Folha de ponto");
 }
 // ---------- PCP Semanal ----------
 const PCP_DIAS=[["seg","Segunda"],["ter","Terça"],["qua","Quarta"],["qui","Quinta"],["sex","Sexta"],["sab","Sábado"]];
