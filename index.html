@@ -472,6 +472,23 @@ tbody tr:hover{background:var(--surface-2)}
 .gc-v{font-size:9px;color:var(--muted-2);margin-bottom:2px;white-space:nowrap}
 .gc-bar{width:10px;border-radius:3px 3px 0 0;min-height:2px}
 .gc-mlbl{font-size:10px;color:var(--muted-2)}
+/* Folha de ponto */
+.pt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.pt-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px}
+.pt-card.dentro{border-color:#1baf7a;box-shadow:0 0 0 1px #1baf7a inset}
+.pt-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.pt-head small{color:var(--muted-2)}
+.pt-status{font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px}
+.pt-status.in{background:#e7f6ec;color:#1a7f3c}
+.pt-status.out{background:#f0f0f0;color:#777}
+.pt-marcas{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;min-height:20px}
+.pt-marca{font-size:11px;padding:2px 7px;border-radius:6px}
+.pt-marca.ent{background:#e7f6ec;color:#1a7f3c}
+.pt-marca.sai{background:#fdeaea;color:#b23}
+.pt-foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.pt-btns{display:flex;gap:8px;align-items:center}
+.cadform{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.cadform .field{flex:1;min-width:160px}
 @media print{
   #print .etiqueta{gap:0;min-height:auto;padding:0;font-size:13px}
   #print .et-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
@@ -946,8 +963,9 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
         </div>
         <button class="navgroup collapsed only-gestor" data-g="tpm" onclick="toggleGroup(this)">🔧 TPM <span class="chev">▾</span></button>
         <div class="navsub collapsed only-gestor"><div class="navmini" style="color:var(--muted-2)">Em breve</div></div>
-        <button class="navgroup collapsed only-gestor" data-g="base" onclick="toggleGroup(this)">📁 Base de dados <span class="chev">▾</span></button>
+        <button class="navgroup collapsed only-gestor" data-g="base" onclick="toggleGroup(this)">📁 Cadastros <span class="chev">▾</span></button>
         <div class="navsub collapsed only-gestor">
+          <button class="navitem subitem" data-v="folha-ponto" onclick="irViewG('folha-ponto')">Folha de ponto</button>
           <button class="navitem subitem" data-v="bd-historico" onclick="irViewG('bd-historico')">Histórico</button>
           <button class="navitem subitem" data-v="cad-fornecedores" onclick="irViewG('cad-fornecedores')">Fornecedores</button>
           <button class="navitem subitem" data-v="cad-clientes" onclick="irViewG('cad-clientes')">Clientes</button>
@@ -1076,6 +1094,10 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
         <div class="vview" id="gview-bd-historico" style="display:none">
           <h2 class="viewtitle">Histórico de produção</h2>
           <div id="historico-c"></div>
+        </div>
+        <div class="vview" id="gview-folha-ponto" style="display:none">
+          <h2 class="viewtitle">Folha de ponto</h2>
+          <div id="folha-ponto-c"></div>
         </div>
 
         <div class="vview" id="gview-cad-fornecedores" style="display:none">
@@ -1235,7 +1257,7 @@ const DEF_ONDAS = [
   { nome:"Onda TT", gramaturas:[470],         comp:compPadrao("Onda TT") },
 ];
 
-const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1", oms:"malba_os_oms_v1", amostras:"malba_os_amostras_v1", pcpsem:"malba_os_pcpsemana_v1" };
+const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1", oms:"malba_os_oms_v1", amostras:"malba_os_amostras_v1", pcpsem:"malba_os_pcpsemana_v1", colab:"malba_os_colaboradores_v1", ponto:"malba_os_ponto_v1" };
 
 // util
 function carregar(k,def){ try{ const v=JSON.parse(localStorage.getItem(k)); return (v===null||v===undefined)?def:v }catch(e){ return def } }
@@ -1275,6 +1297,10 @@ let producao = carregar(LS.prodflow, []);
 let amostras = carregar(LS.amostras, []);
 let pcpSemana = carregar(LS.pcpsem, {dias:{},obs:{}});
 let pcpModo = "quadro";
+let colaboradores = carregar(LS.colab, []);
+let ponto = carregar(LS.ponto, []);
+let pontoModo = "bater";
+let pontoMes = (new Date()).toISOString().slice(0,7);
 let vendedorLogado = localStorage.getItem("malba_os_vend_sessao")||"";
 function primeiroNome(n){ return (String(n||"").trim().split(/\s+/)[0]||"").toLowerCase(); }
 function vendSenha(v){ return (v&&v.senha)?String(v.senha):primeiroNome(v&&v.nome); }
@@ -1378,6 +1404,7 @@ function refreshViewAtual(){
       else if(v==="prod-terceirizado") renderTerc();
       else if(v==="prod-expedicao") renderExpedicao();
       else if(v==="bd-historico") renderHistorico();
+      else if(v==="folha-ponto") renderFolhaPonto();
       else if(v==="dash-pcp") renderPCP();
       return; }
     const vd=$("tela-vendas");
@@ -1749,40 +1776,24 @@ function renderDashProd(){
     </div>
   </div>`;
 
-  // gráfico 4 — histórico de produção UNIFICADO (t, unidades, terceirizado t) por mês
+  // gráficos de histórico — separados: Peso, Quantidade, Terceirizado (por mês no ano)
   let anos=[...new Set(histAtivo().map(h=>(h.data||"").slice(0,4)).filter(Boolean))];
   const anoAtual=String(new Date().getFullYear()); if(!anos.includes(anoAtual)) anos.push(anoAtual);
-  anos.sort().reverse();
-  if(!anos.includes(dashAnoHist)) dashAnoHist=anos[0];
+  anos.sort().reverse(); if(!anos.includes(dashAnoHist)) dashAnoHist=anos[0];
   const mesesL=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-  const fmtU=v=> (+v||0)>=1000 ? ((v/1000).toLocaleString("pt-BR",{maximumFractionDigits:1})+"k") : (+v||0).toLocaleString("pt-BR");
-  const fmtT=v=> (+v||0).toLocaleString("pt-BR",{maximumFractionDigits:1});
-  const dados=mesesL.map((m,i)=>{
-    const ym=dashAnoHist+"-"+String(i+1).padStart(2,"0");
-    const ac=histAtivo().filter(h=>(h.data||"").slice(0,7)===ym && h.processo==="Acabamento");
-    const t=ac.reduce((s,h)=>s+(+h.pesoTotalProd||0),0)/1000;
-    const q=ac.reduce((s,h)=>s+(+h.qtdProd||0),0);
-    const terc=producao.filter(p=>p.terceirizado && !p.excluido && ((p.entradaEm||p.prev||"").slice(0,7)===ym)).reduce((s,p)=>s+(+p.pesoUnit||0)*(+p.qtd||0),0)/1000;
-    return {label:m, t, q, terc};
-  });
-  const totT=dados.reduce((s,d)=>s+d.t,0), totQ=dados.reduce((s,d)=>s+d.q,0), totTerc=dados.reduce((s,d)=>s+d.terc,0);
-  const maxT=Math.max(0.001,...dados.map(d=>d.t)), maxQ=Math.max(1,...dados.map(d=>d.q)), maxTc=Math.max(0.001,...dados.map(d=>d.terc));
-  const grupos=dados.map(d=>`<div class="gc-mo">
-    <div class="gc-grp">
-      <div class="gc-col"><div class="gc-v">${d.t>0?fmtT(d.t):""}</div><div class="gc-bar" style="height:${(d.t/maxT*100).toFixed(1)}%;background:#2a78d6" title="Produção ${d.label}: ${fmtT(d.t)} t"></div></div>
-      <div class="gc-col"><div class="gc-v">${d.q>0?fmtU(d.q):""}</div><div class="gc-bar" style="height:${(d.q/maxQ*100).toFixed(1)}%;background:#1baf7a" title="Quantidade ${d.label}: ${d.q.toLocaleString("pt-BR")} un"></div></div>
-      <div class="gc-col"><div class="gc-v">${d.terc>0?fmtT(d.terc):""}</div><div class="gc-bar" style="height:${(d.terc/maxTc*100).toFixed(1)}%;background:#eda100" title="Terceirizado ${d.label}: ${fmtT(d.terc)} t"></div></div>
-    </div>
-    <div class="gc-mlbl">${d.label}</div>
-  </div>`).join("");
-  const c4=`<div class="chartcard">
-    <div class="charthead"><h3>Histórico de produção</h3>
-      <select class="selmes" onchange="dashAnoHist=this.value;renderDashProd()">${anos.map(a=>`<option ${a===dashAnoHist?"selected":""}>${a}</option>`).join("")}</select></div>
-    <div class="gc-leg"><span><i class="gc-dot" style="background:#2a78d6"></i>Produção (t)</span><span><i class="gc-dot" style="background:#1baf7a"></i>Quantidade (un)</span><span><i class="gc-dot" style="background:#eda100"></i>Terceirizado (t)</span></div>
-    <div class="gc-chart">${grupos}</div>
-    <div class="hint">Em ${dashAnoHist} · Produção: <b>${fmtT(totT)} t</b> · Quantidade: <b>${totQ.toLocaleString("pt-BR")} un</b> · Terceirizado: <b>${fmtT(totTerc)} t</b>. Cada série tem sua própria escala.</div>
-  </div>`;
-  const c4b="";
+  const selAno=`<select class="selmes" onchange="dashAnoHist=this.value;renderDashProd()">${anos.map(a=>`<option ${a===dashAnoHist?"selected":""}>${a}</option>`).join("")}</select>`;
+  const byMonth=fn=> mesesL.map((m,i)=>{ const ym=dashAnoHist+"-"+String(i+1).padStart(2,"0"); return {label:m, val:fn(ym)}; });
+  const mPeso=byMonth(ym=>histAtivo().filter(h=>(h.data||"").slice(0,7)===ym&&h.processo==="Acabamento").reduce((s,h)=>s+(+h.pesoTotalProd||0),0)/1000);
+  const mQtd=byMonth(ym=>histAtivo().filter(h=>(h.data||"").slice(0,7)===ym&&h.processo==="Acabamento").reduce((s,h)=>s+(+h.qtdProd||0),0));
+  const mTerc=byMonth(ym=>producao.filter(p=>p.terceirizado&&!p.excluido&&((p.entradaEm||p.prev||"").slice(0,7)===ym)).reduce((s,p)=>s+(+p.pesoUnit||0)*(+p.qtd||0),0)/1000);
+  const maxP=Math.max(0.001,...mPeso.map(d=>d.val)), maxQ2=Math.max(1,...mQtd.map(d=>d.val)), maxTc=Math.max(0.001,...mTerc.map(d=>d.val));
+  const totP=mPeso.reduce((s,d)=>s+d.val,0), totQ2=mQtd.reduce((s,d)=>s+d.val,0), totTc=mTerc.reduce((s,d)=>s+d.val,0);
+  const barsP=mPeso.map(d=>`<div class="col" title="${d.label}: ${d.val.toLocaleString("pt-BR",{maximumFractionDigits:2})} t"><div class="colbar acab" style="height:${(d.val/maxP*100).toFixed(1)}%"></div><div class="collbl">${d.label}</div></div>`).join("");
+  const barsQ=mQtd.map(d=>`<div class="col" title="${d.label}: ${d.val.toLocaleString("pt-BR")} un"><div class="colbar" style="height:${(d.val/maxQ2*100).toFixed(1)}%"></div><div class="collbl">${d.label}</div></div>`).join("");
+  const barsTc=mTerc.map(d=>`<div class="col" title="${d.label}: ${d.val.toLocaleString("pt-BR",{maximumFractionDigits:2})} t"><div class="colbar" style="height:${(d.val/maxTc*100).toFixed(1)}%;background:#eda100"></div><div class="collbl">${d.label}</div></div>`).join("");
+  const c4=`<div class="chartcard"><div class="charthead"><h3>Histórico de produção · Peso</h3>${selAno}</div><div class="charttotal"><span class="ct-val">${totP.toLocaleString("pt-BR",{maximumFractionDigits:2})}</span><span class="ct-unit">t</span><span class="ct-lbl">no ano</span></div><div class="colchart">${barsP}</div><div class="hint">Toneladas que passaram pelo Acabamento por mês.</div></div>`;
+  const c4b=`<div class="chartcard"><div class="charthead"><h3>Histórico de produção · Quantidade</h3>${selAno}</div><div class="charttotal"><span class="ct-val">${totQ2.toLocaleString("pt-BR")}</span><span class="ct-unit">un</span><span class="ct-lbl">no ano</span></div><div class="colchart">${barsQ}</div><div class="hint">Unidades que passaram pelo Acabamento por mês.</div></div>`;
+  const c4c=`<div class="chartcard"><div class="charthead"><h3>Terceirizado</h3>${selAno}</div><div class="charttotal"><span class="ct-val">${totTc.toLocaleString("pt-BR",{maximumFractionDigits:2})}</span><span class="ct-unit">t</span><span class="ct-lbl">no ano</span></div><div class="colchart">${barsTc}</div><div class="hint">Volume terceirizado (toneladas) por mês, pela data de entrada na OC.</div></div>`;
   // gráfico 5 — Malba Records (editável)
   const recCard=(proc,nome)=>{ const r=records[proc]||{};
     const meta=(dt,nm)=> (dt||nm)?`<div class="recmeta">${esc(dt||"")}${nm?(dt?" - ":"")+esc(nm):""}</div>`:"";
@@ -1813,7 +1824,7 @@ function renderDashProd(){
     <div class="hint">Ao alterar a meta aqui, o <b>gráfico Produção do dia</b> usa esse valor automaticamente.</div>
   </div>`;
 
-  $("dashprod-c").innerHTML=cards+carousel("car-prod",[c1,c2,cLC,c3,c4,c5,c6],"Dashboard · Produção");
+  $("dashprod-c").innerHTML=cards+carousel("car-prod",[c1,c2,cLC,c3,c4,c4b,c4c,c5,c6],"Dashboard · Produção");
   carScroll("car-prod");
 }
 // edição dos recordes e da meta
@@ -3648,6 +3659,110 @@ function renderPCPKanban(){
     col("✅","Pronto","#16a34a",f4,true)+
   `</div>`;
 }
+// ---------- Folha de ponto ----------
+function pontoColAtivos(){ return colaboradores.filter(c=>!c.excluido && c.ativo!==false); }
+function pontoBatidasDia(colId, ymd){ return ponto.filter(b=>b.colId===colId && (b.ts||"").slice(0,10)===ymd).sort((a,b)=>(a.ts||"").localeCompare(b.ts||"")); }
+function pontoHorasDia(colId, ymd){ const bs=pontoBatidasDia(colId,ymd); let ms=0; for(let i=0;i+1<bs.length;i+=2){ ms+=new Date(bs[i+1].ts)-new Date(bs[i].ts); } return ms/3600000; }
+function fmtHoras(h){ if(!h) return "0h"; const H=Math.floor(h); const M=Math.round((h-H)*60); return (H?H+"h":"")+(M?" "+M+"min":(H?"":"0h")); }
+function fmtHora(ts){ const d=new Date(ts); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
+function renderFolhaPonto(){
+  const box=$("folha-ponto-c"); if(!box) return;
+  box.innerHTML=`<div class="pcp-bar">
+    <div class="pcp-tabs">
+      <button class="pcp-tab ${pontoModo==='bater'?'on':''}" onclick="pontoSetModo('bater')">Bater ponto</button>
+      <button class="pcp-tab ${pontoModo==='relatorio'?'on':''}" onclick="pontoSetModo('relatorio')">Relatório</button>
+      <button class="pcp-tab ${pontoModo==='colab'?'on':''}" onclick="pontoSetModo('colab')">Colaboradores</button>
+    </div>
+    ${pontoModo==='relatorio'?`<div class="pcp-exp"><button class="btnprim" onclick="pontoExportPDF()">📄 Exportar PDF</button></div>`:""}
+  </div><div id="ponto-inner"></div>`;
+  if(pontoModo==="relatorio") renderPontoRelatorio();
+  else if(pontoModo==="colab") renderPontoColab();
+  else renderPontoBater();
+}
+function pontoSetModo(m){ pontoModo=m; renderFolhaPonto(); }
+function renderPontoBater(){
+  const box=$("ponto-inner"); if(!box) return;
+  const hoje=hojeStr(); const ativos=pontoColAtivos();
+  if(!ativos.length){ box.innerHTML=`<div class="amo-empty">Nenhum colaborador cadastrado. Vá em "Colaboradores" para adicionar.</div>`; return; }
+  const cards=ativos.map(c=>{
+    const bs=pontoBatidasDia(c.id,hoje); const dentro=bs.length%2===1;
+    const ult=bs.length?fmtHora(bs[bs.length-1].ts):"—";
+    const hrs=pontoHorasDia(c.id,hoje);
+    const marcas=bs.map((b,i)=>`<span class="pt-marca ${i%2===0?'ent':'sai'}">${i%2===0?'▶':'■'} ${fmtHora(b.ts)}</span>`).join("");
+    return `<div class="pt-card ${dentro?'dentro':''}">
+      <div class="pt-head"><div><b>${esc(c.nome)}</b>${c.cargo?`<small> · ${esc(c.cargo)}</small>`:""}</div>
+        <span class="pt-status ${dentro?'in':'out'}">${dentro?'Dentro':'Fora'}</span></div>
+      <div class="pt-marcas">${marcas||'<span class="muted">Sem batidas hoje</span>'}</div>
+      <div class="pt-foot"><span class="muted">Hoje: <b>${fmtHoras(hrs)}</b> · última ${ult}</span>
+        <div class="pt-btns">
+          ${bs.length?`<button class="btnlink" onclick="pontoDesfazer('${c.id}')">↩︎ desfazer</button>`:""}
+          <button class="btnprim" onclick="baterPonto('${c.id}')">${dentro?'Registrar saída':'Registrar entrada'}</button>
+        </div></div>
+    </div>`;
+  }).join("");
+  box.innerHTML=`<div class="pt-grid">${cards}</div>`;
+}
+function baterPonto(colId){
+  const c=colaboradores.find(x=>x.id===colId); if(!c) return;
+  ponto.push({ id:uid(), colId, ts:new Date().toISOString() });
+  salvar(LS.ponto, ponto); renderPontoBater();
+}
+function pontoDesfazer(colId){
+  const hoje=hojeStr(); const bs=pontoBatidasDia(colId,hoje); if(!bs.length) return;
+  if(!confirm("Desfazer a última batida de hoje ("+fmtHora(bs[bs.length-1].ts)+")?")) return;
+  const last=bs[bs.length-1]; ponto=ponto.filter(b=>b.id!==last.id); salvar(LS.ponto, ponto); renderPontoBater();
+}
+function renderPontoColab(){
+  const box=$("ponto-inner"); if(!box) return;
+  const rows=colaboradores.filter(c=>!c.excluido).map((c,i)=>`<div class="listrow"><span>${esc(c.nome)}${c.cargo?` <small style="color:var(--muted-2)">· ${esc(c.cargo)}</small>`:""}${c.ativo===false?' <small style="color:#d92d20">· inativo</small>':""}</span><div class="rowbtns"><button class="ed" onclick="editColab('${c.id}')" title="Editar">✏️</button><button class="rm" onclick="delColab('${c.id}')" title="Remover">×</button></div></div>`).join("")||`<div class="amo-empty">Nenhum colaborador ainda.</div>`;
+  box.innerHTML=`<div class="cadform"><div class="field"><label>Nome do colaborador</label><input id="colab-nome" placeholder="Nome completo"></div>
+    <div class="field"><label>Cargo / função</label><input id="colab-cargo" placeholder="Ex.: Impressor, Acabamento"></div>
+    <button class="btnprim" onclick="addColab()">＋ Adicionar</button></div>
+    <div class="listbox">${rows}</div>`;
+}
+function addColab(){
+  const nome=val("colab-nome"); if(!nome){ alert("Informe o nome."); return; }
+  colaboradores.push({ id:uid(), nome, cargo:val("colab-cargo"), ativo:true });
+  salvar(LS.colab, colaboradores); renderPontoColab();
+}
+function editColab(id){
+  const c=colaboradores.find(x=>x.id===id); if(!c) return;
+  const nome=prompt("Nome:", c.nome); if(nome==null) return;
+  const cargo=prompt("Cargo / função:", c.cargo||""); if(cargo==null) return;
+  const ativo=confirm("Colaborador ATIVO? (OK = ativo, Cancelar = inativo)");
+  c.nome=nome.trim()||c.nome; c.cargo=cargo.trim(); c.ativo=ativo;
+  salvar(LS.colab, colaboradores); renderPontoColab();
+}
+function delColab(id){
+  const c=colaboradores.find(x=>x.id===id); if(!c) return;
+  if(!confirm("Remover "+c.nome+"? As batidas de ponto dele continuam guardadas no histórico.")) return;
+  c.excluido=true; salvar(LS.colab, colaboradores); renderPontoColab();
+}
+function pontoDiasDoMes(ym){ const [y,m]=ym.split("-").map(Number); const nd=new Date(y,m,0).getDate(); const out=[]; for(let d=1;d<=nd;d++) out.push(ym+"-"+String(d).padStart(2,"0")); return out; }
+function renderPontoRelatorio(){
+  const box=$("ponto-inner"); if(!box) return;
+  const ativos=colaboradores.filter(c=>!c.excluido);
+  const dias=pontoDiasDoMes(pontoMes);
+  const linhas=ativos.map(c=>{
+    let tot=0; const porDia=dias.map(ds=>{ const h=pontoHorasDia(c.id,ds); tot+=h; return {ds,h}; }).filter(x=>x.h>0);
+    const det=porDia.map(x=>`${(+x.ds.slice(8)).toString()}: ${fmtHoras(x.h)}`).join(" · ")||'<span class="muted">sem registros</span>';
+    return `<tr><td><b>${esc(c.nome)}</b>${c.cargo?`<br><small style="color:var(--muted-2)">${esc(c.cargo)}</small>`:""}</td><td>${det}</td><td class="num"><b>${fmtHoras(tot)}</b></td></tr>`;
+  }).join("")||`<tr><td colspan="3" style="text-align:center;color:var(--muted-2);padding:30px">Nenhum colaborador.</td></tr>`;
+  box.innerHTML=`<div class="octop"><select class="selmes" onchange="pontoMes=this.value;renderFolhaPonto()">${optMeses(pontoMes)}</select></div>
+    <div class="tablewrap"><table class="htab"><thead><tr><th>Colaborador</th><th>Dias trabalhados (horas)</th><th class="num">Total no mês</th></tr></thead><tbody>${linhas}</tbody></table></div>`;
+}
+function pontoExportPDF(){
+  const ativos=colaboradores.filter(c=>!c.excluido);
+  const dias=pontoDiasDoMes(pontoMes);
+  const [y,m]=pontoMes.split("-"); const mesNome=["","Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"][+m]+"/"+y;
+  const rows=ativos.map(c=>{
+    let tot=0; const porDia=dias.map(ds=>{ const h=pontoHorasDia(c.id,ds); tot+=h; return {ds,h}; }).filter(x=>x.h>0);
+    const det=porDia.map(x=>`${(+x.ds.slice(8))}: ${fmtHoras(x.h)}`).join(" · ")||"—";
+    return `<tr><td><b>${esc(c.nome)}</b>${c.cargo?` · ${esc(c.cargo)}`:""}</td><td>${det}</td><td style="text-align:right"><b>${fmtHoras(tot)}</b></td></tr>`;
+  }).join("");
+  const tabela=`<table class="pordtab"><thead><tr><th>Colaborador</th><th>Dias (horas)</th><th style="text-align:right">Total</th></tr></thead><tbody>${rows||'<tr><td colspan="3" style="color:#888">Sem colaboradores.</td></tr>'}</tbody></table>`;
+  pcpPrintExec(relHeaderHTML("Folha de ponto",mesNome)+tabela, "Folha de ponto");
+}
 // ---------- PCP Semanal ----------
 const PCP_DIAS=[["seg","Segunda"],["ter","Terça"],["qua","Quarta"],["qui","Quinta"],["sex","Sexta"],["sab","Sábado"]];
 function pcpSemGuard(){
@@ -3731,8 +3846,8 @@ function relHeaderHTML(titulo, sub){
     <div class="phr"><div class="phlabel">Emitido em</div><div class="phnum" style="font-size:14px">${fmtData(new Date().toISOString())}</div></div>
   </div>`;
 }
-function pcpPrintExec(html){
-  $("print").innerHTML=`<div class="ptop">${html}</div><div class="pbottom"><div class="pfoot">MALBA Fábrica · PCP</div></div>`;
+function pcpPrintExec(html, foot){
+  $("print").innerHTML=`<div class="ptop">${html}</div><div class="pbottom"><div class="pfoot">MALBA Fábrica · ${foot||"PCP"}</div></div>`;
   const st=document.createElement("style"); st.id="ll-land"; st.textContent="@media print{@page{size:A4 portrait;margin:10mm}}"; document.head.appendChild(st);
   window.print();
   setTimeout(()=>{ const s=$("ll-land"); if(s) s.remove(); $("print").innerHTML=""; },600);
