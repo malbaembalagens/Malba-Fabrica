@@ -489,6 +489,10 @@ tbody tr:hover{background:var(--surface-2)}
 .pt-btns{display:flex;gap:8px;align-items:center}
 .cadform{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
 .cadform .field{flex:1;min-width:160px}
+.navsublabel{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted-2);padding:10px 12px 4px;opacity:.8}
+.ponto-hoje{margin-bottom:16px}
+.ph-data{font-size:18px;font-weight:800;text-transform:capitalize}
+.ph-hint{font-size:13px;color:var(--muted-2);margin-top:2px}
 @media print{
   #print .etiqueta{gap:0;min-height:auto;padding:0;font-size:13px}
   #print .et-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
@@ -801,9 +805,22 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <button class="pcard" onclick="abrirProducao()"><div class="ic">🏭</div><div class="tx"><b>Produção</b><span>Ordens e processos de fabricação</span></div><div class="arr">›</div></button>
       <button class="pcard" onclick="abrirVendas()"><div class="ic">🎯</div><div class="tx"><b>Vendas</b><span>Orçamentos, cadastro e dashboard</span></div><div class="arr">›</div></button>
       <button class="pcard" onclick="abrirGestor()"><div class="ic">📊</div><div class="tx"><b>Gestor</b><span>Dashboard, produção e cadastros</span></div><div class="arr">›</div></button>
+      <button class="pcard" onclick="abrirPonto()"><div class="ic">⏱️</div><div class="tx"><b>Controle de ponto</b><span>Colaboradores marcam entrada e saída</span></div><div class="arr">›</div></button>
     </div>
     <button class="synclink" onclick="abrirSync()"><span id="sync-dot" class="sync-dot"></span> Sincronização entre aparelhos</button>
     <div class="foot">v118 · dados salvos neste aparelho</div>
+  </section>
+
+  <!-- ============ CONTROLE DE PONTO (kiosk) ============ -->
+  <section id="tela-ponto" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="irPerfis()">‹</button>
+      <div class="tt"><small>MALBA Fábrica</small><h2>Controle de ponto</h2></div>
+    </div>
+    <div class="wrap">
+      <div class="ponto-hoje" id="ponto-hoje"></div>
+      <div id="ponto-kiosk-c"></div>
+    </div>
   </section>
 
   <!-- ============ SINCRONIZAÇÃO ============ -->
@@ -963,14 +980,15 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
         </div>
         <button class="navgroup collapsed only-gestor" data-g="tpm" onclick="toggleGroup(this)">🔧 TPM <span class="chev">▾</span></button>
         <div class="navsub collapsed only-gestor"><div class="navmini" style="color:var(--muted-2)">Em breve</div></div>
-        <button class="navgroup collapsed only-gestor" data-g="base" onclick="toggleGroup(this)">📁 Cadastros <span class="chev">▾</span></button>
+        <button class="navgroup collapsed only-gestor" data-g="base" onclick="toggleGroup(this)">📁 Base de dados <span class="chev">▾</span></button>
         <div class="navsub collapsed only-gestor">
-          <button class="navitem subitem" data-v="folha-ponto" onclick="irViewG('folha-ponto')">Folha de ponto</button>
           <button class="navitem subitem" data-v="bd-historico" onclick="irViewG('bd-historico')">Histórico</button>
+          <div class="navsublabel">Cadastros</div>
           <button class="navitem subitem" data-v="cad-fornecedores" onclick="irViewG('cad-fornecedores')">Fornecedores</button>
           <button class="navitem subitem" data-v="cad-clientes" onclick="irViewG('cad-clientes')">Clientes</button>
           <button class="navitem subitem" data-v="cad-vendedores" onclick="irViewG('cad-vendedores')">Vendedores</button>
           <button class="navitem subitem" data-v="cad-ondas" onclick="irViewG('cad-ondas')">Onda e gramatura</button>
+          <button class="navitem subitem" data-v="folha-ponto" onclick="irViewG('folha-ponto')">Folha de ponto</button>
         </div>
         <button class="navgroup collapsed" data-g="dashboard" onclick="toggleGroup(this)">📊 Dashboards <span class="chev">▾</span></button>
         <div class="navsub collapsed">
@@ -3667,23 +3685,24 @@ function fmtHoras(h){ if(!h) return "0h"; const H=Math.floor(h); const M=Math.ro
 function fmtHora(ts){ const d=new Date(ts); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
 function renderFolhaPonto(){
   const box=$("folha-ponto-c"); if(!box) return;
+  if(pontoModo!=="colab") pontoModo="relatorio";
   box.innerHTML=`<div class="pcp-bar">
     <div class="pcp-tabs">
-      <button class="pcp-tab ${pontoModo==='bater'?'on':''}" onclick="pontoSetModo('bater')">Bater ponto</button>
       <button class="pcp-tab ${pontoModo==='relatorio'?'on':''}" onclick="pontoSetModo('relatorio')">Relatório</button>
       <button class="pcp-tab ${pontoModo==='colab'?'on':''}" onclick="pontoSetModo('colab')">Colaboradores</button>
     </div>
     ${pontoModo==='relatorio'?`<div class="pcp-exp"><button class="btnprim" onclick="pontoExportPDF()">📄 Exportar PDF</button></div>`:""}
   </div><div id="ponto-inner"></div>`;
-  if(pontoModo==="relatorio") renderPontoRelatorio();
-  else if(pontoModo==="colab") renderPontoColab();
-  else renderPontoBater();
+  if(pontoModo==="colab") renderPontoColab();
+  else renderPontoRelatorio();
 }
+function abrirPonto(){ show("tela-ponto"); renderPontoKiosk(); }
 function pontoSetModo(m){ pontoModo=m; renderFolhaPonto(); }
-function renderPontoBater(){
-  const box=$("ponto-inner"); if(!box) return;
+function renderPontoKiosk(){
+  const box=$("ponto-kiosk-c"); if(!box) return;
   const hoje=hojeStr(); const ativos=pontoColAtivos();
-  if(!ativos.length){ box.innerHTML=`<div class="amo-empty">Nenhum colaborador cadastrado. Vá em "Colaboradores" para adicionar.</div>`; return; }
+  const hd=$("ponto-hoje"); if(hd){ const d=new Date(); hd.innerHTML=`<div class="ph-data">${d.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"})}</div><div class="ph-hint">Toque no seu nome para registrar entrada ou saída.</div>`; }
+  if(!ativos.length){ box.innerHTML=`<div class="amo-empty">Nenhum colaborador cadastrado ainda. Peça ao gestor para cadastrar em Base de dados › Folha de ponto.</div>`; return; }
   const cards=ativos.map(c=>{
     const bs=pontoBatidasDia(c.id,hoje); const dentro=bs.length%2===1;
     const ult=bs.length?fmtHora(bs[bs.length-1].ts):"—";
@@ -3705,12 +3724,12 @@ function renderPontoBater(){
 function baterPonto(colId){
   const c=colaboradores.find(x=>x.id===colId); if(!c) return;
   ponto.push({ id:uid(), colId, ts:new Date().toISOString() });
-  salvar(LS.ponto, ponto); renderPontoBater();
+  salvar(LS.ponto, ponto); renderPontoKiosk();
 }
 function pontoDesfazer(colId){
   const hoje=hojeStr(); const bs=pontoBatidasDia(colId,hoje); if(!bs.length) return;
   if(!confirm("Desfazer a última batida de hoje ("+fmtHora(bs[bs.length-1].ts)+")?")) return;
-  const last=bs[bs.length-1]; ponto=ponto.filter(b=>b.id!==last.id); salvar(LS.ponto, ponto); renderPontoBater();
+  const last=bs[bs.length-1]; ponto=ponto.filter(b=>b.id!==last.id); salvar(LS.ponto, ponto); renderPontoKiosk();
 }
 function renderPontoColab(){
   const box=$("ponto-inner"); if(!box) return;
