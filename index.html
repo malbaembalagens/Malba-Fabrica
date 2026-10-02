@@ -506,6 +506,21 @@ tbody tr:hover{background:var(--surface-2)}
 .pt-resumo .ex b{color:#b45c00}
 .pt-resumo .ex2 b{color:#1b52b0}
 .pt-resumo .fal b,.pt-resumo .pen b{color:#b23}
+.pt-eye{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:4px 10px;font-size:16px;cursor:pointer}
+.he-tot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.he-tot-grid div{background:var(--surface-2);border-radius:8px;padding:6px 8px}
+.he-tot-grid span{display:block;font-size:9px;color:var(--muted-2)}
+.he-tot-grid b{font-size:13px}
+.he-tot-grid .ex b{color:#b45c00}.he-tot-grid .ex2 b{color:#1b52b0}.he-tot-grid .fal b,.he-tot-grid .pen b{color:#b23}
+.he-table input[type=time]{width:82px;border:1px solid var(--border);border-radius:6px;padding:3px 5px;font-size:12px}
+.he-table td{padding:4px 5px}
+.rc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.rc-grid div{background:var(--surface-2);border-radius:10px;padding:10px}
+.rc-grid span{display:block;font-size:10px;color:var(--muted-2)}
+.rc-grid b{font-size:17px}
+.rc-grid .big b{font-size:20px}
+.rc-grid .ex b{color:#1a7f3c}
+.rc-grid .pen b{color:#b23}
 @media print{
   #print .etiqueta{gap:0;min-height:auto;padding:0;font-size:13px}
   #print .et-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
@@ -3718,19 +3733,19 @@ function ehFeriado(ds){ if(feriadosCfg.rem.includes(ds)) return false; return !!
 function nomeFeriado(ds){ return feriadosAuto(+ds.slice(0,4))[ds] || (feriadosCfg.add.includes(ds)?"Feriado":""); }
 function pontoDiasDoMes(ym){ const [y,m]=ym.split("-").map(Number); const nd=new Date(y,m,0).getDate(); const out=[]; for(let d=1;d<=nd;d++) out.push(ym+"-"+String(d).padStart(2,"0")); return out; }
 // cálculo do dia
-function calcDia(c, ds){
-  const bs=batidasDia(c.id,ds);
+function calcDiaTimes(c, ds, times){
   const dow=new Date(ds+"T12:00:00").getDay();
   const fer=ehFeriado(ds), fds=(dow===0||dow===6);
   const devida=(fer||fds)?0:devidaDia(c);
-  let trab=0; for(let i=0;i+1<bs.length;i+=2){ trab+=(new Date(bs[i+1].ts)-new Date(bs[i].ts))/60000; } trab=Math.round(trab);
+  let trab=0; for(let i=0;i+1<times.length;i+=2){ trab+=hm2m(times[i+1])-hm2m(times[i]); } trab=Math.max(0,Math.round(trab));
   let e50=0,e100=0,falta=0,pend=0;
   if(fer){ e100=trab; }
   else if(fds){ e50=trab; }
-  else if(bs.length===0){ falta=devida; }
+  else if(times.length===0){ falta=devida; }
   else { const diff=trab-devida; if(diff>0) e50=diff; else pend=Math.max(0,(-diff)-(pontoCfg.tolMin||0)); }
-  return {bs,dow,fer,fds,devida,trab,e50,e100,falta,pend};
+  return {times,dow,fer,fds,devida,trab,e50,e100,falta,pend};
 }
+function calcDia(c, ds){ const bs=batidasDia(c.id,ds); const r=calcDiaTimes(c,ds,bs.map(b=>fmtHora(b.ts))); r.bs=bs; return r; }
 function resumoMes(c, ym){
   const dias=pontoDiasDoMes(ym); let devida=0,trab=0,e50=0,e100=0,faltaMin=0,faltaDias=0,pend=0;
   const linhas=dias.map(ds=>{ const r=calcDia(c,ds); devida+=r.devida; trab+=r.trab; e50+=r.e50; e100+=r.e100; if(r.falta>0){faltaMin+=r.falta;faltaDias++;} pend+=r.pend; return {ds,...r}; });
@@ -3766,7 +3781,7 @@ function renderPontoKiosk(){
     const completo=bs.length>=4;
     const prox=PT_LBL[bs.length]||"";
     return `<div class="pt-card ${bs.length%2===1?'dentro':''}">
-      <div class="pt-head"><div><b>${esc(c.nome)}</b>${c.cargo?`<small> · ${esc(c.cargo)}</small>`:""}</div></div>
+      <div class="pt-head"><div><b>${esc(c.nome)}</b>${c.cargo?`<small> · ${esc(c.cargo)}</small>`:""}</div><button class="pt-eye" onclick="abrirResumoColab('${c.id}')" title="Minhas horas do mês">👁️</button></div>
       <div class="pt-slots">${slots}</div>
       <div class="pt-foot">${completo?`<span class="pt-done">✔ 4 pontos registrados</span>`:`<button class="btnprim" style="width:100%" onclick="abrirPontoSenha('${c.id}')">Registrar ${prox}</button>`}</div>
     </div>`;
@@ -3785,11 +3800,23 @@ function abrirPontoSenha(colId){
     <div class="modal-foot"><button class="btnlink" onclick="closeOcModal()">Cancelar</button><button class="btnprim" onclick="confirmarPontoSenha('${colId}')">Registrar ${prox}</button></div>
   </div>`; $("ocmodal").style.display="flex"; setTimeout(()=>{const e=$("pt-senha");if(e)e.focus();},50);
 }
+function tocarBipPonto(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    const ctx=new AC(); const o=ctx.createOscillator(); const g=ctx.createGain();
+    o.type="sine"; o.connect(g); g.connect(ctx.destination);
+    const t=ctx.currentTime; g.gain.setValueAtTime(0.0001,t);
+    o.frequency.setValueAtTime(880,t); o.frequency.setValueAtTime(1175,t+0.12);
+    g.gain.exponentialRampToValueAtTime(0.25,t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.33);
+    o.start(t); o.stop(t+0.35); o.onended=()=>{ try{ctx.close();}catch(e){} };
+  }catch(e){}
+}
 function confirmarPontoSenha(colId){
   const c=colaboradores.find(x=>x.id===colId); const sn=val("pt-senha");
   if(!c || sn!==(c.senha||primeiroNome(c.nome))){ const e=$("pt-erro"); if(e)e.style.display="block"; return; }
   const bs=batidasDia(colId,hojeStr()); if(bs.length>=4){ closeOcModal(); return; }
-  ponto.push({id:uid(),colId,ts:new Date().toISOString()}); salvar(LS.ponto,ponto); closeOcModal(); renderPontoKiosk();
+  ponto.push({id:uid(),colId,ts:new Date().toISOString()}); salvar(LS.ponto,ponto); tocarBipPonto(); closeOcModal(); renderPontoKiosk();
 }
 // ----- colaboradores -----
 function renderPontoColab(){
@@ -3864,7 +3891,7 @@ function renderPontoRelatorio(){
   const box=$("ponto-inner"); if(!box) return;
   const ativos=colaboradores.filter(c=>!c.excluido);
   const cards=ativos.map(c=>{ const r=resumoMes(c,pontoMes);
-    return `<div class="chartcard" style="margin-bottom:14px"><div class="charthead"><h3>${esc(c.nome)}${c.cargo?` · <small style="font-weight:400;color:var(--muted-2)">${esc(c.cargo)}</small>`:""}</h3></div>
+    return `<div class="chartcard" style="margin-bottom:14px"><div class="charthead"><h3>${esc(c.nome)}${c.cargo?` · <small style="font-weight:400;color:var(--muted-2)">${esc(c.cargo)}</small>`:""}</h3><button class="btnghost" onclick="abrirHistColab('${c.id}')">✏️ Acessar histórico</button></div>
       <div class="pt-resumo">
         <div><span>Devidas</span><b>${m2hm(r.devida)}</b></div>
         <div><span>Trabalhadas</span><b>${m2hm(r.trab)}</b></div>
@@ -3875,6 +3902,69 @@ function renderPontoRelatorio(){
       </div></div>`;
   }).join("")||`<div class="amo-empty">Nenhum colaborador cadastrado.</div>`;
   box.innerHTML=`<div class="octop"><select class="selmes" onchange="pontoMes=this.value;renderFolhaPonto()">${optMeses(pontoMes)}</select><span class="hint" style="margin-left:10px">Tolerância de atraso: ${pontoCfg.tolMin||0} min/dia</span></div>${cards}`;
+}
+// ----- editar histórico (gestor) -----
+let pontoEdit=null;
+function abrirHistColab(colId){
+  const c=colaboradores.find(x=>x.id===colId); if(!c) return;
+  pontoEdit={colId, ym:pontoMes, dias:{}};
+  pontoDiasDoMes(pontoMes).forEach(ds=>{ const bs=batidasDia(colId,ds); pontoEdit.dias[ds]=[0,1,2,3].map(i=> bs[i]?fmtHora(bs[i].ts):""); });
+  renderHistEditor(); $("ocmodal").style.display="flex";
+}
+function histEditTotais(){
+  const c=colaboradores.find(x=>x.id===pontoEdit.colId);
+  let devida=0,trab=0,e50=0,e100=0,faltaMin=0,faltaDias=0,pend=0;
+  pontoDiasDoMes(pontoEdit.ym).forEach(ds=>{ const times=pontoEdit.dias[ds].filter(Boolean).sort(); const r=calcDiaTimes(c,ds,times); devida+=r.devida;trab+=r.trab;e50+=r.e50;e100+=r.e100; if(r.falta>0){faltaMin+=r.falta;faltaDias++;} pend+=r.pend; });
+  return {devida,trab,e50,e100,faltaMin,faltaDias,pend};
+}
+function histTotHTML(t){ return `<div class="he-tot-grid">
+  <div><span>Devidas</span><b>${m2hm(t.devida)}</b></div>
+  <div><span>Trabalhadas</span><b>${m2hm(t.trab)}</b></div>
+  <div class="ex"><span>Extra 50%</span><b>+${m2hm(t.e50)}</b></div>
+  <div class="ex2"><span>Extra feriado</span><b>+${m2hm(t.e100)}</b></div>
+  <div class="fal"><span>Faltas</span><b>${t.faltaDias}d</b></div>
+  <div class="pen"><span>Devendo</span><b>-${m2hm(t.faltaMin+t.pend)}</b></div></div>`; }
+function renderHistEditor(){
+  const c=colaboradores.find(x=>x.id===pontoEdit.colId);
+  const diasNome=["dom","seg","ter","qua","qui","sex","sáb"];
+  const rows=pontoDiasDoMes(pontoEdit.ym).map(ds=>{
+    const dow=new Date(ds+"T12:00:00").getDay(); const fer=ehFeriado(ds); const fds=(dow===0||dow===6); const v=pontoEdit.dias[ds];
+    const inp=i=>`<input type="time" value="${v[i]}" onchange="histEditSet('${ds}',${i},this.value)">`;
+    const tag= fer?' <span style="color:#1b52b0;font-size:10px">feriado</span>':(fds?' <span style="color:#999;font-size:10px">folga</span>':"");
+    return `<tr><td style="white-space:nowrap">${(+ds.slice(8))} ${diasNome[dow]}${tag}</td><td>${inp(0)}</td><td>${inp(1)}</td><td>${inp(2)}</td><td>${inp(3)}</td></tr>`;
+  }).join("");
+  $("ocmodal").innerHTML=`<div class="modal-card" style="max-width:580px;max-height:88vh;display:flex;flex-direction:column">
+    <h3 class="modal-h">Histórico · ${esc(c.nome)} · ${pontoEdit.ym.slice(5)}/${pontoEdit.ym.slice(0,4)}</h3>
+    <div id="he-tot">${histTotHTML(histEditTotais())}</div>
+    <div style="overflow:auto;flex:1;margin-top:10px"><table class="htab he-table"><thead><tr><th>Dia</th><th>Entrada</th><th>Almoço</th><th>Retorno</th><th>Saída</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="modal-foot"><button class="btnlink" onclick="pontoEdit=null;closeOcModal()">Cancelar</button><button class="btnprim" onclick="salvarHistColab()">Salvar alterações</button></div>
+  </div>`;
+}
+function histEditSet(ds,i,v){ if(!pontoEdit) return; pontoEdit.dias[ds][i]=v; const t=$("he-tot"); if(t) t.innerHTML=histTotHTML(histEditTotais()); }
+function salvarHistColab(){
+  if(!pontoEdit) return; const {colId,ym}=pontoEdit;
+  ponto=ponto.filter(b=> !(b.colId===colId && (b.ts||"").slice(0,7)===ym));
+  pontoDiasDoMes(ym).forEach(ds=>{ pontoEdit.dias[ds].filter(Boolean).sort().forEach(t=>{ ponto.push({id:uid(),colId,ts:new Date(ds+"T"+t+":00").toISOString()}); }); });
+  salvar(LS.ponto,ponto); pontoEdit=null; closeOcModal(); renderFolhaPonto();
+}
+// ----- resumo do colaborador (kiosk) -----
+function abrirResumoColab(colId){
+  const c=colaboradores.find(x=>x.id===colId); if(!c) return;
+  const ym=(new Date()).toISOString().slice(0,7); const r=resumoMes(c,ym);
+  const mesNome=["","Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][+ym.slice(5)]+"/"+ym.slice(0,4);
+  const devendo=r.faltaMin+r.pend; const extra=r.e50+r.e100;
+  $("ocmodal").innerHTML=`<div class="modal-card" style="max-width:360px">
+    <h3 class="modal-h">${esc(c.nome)}</h3>
+    <div class="modal-sec">Resumo de ${mesNome}</div>
+    <div class="rc-grid">
+      <div><span>Trabalhadas</span><b>${m2hm(r.trab)}</b></div>
+      <div><span>Devidas</span><b>${m2hm(r.devida)}</b></div>
+      <div class="big ex"><span>Hora extra</span><b>+${m2hm(extra)}</b></div>
+      <div class="big pen"><span>Devendo</span><b>${devendo>0?"-"+m2hm(devendo):"0:00"}</b></div>
+    </div>
+    <div class="hint" style="margin-top:8px">Extra 50%: +${m2hm(r.e50)} · feriado: +${m2hm(r.e100)} · faltas: ${r.faltaDias}d</div>
+    <div class="modal-foot"><button class="btnprim" onclick="closeOcModal()">Fechar</button></div>
+  </div>`; $("ocmodal").style.display="flex";
 }
 // ----- PDF folha para assinar -----
 function folhaColabHTML(c, quebra){
