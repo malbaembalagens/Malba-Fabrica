@@ -1407,16 +1407,51 @@ async function cloudGetOne(key){
   const j = await r.json();
   return (Array.isArray(j) && j.length) ? j[0].value : null;
 }
-async function cloudUpsert(key,value){
+async function cloudGetRow(key){
+  const r = await fetch(syncBase()+"/rest/v1/malba_kv?select=value,updated_at&key=eq."+encodeURIComponent(key), { headers:syncHeaders() });
+  if(!r.ok) throw new Error("get "+r.status);
+  const j = await r.json();
+  return (Array.isArray(j) && j.length) ? j[0] : null;
+}
+async function cloudUpsertRaw(key,value,doMerge){
   let val=value;
-  // nunca substituir a lista inteira da nuvem: junta com o que já está lá (aparelho atrasado não apaga o dos outros)
-  if(ehChaveMerge(key)){
+  if(doMerge && ehChaveMerge(key)){
     try{ const cv=await cloudGetOne(key); if(cv!==null && cv!==undefined) val=mergeFor(key, value, cv); }catch(e){}
   }
   const r = await fetch(syncBase()+"/rest/v1/malba_kv?on_conflict=key", {
     method:"POST", headers:Object.assign({Prefer:"resolution=merge-duplicates"},syncHeaders()),
-    body:JSON.stringify([{ key, value: val, updated_at: localMod(key)||new Date().toISOString() }]) });
+    body:JSON.stringify([{ key, value: val, updated_at: new Date().toISOString() }]) });
   if(!r.ok) throw new Error("upsert "+r.status);
+}
+// Gravação com trava otimista (compare-and-swap) nas chaves de merge:
+// só grava se a nuvem não mudou desde a leitura; se mudou, relê, junta de novo e tenta outra vez.
+// Fecha a corrida de dois aparelhos gravando ao mesmo tempo. Fallback nunca perde a escrita.
+async function cloudUpsert(key,value){
+  if(!ehChaveMerge(key)){ return cloudUpsertRaw(key, value, false); }
+  for(let tent=0; tent<4; tent++){
+    let cur=null;
+    try{ cur=await cloudGetRow(key); }catch(e){ break; }
+    if(cur===null){
+      // ainda não existe: tenta inserir só se ninguém inserir antes
+      try{
+        const r=await fetch(syncBase()+"/rest/v1/malba_kv", {
+          method:"POST", headers:Object.assign({Prefer:"resolution=ignore-duplicates,return=representation"},syncHeaders()),
+          body:JSON.stringify([{ key, value: value, updated_at: new Date().toISOString() }]) });
+        if(r.ok){ const rows=await r.json(); if(Array.isArray(rows) && rows.length) return; }
+      }catch(e){}
+      continue; // alguém inseriu; refaz a leitura e junta
+    }
+    const merged = (cur.value!=null) ? mergeFor(key, value, cur.value) : value;
+    try{
+      const r=await fetch(syncBase()+"/rest/v1/malba_kv?key=eq."+encodeURIComponent(key)+"&updated_at=eq."+encodeURIComponent(cur.updated_at), {
+        method:"PATCH", headers:Object.assign({Prefer:"return=representation"},syncHeaders()),
+        body:JSON.stringify({ value: merged, updated_at: new Date().toISOString() }) });
+      if(r.ok){ const rows=await r.json(); if(Array.isArray(rows) && rows.length===1) return; } // CAS ok
+      // 0 linhas = outro aparelho gravou no meio; relê e tenta de novo
+    }catch(e){ break; }
+  }
+  // plano B: comportamento antigo (merge + upsert) — nunca perde a gravação
+  return cloudUpsertRaw(key, value, true);
 }
 function reloadState(){
   orcamentos = carregar(LS.orc, []);
