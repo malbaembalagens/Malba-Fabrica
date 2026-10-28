@@ -373,7 +373,7 @@ tbody tr:hover{background:var(--surface-2)}
 .stb-atr{background:var(--red-soft);color:var(--red)}
 .stb-parc{background:#e2effb;color:#1c66c2}
 .stb-canc{background:#eee;color:#777}
-.ic-btn.canc{color:#b23}
+.stb-alt{background:#fff3cd;color:#8a6d1b}
 .rechint{font-size:13px;color:var(--muted);line-height:1.5;margin:-6px 0 16px}
 .ic-btn.ok{background:var(--green-soft);color:var(--green);border-color:transparent}
 /* calendário agenda */
@@ -2557,13 +2557,9 @@ function fichaTecnica(key){
 // ---------- Ordem de compra ----------
 function ocPrevista(o){ return o.dataPrevista||o.data||""; }
 function ocRecebidoTotal(o){ return (o.itens||[]).reduce((s,i)=>s+(+i.recebido||0),0); }
-function ocStatus(o){ if(o.cancelada) return "cancelado"; if(o.recebida && !ocFaltaProd(o)) return "recebido"; if(o.recebida || ocRecebidoTotal(o)>0) return "parcial"; const p=ocPrevista(o); if(p && p<hojeStr()) return "atrasado"; return "pendente"; }
+function ocStatus(o){ if(o.excluida) return "cancelado"; if(o.recebida && !ocFaltaProd(o)) return "recebido"; if(o.recebida || ocRecebidoTotal(o)>0) return "parcial"; const p=ocPrevista(o); if(p && p<hojeStr()) return "atrasado"; return "pendente"; }
 const OC_ST={recebido:["Recebido","stb-rec"],parcial:["Parcial","stb-parc"],pendente:["Pendente","stb-pend"],atrasado:["Atrasado","stb-atr"],cancelado:["Cancelado","stb-canc"]};
-function ocCancelar(id){ const o=ordens.find(x=>x.id===id); if(!o)return; if(!confirm("Cancelar a ordem de compra "+o.id+"?\n\nEla sai do fluxo de produção e vai para a aba Canceladas. Os itens que ainda não entraram em produção são retirados; o que já foi produzido permanece.")) return;
-  o.cancelada=true; o._upd=Date.now();
-  (producao||[]).forEach(p=>{ if(p.ocId===id && !p.excluido && (p.imp.feito||0)===0 && (p.acab.feito||0)===0){ p.excluido=true; tocaProd(p); } });
-  salvar(LS.oc,ordens); salvar(LS.prodflow,producao); ocRefresh(); }
-function ocReativar(id){ const o=ordens.find(x=>x.id===id); if(!o)return; if(!confirm("Reativar a ordem de compra "+o.id+"? Ela volta para 'Não recebidas'.")) return; o.cancelada=false; o._upd=Date.now(); salvar(LS.oc,ordens); ocRefresh(); }
+function ocReativar(id){ const o=ordens.find(x=>x.id===id); if(!o)return; if(!confirm("Reativar a ordem de compra "+o.id+"? Ela volta para 'Não recebidas'.")) return; o.excluida=false; o._upd=Date.now(); (producao||[]).forEach(p=>{ if(p.ocId===id && p.excluido && (p.imp.feito||0)===0 && (p.acab.feito||0)===0){ p.excluido=false; tocaProd(p); } }); salvar(LS.oc,ordens); salvar(LS.prodflow,producao); ocRefresh(); }
 function setOCTab(t,el){ ocTab=t; ocPage=1; document.querySelectorAll("#gview-prod-ordem .tab").forEach(c=>c.classList.remove("on")); el.classList.add("on"); renderOC(); }
 function ocNovoId(data){ const [y,m,d]=data.split("-"); const base=d+m+y; const n=ordens.filter(o=>String(o.id).startsWith(base)).length+1; return base+String(n).padStart(3,"0"); }
 function ocRefresh(){ const ag=document.getElementById("gview-dash-agenda"), oc=document.getElementById("gview-prod-ordem"); if(ag&&ag.style.display!=="none") renderAgenda(); if(oc&&oc.style.display!=="none") renderOC(); }
@@ -2622,16 +2618,16 @@ function ocReabrir(id){ const o=ordens.find(x=>x.id===id); if(!o)return;
   o.recebida=false; o._upd=Date.now();
   salvar(LS.oc,ordens); salvar(LS.prodflow,producao); ocRefresh();
 }
-function ocExcluir(id){ if(!confirm("Excluir esta ordem de compra?"))return; const o=ordens.find(x=>x.id===id); if(o){ o.excluida=true; o._upd=Date.now(); } (producao||[]).forEach(p=>{ if(p.ocId===id && !p.excluido){ p.excluido=true; tocaProd(p); } }); salvar(LS.oc,ordens); salvar(LS.prodflow,producao); ocRefresh(); }
+function ocExcluir(id){ if(!confirm("Cancelar esta ordem de compra?\n\nEla vai para a aba Canceladas (dá para reativar depois) e sai do fluxo de produção."))return; const o=ordens.find(x=>x.id===id); if(o){ o.excluida=true; o._upd=Date.now(); } (producao||[]).forEach(p=>{ if(p.ocId===id && !p.excluido){ p.excluido=true; tocaProd(p); } }); salvar(LS.oc,ordens); salvar(LS.prodflow,producao); ocRefresh(); }
 function renderOC(){
-  const vivas=ordens.filter(o=>!o.excluida && !o.cancelada); const recCount=vivas.filter(o=>o.recebida).length, naoCount=vivas.length-recCount;
-  const cancCount=ordens.filter(o=>!o.excluida && o.cancelada).length;
+  const vivas=ordens.filter(o=>!o.excluida); const recCount=vivas.filter(o=>o.recebida).length, naoCount=vivas.length-recCount;
+  const cancCount=ordens.filter(o=>o.excluida).length;
   if($("oc-c-nao")) $("oc-c-nao").textContent=naoCount;
   if($("oc-c-rec")) $("oc-c-rec").textContent=recCount;
   if($("oc-c-canc")) $("oc-c-canc").textContent=cancCount;
   const busca=($("oc-busca")?$("oc-busca").value:"").toLowerCase().trim();
   const de=$("oc-de")?$("oc-de").value:"", ate=$("oc-ate")?$("oc-ate").value:"";
-  let lst=ordens.filter(o=> !o.excluida && (ocTab==="cancelada" ? o.cancelada : (!o.cancelada && ((ocTab==="recebida")? o.recebida : !o.recebida))) );
+  let lst=ordens.filter(o=> ocTab==="cancelada" ? o.excluida : (!o.excluida && ((ocTab==="recebida")? o.recebida : !o.recebida)) );
   if(de) lst=lst.filter(o=>ocPrevista(o)>=de);
   if(ate) lst=lst.filter(o=>ocPrevista(o)<=ate);
   if(busca) lst=lst.filter(o=>{ const hay=[o.id,o.fornecedor,...(o.itens||[]).map(i=>i.sku+" "+i.produto)].join(" ").toLowerCase(); return hay.includes(busca); });
@@ -2641,12 +2637,12 @@ function renderOC(){
   const slice=lst.slice((ocPage-1)*perPage, ocPage*perPage);
   const box=$("oc-list");
   if(!lst.length){ box.innerHTML=`<div class="empty"><span class="em">🧾</span>Nenhuma ordem ${ocTab==="cancelada"?"cancelada":(ocTab==="recebida"?"recebida":"em aberto")}.</div>`; return; }
-  const rows=slice.map(o=>{ const st=OC_ST[ocStatus(o)]; const podeReceber=(!o.recebida || ocFaltaProd(o)); const canc=!!o.cancelada;
+  const rows=slice.map(o=>{ const st=OC_ST[ocStatus(o)]; const podeReceber=(!o.recebida || ocFaltaProd(o)); const canc=!!o.excluida;
     return `<tr>
     <td><b>${esc(o.id)}</b></td>
     <td>${ocPrevista(o)?fmtData(ocPrevista(o)):"—"}</td>
     <td>${esc(o.fornecedor||"—")}<br><small style="color:var(--muted-2)">${esc(empresaOC(o).nome)}</small></td>
-    <td><span class="stb ${st[1]}">${st[0]}</span></td>
+    <td><span class="stb ${st[1]}">${st[0]}</span>${o.alteradaEm?` <span class="stb stb-alt" title="Alterada em ${fmtData(o.alteradaEm)} às ${new Date(o.alteradaEm).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}">✎ alterada</span>`:""}</td>
     <td class="num">${(+o.peso||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})} kg</td>
     <td class="num">${brl(ocTotais(o).total)}</td>
     <td class="devacts">
@@ -2657,8 +2653,7 @@ function renderOC(){
       ${ ehGestor() ? `<button class="ic-btn bling ${o.blingIntegrado?"done":""}" onclick="integrarBling('${o.id}')" title="${o.blingIntegrado?("Integrado ao Bling nº "+(o.blingId||"?")+" — clique p/ reenviar"):"Integrar com o Bling"}">${o.blingIntegrado?"✅":"🔗"}</button>` : "" }
       <button class="ic-btn ${podeReceber?"ok":""}" onclick="abrirReceber('${o.id}')" title="${podeReceber?"Dar entrada (receber)":"Reabrir recebimento"}">${podeReceber?"✓":"↩︎"}</button>
       ${ ehGestor() ? `<button class="ic-btn ed" onclick="editarOC('${o.id}')" title="Editar">✏️</button>` : "" }
-      ${ ehGestor() ? `<button class="ic-btn canc" onclick="ocCancelar('${o.id}')" title="Cancelar ordem">🚫</button>` : "" }
-      ${ ehGestor() ? `<button class="ic-btn rm" onclick="ocExcluir('${o.id}')" title="Excluir">×</button>` : "" }`}
+      ${ ehGestor() ? `<button class="ic-btn rm" onclick="ocExcluir('${o.id}')" title="Cancelar (vai para Canceladas)">×</button>` : "" }`}
     </td></tr>`;}).join("");
   box.innerHTML=`<div class="tablewrap"><table class="htab"><thead><tr><th>ID</th><th>Previsão</th><th>Fornecedor</th><th>Status</th><th class="num">Peso</th><th class="num">Valor</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="pager"><button ${ocPage<=1?"disabled":""} onclick="ocPage--;renderOC()">← Anterior</button><span class="pgnum">${ocPage}</span><button ${ocPage>=pages?"disabled":""} onclick="ocPage++;renderOC()">Próximo →</button></div>`;
@@ -2756,7 +2751,7 @@ function renderAgenda(){
     title=start.getDate()+" "+nomesMes[start.getMonth()].slice(0,3)+" – "+end.getDate()+" "+nomesMes[end.getMonth()].slice(0,3)+" "+y;
   }
   const hj=hojeStr();
-  const cellHtml=cells.map(d=>{ const ds=isoOf(d); const evs=ordens.filter(o=>!o.excluida && !o.cancelada && ocPrevista(o)===ds);
+  const cellHtml=cells.map(d=>{ const ds=isoOf(d); const evs=ordens.filter(o=>!o.excluida && ocPrevista(o)===ds);
     const other=d.getMonth()!==mo && agendaView==="mensal";
     return `<div class="calcell${other?" other":""}${ds===hj?" today":""}"><div class="caldate">${ds===hj?`<span class="todaynum">${d.getDate()}</span>`:d.getDate()}</div>${evs.map(ocCellHtml).join("")}</div>`;
   }).join("");
@@ -3484,7 +3479,7 @@ function salvarOC(){
   const ipi=valor*0.0325;
   if(ocForm.editId){
     const o=ordens.find(x=>x.id===ocForm.editId);
-    if(o){ o.fornecedor=ocForm.fornecedor; o.empresa=ocForm.empresa||"fabrica"; o.dataPrevista=ocForm.dataPrevista; o.itens=itens; o.peso=peso; o.valor=valor; o.ipi=ipi; o.valorTotal=valor+ipi; }
+    if(o){ o.fornecedor=ocForm.fornecedor; o.empresa=ocForm.empresa||"fabrica"; o.dataPrevista=ocForm.dataPrevista; o.itens=itens; o.peso=peso; o.valor=valor; o.ipi=ipi; o.valorTotal=valor+ipi; o.alteradaEm=Date.now(); o._upd=Date.now(); }
   } else {
     const id=ocNovoId(ocForm.dataPrevista);
     ordens.push({ id, dataPrevista:ocForm.dataPrevista, fornecedor:ocForm.fornecedor, empresa:ocForm.empresa||"fabrica", itens, peso, valor, ipi, valorTotal:valor+ipi, recebida:false });
@@ -3730,7 +3725,7 @@ function pcpSetModo(m){ pcpModo=m; renderPCP(); }
 function renderPCPKanban(){
   const box=$("pcp-inner"); if(!box) return;
   const f1=[];
-  ordens.filter(o=>!o.recebida && !o.excluida && !o.cancelada).forEach(o=>{ (o.itens||[]).forEach(it=>{ const rest=(+it.qtd||0)-(+it.recebido||0); if(rest>0) f1.push({sku:it.sku, qtd:rest, peso:(it.pesoUnit||0)*rest, oc:o.id, info:o.fornecedor}); }); });
+  ordens.filter(o=>!o.recebida && !o.excluida).forEach(o=>{ (o.itens||[]).forEach(it=>{ const rest=(+it.qtd||0)-(+it.recebido||0); if(rest>0) f1.push({sku:it.sku, qtd:rest, peso:(it.pesoUnit||0)*rest, oc:o.id, info:o.fornecedor}); }); });
   const prod=producao.filter(p=>!p.terceirizado && !p.entregue && !p.excluido);
   const f2=prod.filter(p=>!p.imp.done).map(p=>({sku:p.sku, qtd:p.qtd, peso:p.pesoUnit*p.qtd, oc:p.ocId}));
   const f3=prod.filter(p=>p.imp.done && !p.acab.done).map(p=>({sku:p.sku, qtd:p.imp.feito, peso:p.pesoUnit*p.imp.feito, oc:p.ocId}));
@@ -4065,7 +4060,7 @@ function pcpItensCandidatos(){
   producao.filter(p=>!p.entregue && !p.excluido && !p.terceirizado && !(p.acab&&p.acab.done)).forEach(p=>{
     out.push({ref:"p:"+p.id, sku:p.sku||"—", qtd:+p.qtd||0, peso:(+p.pesoUnit||0)*(+p.qtd||0), oc:false, info:p.ocId?("OC "+p.ocId):"Produção"});
   });
-  ordens.filter(o=>!o.recebida && !o.excluida && !o.cancelada).forEach(o=>{
+  ordens.filter(o=>!o.recebida && !o.excluida).forEach(o=>{
     (o.itens||[]).forEach((it,idx)=>{ const rest=(+it.qtd||0)-(+it.recebido||0); if(rest>0){
       out.push({ref:"o:"+o.id+"|"+idx, sku:it.sku||"—", qtd:rest, peso:(+it.pesoUnit||0)*rest, oc:true, info:"OC "+o.id});
     }});
@@ -4142,7 +4137,7 @@ function pcpPrintExec(html, foot){
 }
 function pcpExportGeral(){
   const prod=producao.filter(p=>!p.terceirizado && !p.entregue && !p.excluido);
-  const f1=[]; ordens.filter(o=>!o.recebida && !o.excluida && !o.cancelada).forEach(o=>{ (o.itens||[]).forEach(it=>{ const rest=(+it.qtd||0)-(+it.recebido||0); if(rest>0) f1.push({sku:it.sku,qtd:rest,peso:(+it.pesoUnit||0)*rest,info:"OC "+o.id}); }); });
+  const f1=[]; ordens.filter(o=>!o.recebida && !o.excluida).forEach(o=>{ (o.itens||[]).forEach(it=>{ const rest=(+it.qtd||0)-(+it.recebido||0); if(rest>0) f1.push({sku:it.sku,qtd:rest,peso:(+it.pesoUnit||0)*rest,info:"OC "+o.id}); }); });
   const f2=prod.filter(p=>!p.imp.done).map(p=>({sku:p.sku,qtd:p.qtd,peso:(+p.pesoUnit||0)*(+p.qtd||0)}));
   const f3=prod.filter(p=>p.imp.done && !p.acab.done).map(p=>({sku:p.sku,qtd:p.imp.feito,peso:(+p.pesoUnit||0)*(+p.imp.feito||0)}));
   const f4=producao.filter(p=>p.acab.done && !p.entregue && !p.excluido).map(p=>({sku:p.sku,qtd:p.acab.feito,peso:(+p.pesoUnit||0)*(+p.acab.feito||0)}));
