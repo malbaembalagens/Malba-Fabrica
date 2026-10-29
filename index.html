@@ -374,6 +374,13 @@ tbody tr:hover{background:var(--surface-2)}
 .stb-parc{background:#e2effb;color:#1c66c2}
 .stb-canc{background:#eee;color:#777}
 .stb-alt{background:#fff3cd;color:#8a6d1b}
+.ab-pill{border:1px solid var(--border);background:#eaf6ee;color:#1a6b38;border-radius:8px;padding:3px 10px;font-size:11px;cursor:pointer;white-space:nowrap}
+.ab-pill.off{background:var(--surface-2);color:var(--muted)}
+.seg{display:flex;gap:8px;margin:10px 0}
+.seg button{flex:1;border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:9px;font-size:13px;cursor:pointer}
+.seg button.on{background:var(--dark);color:#fff;border-color:var(--dark)}
+.pt-resumo .liq b,.rc-grid .liq b{color:#1a7f3c}
+.rc-grid .liq{border:1.5px solid #1a7f3c}
 .rechint{font-size:13px;color:var(--muted);line-height:1.5;margin:-6px 0 16px}
 .ic-btn.ok{background:var(--green-soft);color:var(--green);border-color:transparent}
 /* calendário agenda */
@@ -1246,6 +1253,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
 
 <script>var BOX_IMG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/4QC8RXhpZgAASUkqAAgAAAAGABIBAwABAAAAAQAAABoBBQABAAAAVgAAABsBBQABAAAAXgAAACgBAwABAAAAAgAAABMCAwABAAAAAQAAAGmHBAABAAAAZgAAAAAAAABgAAAAAQAAAGAAAAABAAAABgAAkAcABAAAADAyMTABkQcABAAAAAECAwAAoAcABAAAADAxMDABoAMAAQAAAP//AAACoAMAAQAAAPQBAAADoAMAAQAAAPQBAAAAAAAA/+EPe2h0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8APD94cGFja2V0IGJlZ2luPSfvu78nIGlkPSdXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQnPz4KPHg6eG1wbWV0YSB4bWxuczp4PSdhZG9iZTpuczptZXRhLyc+CjxyZGY6UkRGIHhtbG5zOnJkZj0naHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyc+CgogPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9JycKICB4bWxuczpBdHRyaWI9J2h0dHA6Ly9ucy5hdHRyaWJ1dGlvbi5jb20vYWRzLzEuMC8nPgogIDxBdHRyaWI6QWRzPgogICA8cmRmOlNlcT4KICAgIDxyZGY6bGkgcmRmOnBhcnNlVHlwZT0nUmVzb3VyY2UnPgogICAgIDxBdHRyaWI6Q3JlYXRlZD4yMDI2LTA2LTA4PC9BdHRyaWI6Q3JlYXRlZD4KICAgICA8QXR0cmliOkRhdGE+eyZxdW90O2RvYyZxdW90OzomcXVvdDtEQUdpN3VlMnQ3cyZxdW90OywmcXVvdDt1c2VyJnF1b3Q7OiZxdW90O1VBRWxVSF9IMjJjJnF1b3Q7LCZxdW90O2JyYW5kJnF1b3Q7OiZxdW90O0VxdWlwZSBkZSBHdWlsaGVybWUgTWFycXVlcyZxdW90OywmcXVvdDt0ZW1wbGF0ZSZxdW90OzomcXVvdDtMb2dvIFZlcmRlIGUgQnJhbmNvIGRlIERlc2lnbiBkZSBJbnRlcmlvcmVzJnF1b3Q7fTwvQXR0cmliOkRhdGE+CiAgICAgPEF0dHJpYjpFeHRJZD5jNzg1MzcyNC1lYjFlLTRkNmUtYjFkYy1mMzMyYTdkNjYzZDE8L0F0dHJpYjpFeHRJZD4KICAgICA8QXR0cmliOkZiSWQ+NTI1MjY1OTE0MTc5NTgwPC9BdHRyaWI6RmJJZD4KICAgICA8QXR0cmliOlRvdWNoVHlwZT4yPC9BdHRyaWI6VG91Y2hUeXBlPgogICAgPC9yZGY6bGk+CiAgIDwvcmRmOlNlcT4KICA8L0F0dHJpYjpBZHM+CiA8L3JkZjpEZXNjcmlwdGlvbj4KCiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0nJwogIHhtbG5zOmRjPSdodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyc+CiAgPGRjOnRpdGxlPgogICA8cmRmOkFsdD4KICAgIDxyZGY6bGkgeG1sOmxhbmc9J3gtZGVmYXVsdCc+TG9nb3MgKDUwMCB4IDUwMCBweCkgLSAxPC9yZGY6bGk+CiAgIDwvcmRmOkFsdD4KICA8L2RjOnRpdGxlPgogPC9yZGY6RGVzY3JpcHRpb24+CgogPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9JycKICB4bWxuczpwZGY9J2h0dHA6Ly9ucy5hZG9iZS5jb20vcGRmLzEuMy8nPgogIDxwZGY6QXV0aG9yPkd1aWxoZXJtZSBNYXJxdWVzPC9wZGY6QXV0aG9yPgogPC9yZGY6RGVzY3JpcHRpb24+CgogPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9JycKICB4bWxuczp4bXA9J2h0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8nPgogIDx4bXA6Q3JlYXRvclRvb2w+Q2FudmEgKFJlbmRlcmVyKSBkb2M9REFHaTd1ZTJ0N3MgdXNlcj1VQUVsVUhfSDIyYyBicmFuZD1FcXVpcGUgZGUgR3VpbGhlcm1lIE1hcnF1ZXMgdGVtcGxhdGU9TG9nbyBWZXJkZSBlIEJyYW5jbyBkZSBEZXNpZ24gZGUgSW50ZXJpb3JlczwveG1wOkNyZWF0b3JUb29sPgogPC9yZGY6RGVzY3JpcHRpb24+CjwvcmRmOlJERj4KPC94OnhtcG1ldGE+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCjw/eHBhY2tldCBlbmQ9J3cnPz7/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAH0AfQDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD6pooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiqt3fRW4IJ3P/dFTKSirsaTeiLRIAyTgVSk1GFZlQHdk4LDoKybq9luDgnav90VVrknin9g6I0P5jraKo6Tc+dBsY/OnH1FXq64SU1zI55R5XZhRRRVCCiiigAqpPfxQ3HlPnpyfSpbucW8DOevYe9c07F3LMcknJrmr1nCyjubUqfNqzqkdXUMhBB7ilrmLe5kgbMbYHp2rYtNSjmwsnyP79DTp4iMtHoxTouOxfoooroMgooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKa7rGpZ2CgdzQA6ori4jgXMjAe3c1nXeqdVtx/wI1lSO0jFnYsT3NctTEpaR1N4UW9ZF671OSXKxfIn6ms8nJ5oorilNzd5HTGKjogoooqRk1pObedXHTuPUV0yMHQMpyCM1ydbGi3OQYGPI5WurDVLPlfUwrQuuZGrRRRXecoUUVU1O58i3OD87cCplJRV2OK5nZGZq1z50+xT8icfU1QoPJorypycndnfFcqsgoooqRlu0v5bfAzvT+6a2rW8iuB8jYb+6etc1SglTkEgj0ranXlDTdGc6SkdZRWJaao6YWf5l9e9a8M0cy7o2BFd9OrGexyzpuO5JRRRWhAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFHSq11exW4+Y5b+6Kxru+luCRnanoKxqV4w06mkKTkad3qUcWVi+d/wBBWPcXEs7ZkYn27CoaK4alaVTc6oU1HYKKKKyLCiiigAooooAKdE7RyK6nkHNNooA6m2mWeFZF7j8qkrD0e58qXymPyP09jW5XqUantI3OGpDldgJABJ4Arm7+4NxcM38I4X6Vpazc7I/JQ/M3X6ViVzYqpd8iN6MLLmYUUUVyG4UUUUAFFFFABT4pXibdGxU+1MooTsBs2mqq2FuBtP8AeHStNWDAFSCD3FcnU9tdS25+Rvl7qeldVPEt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KACiiigAooooAKKKKACiiigApssaSoUkUMp6ginUUAc3qfhwNmSxbB6+W3T8DXNzwyQSGOZGRx2Ir0iq95ZwXkey4jDDse4+hrlqYZS1jodFPENaS1PPaK29S0Ca3y9tmWP0/iFYhBUkEEEdjXHKEoO0jsjNSV0KKr6j/wAerfUfzqwKr6j/AMerfUfzqHsUjnNX/wCPJv8AeH86xW+6/wDwH/0IVualG0tqUQZYkcfjUNvpyrkz/MTj5e3XNOMkkEldlPT4na9DhTsU8n8BW5V/SdHutRcLaxYQcFzworutF8M2mn7ZJgLi4H8TDhfoKuFKdV3WxE6sae+5ymi+GrvUNskoMFuf4mHJ+grudK0e00xALeMb+7tyTWjRXfToRp7bnDUrSn6BRRRWxkFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAVn6jpNtegll2Sf31rQopSipKzGpOLujhtR0m4siSy74v76/1rH1H/j1b6j+deokAjBGRWLqXhyzvWBG6EE5YJ0P+FcdTCv7B108SvtHnFpaz3cwito2kc9gK7LRfCCR7ZdSbe3Xy16D6101hY21hCI7WJY1746n6mrNVSwsY6y1ZFTEuWkdBsUSQxhIkVEHQAYFOoorrOYKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD//2Q==";</script>
 <div id="ocmodal" class="modal-wrap" style="display:none" onclick="if(event.target===this)closeOcModal()"></div>
+<div id="ocmodal2" class="modal-wrap" style="display:none;z-index:90" onclick="if(event.target===this)closeAbono()"></div>
 <div id="print"></div>
 
 <script>
@@ -1306,7 +1314,7 @@ const DEF_ONDAS = [
   { nome:"Onda TT", gramaturas:[470],         comp:compPadrao("Onda TT") },
 ];
 
-const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1", oms:"malba_os_oms_v1", amostras:"malba_os_amostras_v1", pcpsem:"malba_os_pcpsemana_v1", colab:"malba_os_colaboradores_v1", ponto:"malba_os_ponto_v1", pontocfg:"malba_os_pontocfg_v1", feriados:"malba_os_feriados_v1" };
+const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1", oms:"malba_os_oms_v1", amostras:"malba_os_amostras_v1", pcpsem:"malba_os_pcpsemana_v1", colab:"malba_os_colaboradores_v1", ponto:"malba_os_ponto_v1", pontocfg:"malba_os_pontocfg_v1", feriados:"malba_os_feriados_v1", abonos:"malba_os_abonos_v1" };
 
 // util
 function carregar(k,def){ try{ const v=JSON.parse(localStorage.getItem(k)); return (v===null||v===undefined)?def:v }catch(e){ return def } }
@@ -1348,6 +1356,7 @@ let pcpSemana = carregar(LS.pcpsem, {dias:{},obs:{}});
 let pcpModo = "quadro";
 let colaboradores = carregar(LS.colab, []);
 let ponto = carregar(LS.ponto, []);
+let abonos = carregar(LS.abonos, {});   // { "colId|ds": {tipo:"dia"|"horas", min, motivo, obs, _upd} }
 let pontoModo = "bater";
 let pontoMes = (new Date()).toISOString().slice(0,7);
 let pontoCfg = carregar(LS.pontocfg, {tolMin:10});
@@ -1395,15 +1404,24 @@ async function cloudPullAll(){
   rows.forEach(row=>{ map[row.key]={value:row.value, updated_at:row.updated_at}; });
   return map;
 }
+function mergePonto(localArr, cloudArr){
+  const byId={};
+  const add=b=>{ if(!b||b.id==null) return; const ex=byId[b.id]; if(!ex){ byId[b.id]=b; return; } const lu=+ex._upd||0, cu=+b._upd||0; if(cu>lu){ byId[b.id]=b; return; } if(cu===lu && b.excluido && !ex.excluido) byId[b.id]=b; };
+  (Array.isArray(localArr)?localArr:[]).forEach(b=>{ if(b&&b.id!=null) byId[b.id]=b; });
+  (Array.isArray(cloudArr)?cloudArr:[]).forEach(add);
+  return Object.values(byId);
+}
 function mergeFor(key, localVal, cloudVal){
   if(key===LS.hist) return mergeHist(localVal, cloudVal);
   if(key===LS.prodflow) return mergeProd(localVal, cloudVal);
   if(key===LS.oc) return mergeOrd(localVal, cloudVal);
   if(key===LS.dev) return mergeDevSt(localVal, cloudVal);
   if(key===LS.devav) return mergeAv(localVal, cloudVal);
+  if(key===LS.ponto) return mergePonto(localVal, cloudVal);
+  if(key===LS.abonos) return mergeDevSt(localVal, cloudVal);
   return localVal;
 }
-function ehChaveMerge(key){ return [LS.hist,LS.prodflow,LS.oc,LS.dev,LS.devav].includes(key); }
+function ehChaveMerge(key){ return [LS.hist,LS.prodflow,LS.oc,LS.dev,LS.devav,LS.ponto,LS.abonos].includes(key); }
 async function cloudGetOne(key){
   const r = await fetch(syncBase()+"/rest/v1/malba_kv?select=value&key=eq."+encodeURIComponent(key), { headers:syncHeaders() });
   if(!r.ok) throw new Error("get "+r.status);
@@ -1619,7 +1637,7 @@ async function syncInit(){
           if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
           return;
         }
-        if(k===LS.dev || k===LS.devav){
+        if(k===LS.dev || k===LS.devav || k===LS.ponto || k===LS.abonos){
           const merged=mergeFor(k, lsParse(k), cloud[k].value), ms=JSON.stringify(merged);
           localStorage.setItem(k, ms); syncVer[k]=cloud[k].updated_at;
           if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
@@ -1663,7 +1681,7 @@ async function syncPull(){
           if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
           return;
         }
-        if(k===LS.dev || k===LS.devav){
+        if(k===LS.dev || k===LS.devav || k===LS.ponto || k===LS.abonos){
           const merged=mergeFor(k, lsParse(k), cloud[k].value), ms=JSON.stringify(merged);
           if(localStorage.getItem(k)!==ms){ localStorage.setItem(k,ms); changed=true; }
           syncVer[k]=cloud[k].updated_at;
@@ -3763,7 +3781,8 @@ function colJorn(c){ return {ent:c.jEnt||JORN_PADRAO.ent, almI:c.jAlmI||JORN_PAD
 function devidaDia(c){ const j=colJorn(c); return Math.max(0,(hm2m(j.almI)-hm2m(j.ent)))+Math.max(0,(hm2m(j.sai)-hm2m(j.almF))); }
 function pontoColAtivos(){ return colaboradores.filter(c=>!c.excluido && c.ativo!==false); }
 function fmtHora(ts){ const d=new Date(ts); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
-function batidasDia(colId, ds){ return ponto.filter(b=>b.colId===colId && (b.ts||"").slice(0,10)===ds).sort((a,b)=>(a.ts||"").localeCompare(b.ts||"")); }
+function abonoDe(colId, ds){ const a=abonos[colId+"|"+ds]; return (a && !a.excluido) ? a : null; }
+function batidasDia(colId, ds){ return ponto.filter(b=>b.colId===colId && !b.excluido && (b.ts||"").slice(0,10)===ds).sort((a,b)=>(a.ts||"").localeCompare(b.ts||"")); }
 // feriados SP (capital)
 function pascoa(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,g=Math.floor((b+8)/25),h=Math.floor((b-g+1)/3),i=(19*a+b-d-h+15)%30,k=Math.floor(c/4),l=c%4,mm=(32+2*e+2*k-i-l)%7,n=Math.floor((a+11*i+22*mm)/451),mes=Math.floor((i+mm-7*n+114)/31),dia=((i+mm-7*n+114)%31)+1; return new Date(y,mes-1,dia); }
 function addDias(dt,n){ const x=new Date(dt); x.setDate(x.getDate()+n); return x; }
@@ -3785,7 +3804,9 @@ function calcDiaTimes(c, ds, times){
   else if(fds){ e50=trab; }
   else if(times.length===0){ falta=devida; }
   else { const diff=trab-devida; if(diff>0) e50=diff; else pend=Math.max(0,(-diff)-(pontoCfg.tolMin||0)); }
-  return {times,dow,fer,fds,devida,trab,e50,e100,falta,pend};
+  const ab=abonoDe(c.id,ds);
+  if(ab){ if(ab.tipo==="dia"){ falta=0; pend=0; } else { const m=+ab.min||0; if(falta>0) falta=Math.max(0,falta-m); else if(pend>0) pend=Math.max(0,pend-m); } }
+  return {times,dow,fer,fds,devida,trab,e50,e100,falta,pend,abono:ab};
 }
 function calcDia(c, ds){ const bs=batidasDia(c.id,ds); const r=calcDiaTimes(c,ds,bs.map(b=>fmtHora(b.ts))); r.bs=bs; return r; }
 function resumoMes(c, ym){
@@ -3858,7 +3879,7 @@ function confirmarPontoSenha(colId){
   const c=colaboradores.find(x=>x.id===colId); const sn=val("pt-senha");
   if(!c || sn!==(c.senha||primeiroNome(c.nome))){ const e=$("pt-erro"); if(e)e.style.display="block"; return; }
   const bs=batidasDia(colId,hojeStr()); if(bs.length>=4){ closeOcModal(); return; }
-  ponto.push({id:uid(),colId,ts:new Date().toISOString()}); salvar(LS.ponto,ponto); tocarBipPonto(); closeOcModal(); renderPontoKiosk();
+  ponto.push({id:uid(),colId,ts:new Date().toISOString(),_upd:Date.now()}); salvar(LS.ponto,ponto); tocarBipPonto(); closeOcModal(); renderPontoKiosk();
 }
 // ----- colaboradores -----
 function renderPontoColab(){
@@ -3937,10 +3958,11 @@ function renderPontoRelatorio(){
       <div class="pt-resumo">
         <div><span>Devidas</span><b>${m2hm(r.devida)}</b></div>
         <div><span>Trabalhadas</span><b>${m2hm(r.trab)}</b></div>
-        <div class="ex"><span>Extra 50%</span><b>+${m2hm(r.e50)}</b></div>
+        <div class="ex"><span>Extra 80%</span><b>+${m2hm(r.e50)}</b></div>
         <div class="ex2"><span>Extra feriado</span><b>+${m2hm(r.e100)}</b></div>
         <div class="fal"><span>Faltas</span><b>${r.faltaDias}d · ${m2hm(r.faltaMin)}</b></div>
         <div class="pen"><span>Pendentes</span><b>-${m2hm(r.pend)}</b></div>
+        <div class="liq"><span>Hora extra líquida</span><b>${(r.e50-r.pend)>=0?"+":""}${m2hm(r.e50-r.pend)}</b></div>
       </div></div>`;
   }).join("")||`<div class="amo-empty">Nenhum colaborador cadastrado.</div>`;
   box.innerHTML=`<div class="octop"><select class="selmes" onchange="pontoMes=this.value;renderFolhaPonto()">${optMeses(pontoMes)}</select><span class="hint" style="margin-left:10px">Tolerância de atraso: ${pontoCfg.tolMin||0} min/dia</span></div>${cards}`;
@@ -3962,7 +3984,7 @@ function histEditTotais(){
 function histTotHTML(t){ return `<div class="he-tot-grid">
   <div><span>Devidas</span><b>${m2hm(t.devida)}</b></div>
   <div><span>Trabalhadas</span><b>${m2hm(t.trab)}</b></div>
-  <div class="ex"><span>Extra 50%</span><b>+${m2hm(t.e50)}</b></div>
+  <div class="ex"><span>Extra 80%</span><b>+${m2hm(t.e50)}</b></div>
   <div class="ex2"><span>Extra feriado</span><b>+${m2hm(t.e100)}</b></div>
   <div class="fal"><span>Faltas</span><b>${t.faltaDias}d</b></div>
   <div class="pen"><span>Devendo</span><b>-${m2hm(t.faltaMin+t.pend)}</b></div></div>`; }
@@ -3973,21 +3995,64 @@ function renderHistEditor(){
     const dow=new Date(ds+"T12:00:00").getDay(); const fer=ehFeriado(ds); const fds=(dow===0||dow===6); const v=pontoEdit.dias[ds];
     const inp=i=>`<input type="time" value="${v[i]}" onchange="histEditSet('${ds}',${i},this.value)">`;
     const tag= fer?' <span style="color:#1b52b0;font-size:10px">feriado</span>':(fds?' <span style="color:#999;font-size:10px">folga</span>':"");
-    return `<tr><td style="white-space:nowrap">${(+ds.slice(8))} ${diasNome[dow]}${tag}</td><td>${inp(0)}</td><td>${inp(1)}</td><td>${inp(2)}</td><td>${inp(3)}</td></tr>`;
+    const ab=abonoDe(pontoEdit.colId,ds);
+    const abBtn = ab ? `<button class="ab-pill" onclick="abrirAbono('${pontoEdit.colId}','${ds}')" title="${esc(ab.motivo||'Abonado')}${ab.tipo==='horas'?(' · '+m2hm(ab.min)):' · dia'}">✓ abonado</button>` : `<button class="ab-pill off" onclick="abrirAbono('${pontoEdit.colId}','${ds}')">Abonar</button>`;
+    return `<tr><td style="white-space:nowrap">${(+ds.slice(8))} ${diasNome[dow]}${tag}</td><td>${inp(0)}</td><td>${inp(1)}</td><td>${inp(2)}</td><td>${inp(3)}</td><td style="text-align:right">${abBtn}</td></tr>`;
   }).join("");
   $("ocmodal").innerHTML=`<div class="modal-card" style="max-width:580px;max-height:88vh;display:flex;flex-direction:column">
     <h3 class="modal-h">Histórico · ${esc(c.nome)} · ${pontoEdit.ym.slice(5)}/${pontoEdit.ym.slice(0,4)}</h3>
     <div id="he-tot">${histTotHTML(histEditTotais())}</div>
-    <div style="overflow:auto;flex:1;margin-top:10px"><table class="htab he-table"><thead><tr><th>Dia</th><th>Entrada</th><th>Almoço</th><th>Retorno</th><th>Saída</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div style="overflow:auto;flex:1;margin-top:10px"><table class="htab he-table"><thead><tr><th>Dia</th><th>Entrada</th><th>Almoço</th><th>Retorno</th><th>Saída</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="modal-foot"><button class="btnlink" onclick="pontoEdit=null;closeOcModal()">Cancelar</button><button class="btnprim" onclick="salvarHistColab()">Salvar alterações</button></div>
   </div>`;
 }
 function histEditSet(ds,i,v){ if(!pontoEdit) return; pontoEdit.dias[ds][i]=v; const t=$("he-tot"); if(t) t.innerHTML=histTotHTML(histEditTotais()); }
 function salvarHistColab(){
   if(!pontoEdit) return; const {colId,ym}=pontoEdit;
-  ponto=ponto.filter(b=> !(b.colId===colId && (b.ts||"").slice(0,7)===ym));
-  pontoDiasDoMes(ym).forEach(ds=>{ pontoEdit.dias[ds].filter(Boolean).sort().forEach(t=>{ ponto.push({id:uid(),colId,ts:new Date(ds+"T"+t+":00").toISOString()}); }); });
+  ponto.forEach(b=>{ if(b.colId===colId && !b.excluido && (b.ts||"").slice(0,7)===ym){ b.excluido=true; b._upd=Date.now(); } });
+  pontoDiasDoMes(ym).forEach(ds=>{ pontoEdit.dias[ds].filter(Boolean).sort().forEach(t=>{ ponto.push({id:uid(),colId,ts:new Date(ds+"T"+t+":00").toISOString(),_upd:Date.now()}); }); });
   salvar(LS.ponto,ponto); pontoEdit=null; closeOcModal(); renderFolhaPonto();
+}
+function abrirAbono(colId, ds){
+  const a=abonos[colId+"|"+ds]||{}; const c=colaboradores.find(x=>x.id===colId);
+  const dias=["dom","seg","ter","qua","qui","sex","sáb"]; const dow=new Date(ds+"T12:00:00").getDay();
+  const tipo=a.tipo||"dia"; const minTxt=a.min?m2hm(a.min):"02:00";
+  const motivos=["Atestado médico","Atestado odontológico","Declaração de comparecimento","Falta justificada","Outro"];
+  $("ocmodal2").innerHTML=`<div class="modal-card" style="max-width:380px">
+    <h3 class="modal-h">Abonar · ${(+ds.slice(8))} ${dias[dow]}</h3>
+    <div class="modal-sec">${esc(c?c.nome:"")}</div>
+    <div class="seg">
+      <button id="ab-t-dia" class="${tipo==='dia'?'on':''}" onclick="abonoSetTipo('dia')">Dia inteiro</button>
+      <button id="ab-t-horas" class="${tipo==='horas'?'on':''}" onclick="abonoSetTipo('horas')">Algumas horas</button>
+    </div>
+    <div class="field" id="ab-horas-wrap" style="${tipo==='horas'?'':'display:none'}"><label>Horas a abonar (hh:mm)</label><input id="ab-horas" value="${minTxt}" style="max-width:110px"></div>
+    <div class="field"><label>Motivo</label><select id="ab-motivo">${motivos.map(m=>`<option ${a.motivo===m?'selected':''}>${m}</option>`).join("")}</select></div>
+    <div class="field"><label>Observação (opcional)</label><textarea id="ab-obs" rows="2" placeholder="Ex.: atestado de 1 dia">${esc(a.obs||"")}</textarea></div>
+    <input type="hidden" id="ab-col" value="${colId}"><input type="hidden" id="ab-ds" value="${ds}"><input type="hidden" id="ab-tipo" value="${tipo}">
+    <div class="modal-foot">
+      ${a.tipo?`<button class="btnlink" style="color:#b23" onclick="removerAbono('${colId}','${ds}')">Remover abono</button>`:""}
+      <button class="btnlink" onclick="closeAbono()">Cancelar</button>
+      <button class="btnprim" onclick="salvarAbono()">Abonar</button>
+    </div>
+  </div>`;
+  $("ocmodal2").style.display="flex";
+}
+function abonoSetTipo(t){ $("ab-tipo").value=t; $("ab-t-dia").classList.toggle("on",t==="dia"); $("ab-t-horas").classList.toggle("on",t==="horas"); $("ab-horas-wrap").style.display=(t==="horas")?"":"none"; }
+function closeAbono(){ const m=$("ocmodal2"); if(m){ m.style.display="none"; m.innerHTML=""; } }
+function salvarAbono(){
+  const colId=val("ab-col"), ds=val("ab-ds"), tipo=val("ab-tipo");
+  const min = tipo==="horas" ? (hm2m(val("ab-horas"))||0) : 0;
+  if(tipo==="horas" && min<=0){ alert("Informe as horas a abonar."); return; }
+  abonos[colId+"|"+ds]={tipo, min, motivo:val("ab-motivo"), obs:val("ab-obs"), _upd:Date.now()};
+  salvar(LS.abonos,abonos); closeAbono();
+  if(pontoEdit && pontoEdit.colId===colId){ const t=$("he-tot"); if(t) t.innerHTML=histTotHTML(histEditTotais()); renderHistEditor(); }
+  else renderFolhaPonto();
+}
+function removerAbono(colId, ds){
+  const a=abonos[colId+"|"+ds]; if(a){ a.excluido=true; a._upd=Date.now(); }
+  salvar(LS.abonos,abonos); closeAbono();
+  if(pontoEdit && pontoEdit.colId===colId){ const t=$("he-tot"); if(t) t.innerHTML=histTotHTML(histEditTotais()); renderHistEditor(); }
+  else renderFolhaPonto();
 }
 // ----- resumo do colaborador (kiosk) -----
 function abrirResumoColab(colId){
@@ -4003,8 +4068,9 @@ function abrirResumoColab(colId){
       <div><span>Devidas</span><b>${m2hm(r.devida)}</b></div>
       <div class="big ex"><span>Hora extra</span><b>+${m2hm(extra)}</b></div>
       <div class="big pen"><span>Devendo</span><b>${devendo>0?"-"+m2hm(devendo):"0:00"}</b></div>
+      <div class="big liq" style="grid-column:1/-1"><span>Hora extra líquida (extra 80% − pendentes)</span><b>${(r.e50-r.pend)>=0?"+":""}${m2hm(r.e50-r.pend)}</b></div>
     </div>
-    <div class="hint" style="margin-top:8px">Extra 50%: +${m2hm(r.e50)} · feriado: +${m2hm(r.e100)} · faltas: ${r.faltaDias}d</div>
+    <div class="hint" style="margin-top:8px">Extra 80%: +${m2hm(r.e50)} · feriado: +${m2hm(r.e100)} · faltas: ${r.faltaDias}d</div>
     <div class="modal-foot"><button class="btnprim" onclick="closeOcModal()">Fechar</button></div>
   </div>`; $("ocmodal").style.display="flex";
 }
@@ -4030,7 +4096,7 @@ function folhaColabHTML(c, quebra){
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:11px">
       <div style="background:#f6f6f4;border-radius:6px;padding:6px 10px">Devidas: <b>${m2hm(r.devida)}</b></div>
       <div style="background:#f6f6f4;border-radius:6px;padding:6px 10px">Trabalhadas: <b>${m2hm(r.trab)}</b></div>
-      <div style="background:#fff4e5;border-radius:6px;padding:6px 10px;color:#b45c00">Extra 50%: <b>+${m2hm(r.e50)}</b></div>
+      <div style="background:#fff4e5;border-radius:6px;padding:6px 10px;color:#b45c00">Extra 80%: <b>+${m2hm(r.e50)}</b></div>
       <div style="background:#eef4ff;border-radius:6px;padding:6px 10px;color:#1b52b0">Extra feriado: <b>+${m2hm(r.e100)}</b></div>
       <div style="background:#fdeaea;border-radius:6px;padding:6px 10px;color:#b23">Faltas: <b>${r.faltaDias}d · ${m2hm(r.faltaMin)}</b></div>
       <div style="background:#f6f6f4;border-radius:6px;padding:6px 10px">Pendentes: <b>-${m2hm(r.pend)}</b></div>
