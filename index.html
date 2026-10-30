@@ -1405,11 +1405,20 @@ async function cloudPullAll(){
   return map;
 }
 function mergePonto(localArr, cloudArr){
-  const byId={};
-  const add=b=>{ if(!b||b.id==null) return; const ex=byId[b.id]; if(!ex){ byId[b.id]=b; return; } const lu=+ex._upd||0, cu=+b._upd||0; if(cu>lu){ byId[b.id]=b; return; } if(cu===lu && b.excluido && !ex.excluido) byId[b.id]=b; };
-  (Array.isArray(localArr)?localArr:[]).forEach(b=>{ if(b&&b.id!=null) byId[b.id]=b; });
-  (Array.isArray(cloudArr)?cloudArr:[]).forEach(add);
-  return Object.values(byId);
+  // junta por MINUTO (colId + ts até o minuto): nunca duplica a mesma batida,
+  // mesmo que venha com ids/segundos diferentes de aparelhos ou de restaurações.
+  const all=[].concat(Array.isArray(localArr)?localArr:[], Array.isArray(cloudArr)?cloudArr:[]);
+  const byNat={};
+  all.forEach(b=>{
+    if(!b||b.colId==null||!b.ts) return;
+    if(b.excluido) return;                                   // descarta batidas removidas
+    const k=b.colId+"|"+String(b.ts).slice(0,16);            // colId + AAAA-MM-DDThh:mm
+    const ex=byNat[k];
+    if(!ex){ byNat[k]=b; return; }
+    // mantém a batida original (sem _upd) quando houver; senão a já guardada
+    if(ex._upd!=null && b._upd==null) byNat[k]=b;
+  });
+  return Object.values(byNat);
 }
 function mergeFor(key, localVal, cloudVal){
   if(key===LS.hist) return mergeHist(localVal, cloudVal);
