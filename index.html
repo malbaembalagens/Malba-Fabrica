@@ -888,6 +888,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
 
       <div class="synccard" id="sync-actions">
         <button class="btn ghost full" onclick="syncAgora()">🔄 Sincronizar agora</button>
+        <button class="btn ghost full" onclick="forcarReloadTodos()">📲 Atualizar todos os aparelhos</button>
         <button class="btn ghost full" onclick="recuperarBackup()">⏪ Recuperar itens do backup</button>
         <button class="btn ghost full danger" onclick="syncDesconectar()">Desconectar este aparelho</button>
       </div>
@@ -1314,9 +1315,10 @@ const DEF_ONDAS = [
   { nome:"Onda TT", gramaturas:[470],         comp:compPadrao("Onda TT") },
 ];
 
-const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1", oms:"malba_os_oms_v1", amostras:"malba_os_amostras_v1", pcpsem:"malba_os_pcpsemana_v1", colab:"malba_os_colaboradores_v1", ponto:"malba_os_ponto_v1", pontocfg:"malba_os_pontocfg_v1", feriados:"malba_os_feriados_v1", abonos:"malba_os_abonos_v1" };
+const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1", oms:"malba_os_oms_v1", amostras:"malba_os_amostras_v1", pcpsem:"malba_os_pcpsemana_v1", colab:"malba_os_colaboradores_v1", ponto:"malba_os_ponto_v1", pontocfg:"malba_os_pontocfg_v1", feriados:"malba_os_feriados_v1", abonos:"malba_os_abonos_v1", pontodel:"malba_os_pontodel_v1" };
 
 // util
+const APP_VER="2026-10-30b"; const RELOAD_KEY="malba_os_reload_v1";
 function carregar(k,def){ try{ const v=JSON.parse(localStorage.getItem(k)); return (v===null||v===undefined)?def:v }catch(e){ return def } }
 function salvar(k,v){ localStorage.setItem(k, JSON.stringify(v)); try{ if(appReady){ if(typeof SYNC_KEYS!=="undefined" && SYNC_KEYS.includes(k)) setLocalMod(k); if(typeof syncPush==="function") syncPush(k); } }catch(e){} }
 function brl(n){ return "R$ " + (Number(n)||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}) }
@@ -1357,6 +1359,7 @@ let pcpModo = "quadro";
 let colaboradores = carregar(LS.colab, []);
 let ponto = carregar(LS.ponto, []);
 let abonos = carregar(LS.abonos, {});   // { "colId|ds": {tipo:"dia"|"horas", min, motivo, obs, _upd} }
+let pontoDel = carregar(LS.pontodel, {});   // { "colId|ds|hh:mm": tsExclusao } — exclusão de batida à prova de corrupção
 let pontoModo = "bater";
 let pontoMes = (new Date()).toISOString().slice(0,7);
 let pontoCfg = carregar(LS.pontocfg, {tolMin:10});
@@ -1407,18 +1410,27 @@ async function cloudPullAll(){
 function mergePonto(localArr, cloudArr){
   // junta por MINUTO (colId + ts até o minuto): nunca duplica a mesma batida,
   // mesmo que venha com ids/segundos diferentes de aparelhos ou de restaurações.
+  // IMPORTANTE: NÃO usa mais a flag "excluido" (a corrupção a usava para sumir
+  // com batidas boas). A exclusão real de uma batida vai no registro separado
+  // pontoDel e é aplicada na leitura (batidasDia). Assim nenhum aparelho,
+  // novo ou velho, consegue mais apagar batida real em massa.
   const all=[].concat(Array.isArray(localArr)?localArr:[], Array.isArray(cloudArr)?cloudArr:[]);
   const byNat={};
   all.forEach(b=>{
     if(!b||b.colId==null||!b.ts) return;
-    if(b.excluido) return;                                   // descarta batidas removidas
     const k=b.colId+"|"+String(b.ts).slice(0,16);            // colId + AAAA-MM-DDThh:mm
     const ex=byNat[k];
     if(!ex){ byNat[k]=b; return; }
-    // mantém a batida original (sem _upd) quando houver; senão a já guardada
-    if(ex._upd!=null && b._upd==null) byNat[k]=b;
+    if((+b._upd||0) > (+ex._upd||0)) byNat[k]=b;              // mantém a cópia mais recente do minuto
   });
   return Object.values(byNat);
+}
+function mergeDel(localObj, cloudObj){
+  // registro de exclusões de batida: união, mantendo o carimbo de exclusão mais novo por chave
+  const out=Object.assign({}, (cloudObj&&typeof cloudObj==="object")?cloudObj:{});
+  const L=(localObj&&typeof localObj==="object")?localObj:{};
+  for(const k in L){ if((+L[k]||0) > (+out[k]||0)) out[k]=L[k]; }
+  return out;
 }
 function mergeFor(key, localVal, cloudVal){
   if(key===LS.hist) return mergeHist(localVal, cloudVal);
@@ -1428,9 +1440,10 @@ function mergeFor(key, localVal, cloudVal){
   if(key===LS.devav) return mergeAv(localVal, cloudVal);
   if(key===LS.ponto) return mergePonto(localVal, cloudVal);
   if(key===LS.abonos) return mergeDevSt(localVal, cloudVal);
+  if(key===LS.pontodel) return mergeDel(localVal, cloudVal);
   return localVal;
 }
-function ehChaveMerge(key){ return [LS.hist,LS.prodflow,LS.oc,LS.dev,LS.devav,LS.ponto,LS.abonos].includes(key); }
+function ehChaveMerge(key){ return [LS.hist,LS.prodflow,LS.oc,LS.dev,LS.devav,LS.ponto,LS.abonos,LS.pontodel].includes(key); }
 async function cloudGetOne(key){
   const r = await fetch(syncBase()+"/rest/v1/malba_kv?select=value&key=eq."+encodeURIComponent(key), { headers:syncHeaders() });
   if(!r.ok) throw new Error("get "+r.status);
@@ -1500,6 +1513,12 @@ function reloadState(){
   producao = carregar(LS.prodflow, []);
   records = carregar(LS.records, DEFAULT_RECORDS);
   metaProd = carregar(LS.metaprod, {caixas:35000, ton:2.5});
+  colaboradores = carregar(LS.colab, []);
+  ponto = carregar(LS.ponto, []);
+  abonos = carregar(LS.abonos, {});
+  pontoDel = carregar(LS.pontodel, {});
+  pontoCfg = carregar(LS.pontocfg, {tolMin:10});
+  feriadosCfg = carregar(LS.feriados, {add:[],rem:[]});
 }
 function refreshViewAtual(){
   try{
@@ -1622,6 +1641,7 @@ async function syncInit(){
   syncSetStatus("conectando");
   try{
     const cloud = await cloudPullAll();
+    try{ const rv=cloud[RELOAD_KEY]&&cloud[RELOAD_KEY].value; if(rv!=null) localStorage.setItem("malba_reload_seen",String(rv)); else if(localStorage.getItem("malba_reload_seen")===null) localStorage.setItem("malba_reload_seen","0"); }catch(e){}
     const keys = Object.keys(cloud).filter(k=>SYNC_KEYS.includes(k));
     if(keys.length===0){
       for(const k of SYNC_KEYS){ const raw=localStorage.getItem(k); if(raw!==null){ await cloudUpsert(k, JSON.parse(raw)); syncVer[k]=new Date().toISOString(); } }
@@ -1646,7 +1666,7 @@ async function syncInit(){
           if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
           return;
         }
-        if(k===LS.dev || k===LS.devav || k===LS.ponto || k===LS.abonos){
+        if(k===LS.dev || k===LS.devav || k===LS.ponto || k===LS.abonos || k===LS.pontodel){
           const merged=mergeFor(k, lsParse(k), cloud[k].value), ms=JSON.stringify(merged);
           localStorage.setItem(k, ms); syncVer[k]=cloud[k].updated_at;
           if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
@@ -1666,6 +1686,7 @@ async function syncPull(){
   if(!syncOn) return;
   try{
     const cloud = await cloudPullAll(); let changed=false;
+    try{ const rv=cloud[RELOAD_KEY]&&cloud[RELOAD_KEY].value; if(rv!=null){ const seen=localStorage.getItem("malba_reload_seen"); if(seen===null){ localStorage.setItem("malba_reload_seen",String(rv)); } else if(String(rv)!==seen){ localStorage.setItem("malba_reload_seen",String(rv)); limparSWcache().finally(()=>location.reload(true)); return; } } }catch(e){}
     Object.keys(cloud).forEach(k=>{
       if(!SYNC_KEYS.includes(k)||pendingPush[k]) return;
       if(cloud[k].updated_at && cloud[k].updated_at!==syncVer[k]){
@@ -1690,7 +1711,7 @@ async function syncPull(){
           if(ms!==JSON.stringify(cloud[k].value)) pendingPush[k]=true;
           return;
         }
-        if(k===LS.dev || k===LS.devav || k===LS.ponto || k===LS.abonos){
+        if(k===LS.dev || k===LS.devav || k===LS.ponto || k===LS.abonos || k===LS.pontodel){
           const merged=mergeFor(k, lsParse(k), cloud[k].value), ms=JSON.stringify(merged);
           if(localStorage.getItem(k)!==ms){ localStorage.setItem(k,ms); changed=true; }
           syncVer[k]=cloud[k].updated_at;
@@ -1738,6 +1759,20 @@ function syncDesconectar(){
   SUPA_URL=DEFAULT_SUPA_URL; SUPA_KEY=DEFAULT_SUPA_KEY; syncSetStatus("off"); renderSyncScreen();
 }
 function syncAgora(){ flushPending().then(syncPull); }
+async function limparSWcache(){
+  try{ if('serviceWorker' in navigator){ const rs=await navigator.serviceWorker.getRegistrations(); for(const r of rs){ try{ await r.unregister(); }catch(e){} } } }catch(e){}
+  try{ if(window.caches && caches.keys){ const ks=await caches.keys(); for(const k of ks){ try{ await caches.delete(k); }catch(e){} } } }catch(e){}
+}
+async function forcarReloadTodos(){
+  if(!syncOn){ alert("Conecte a sincronização primeiro."); return; }
+  if(!confirm("Atualizar TODOS os aparelhos conectados?\n\nCada aparelho vai recarregar sozinho em até 20 segundos e pegar a versão mais nova (v"+APP_VER+"). Este aparelho já está atualizado.")) return;
+  const v=Date.now();
+  try{
+    await fetch(syncBase()+"/rest/v1/malba_kv?on_conflict=key", { method:"POST", headers:Object.assign({Prefer:"resolution=merge-duplicates"},syncHeaders()), body:JSON.stringify([{ key:RELOAD_KEY, value:v, updated_at:new Date().toISOString() }]) });
+    localStorage.setItem("malba_reload_seen", String(v));
+    alert("✅ Sinal enviado. Os outros aparelhos vão recarregar em até 20 segundos.");
+  }catch(e){ alert("❌ Não consegui enviar o sinal: "+(e&&e.message||e)); }
+}
 const SYNC_SQL = `create table if not exists malba_kv (
   key text primary key,
   value jsonb,
@@ -1758,7 +1793,7 @@ function renderSyncScreen(){
   const [cor,txt]=map[syncStatus]||map.off;
   if(dot){ dot.style.background=cor; }
   const card=document.getElementById("sync-status-card");
-  if(card){ card.textContent=txt; card.className="syncstatus "+syncStatus; }
+  if(card){ card.textContent=txt+" · v"+APP_VER; card.className="syncstatus "+syncStatus; }
   const sql=document.getElementById("sync-sql"); if(sql && !sql.value) sql.value=SYNC_SQL;
   const u=document.getElementById("sync-url"); if(u && !u.value) u.value=SUPA_URL;
   const k=document.getElementById("sync-key"); if(k && !k.value) k.value=SUPA_KEY;
@@ -3791,7 +3826,25 @@ function devidaDia(c){ const j=colJorn(c); return Math.max(0,(hm2m(j.almI)-hm2m(
 function pontoColAtivos(){ return colaboradores.filter(c=>!c.excluido && c.ativo!==false); }
 function fmtHora(ts){ const d=new Date(ts); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
 function abonoDe(colId, ds){ const a=abonos[colId+"|"+ds]; return (a && !a.excluido) ? a : null; }
-function batidasDia(colId, ds){ return ponto.filter(b=>b.colId===colId && !b.excluido && (b.ts||"").slice(0,10)===ds).sort((a,b)=>(a.ts||"").localeCompare(b.ts||"")); }
+function batidasDia(colId, ds){
+  // junta por minuto (hh:mm local) — colapsa duplicatas de corrupção/aparelhos — e aplica exclusões reais
+  const byMin={};
+  ponto.forEach(b=>{
+    if(!b||b.colId!==colId||!b.ts) return;
+    if((b.ts||"").slice(0,10)!==ds) return;
+    const hm=fmtHora(b.ts);
+    const ex=byMin[hm];
+    if(!ex || (+b._upd||0)>(+ex._upd||0)) byMin[hm]=b;
+  });
+  const out=[];
+  for(const hm in byMin){
+    const b=byMin[hm];
+    const del=+((pontoDel||{})[colId+"|"+ds+"|"+hm])||0;   // exclusão vence se mais nova que a batida
+    if(del && del >= (+b._upd||0)) continue;
+    out.push(b);
+  }
+  return out.sort((a,b)=>(a.ts||"").localeCompare(b.ts||""));
+}
 // feriados SP (capital)
 function pascoa(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,g=Math.floor((b+8)/25),h=Math.floor((b-g+1)/3),i=(19*a+b-d-h+15)%30,k=Math.floor(c/4),l=c%4,mm=(32+2*e+2*k-i-l)%7,n=Math.floor((a+11*i+22*mm)/451),mes=Math.floor((i+mm-7*n+114)/31),dia=((i+mm-7*n+114)%31)+1; return new Date(y,mes-1,dia); }
 function addDias(dt,n){ const x=new Date(dt); x.setDate(x.getDate()+n); return x; }
@@ -3811,7 +3864,7 @@ function calcDiaTimes(c, ds, times){
   let e50=0,e100=0,falta=0,pend=0;
   if(fer){ e100=trab; }
   else if(fds){ e50=trab; }
-  else if(times.length===0){ falta=devida; }
+  else if(times.length===0 || trab===0){ falta=devida; }   // sem batida OU sem trabalho efetivo = FALTA (não entra em pendente)
   else { const diff=trab-devida; if(diff>0) e50=diff; else pend=Math.max(0,(-diff)-(pontoCfg.tolMin||0)); }
   const ab=abonoDe(c.id,ds);
   if(ab){ if(ab.tipo==="dia"){ falta=0; pend=0; } else { const m=+ab.min||0; if(falta>0) falta=Math.max(0,falta-m); else if(pend>0) pend=Math.max(0,pend-m); } }
@@ -4018,9 +4071,26 @@ function renderHistEditor(){
 function histEditSet(ds,i,v){ if(!pontoEdit) return; pontoEdit.dias[ds][i]=v; const t=$("he-tot"); if(t) t.innerHTML=histTotHTML(histEditTotais()); }
 function salvarHistColab(){
   if(!pontoEdit) return; const {colId,ym}=pontoEdit;
-  ponto.forEach(b=>{ if(b.colId===colId && !b.excluido && (b.ts||"").slice(0,7)===ym){ b.excluido=true; b._upd=Date.now(); } });
-  pontoDiasDoMes(ym).forEach(ds=>{ pontoEdit.dias[ds].filter(Boolean).sort().forEach(t=>{ ponto.push({id:uid(),colId,ts:new Date(ds+"T"+t+":00").toISOString(),_upd:Date.now()}); }); });
-  salvar(LS.ponto,ponto); pontoEdit=null; closeOcModal(); renderFolhaPonto();
+  const now=Date.now();
+  pontoDiasDoMes(ym).forEach(ds=>{
+    const manter=(pontoEdit.dias[ds]||[]).filter(Boolean);
+    const manterSet=new Set(manter);
+    // batidas existentes hoje nesse dia, por hh:mm (local), guardando o _upd mais novo
+    const existentes={};
+    ponto.forEach(b=>{ if(b&&b.colId===colId && (b.ts||"").slice(0,10)===ds){ const hm=fmtHora(b.ts); if(existentes[hm]==null||(+b._upd||0)>existentes[hm]) existentes[hm]=(+b._upd||0); } });
+    // adiciona / revive os horários que o editor quer manter e que não estão visíveis
+    manter.forEach(t=>{
+      const del=pontoDel[colId+"|"+ds+"|"+t];
+      if(existentes[t]==null || (del!=null && del>=existentes[t])){
+        ponto.push({id:uid(),colId,ts:new Date(ds+"T"+t+":00").toISOString(),_upd:now});
+        existentes[t]=now;
+      }
+    });
+    // marca exclusão dos horários que o editor removeu
+    Object.keys(existentes).forEach(hm=>{ if(!manterSet.has(hm)) pontoDel[colId+"|"+ds+"|"+hm]=now; });
+  });
+  salvar(LS.ponto,ponto); salvar(LS.pontodel,pontoDel);
+  pontoEdit=null; closeOcModal(); renderFolhaPonto();
 }
 function abrirAbono(colId, ds){
   const a=abonos[colId+"|"+ds]||{}; const c=colaboradores.find(x=>x.id===colId);
@@ -5301,7 +5371,7 @@ function seedFichas5(){
   if(added){ salvar(LS.devav,devAvulsos); try{ render(); }catch(e){} }
   localStorage.setItem("malba_os_fichas_v5","1");
 }
-(async()=>{ try{ if(blingOAuthCapture()) return; }catch(e){} try{ await syncInit(); }catch(e){} try{ repararOrdens(); }catch(e){} try{ limparOcsFantasma(); }catch(e){} try{ repararHistorico(); }catch(e){} try{ dedupDevAvulsos(); }catch(e){} try{ seedFichas5(); }catch(e){} })();
+(async()=>{ try{ limparSWcache(); }catch(e){} try{ if(blingOAuthCapture()) return; }catch(e){} try{ await syncInit(); }catch(e){} try{ repararOrdens(); }catch(e){} try{ limparOcsFantasma(); }catch(e){} try{ repararHistorico(); }catch(e){} try{ dedupDevAvulsos(); }catch(e){} try{ seedFichas5(); }catch(e){} })();
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden && syncOn){ flushPending().then(syncPull); } });
 </script>
 </body>
