@@ -4479,30 +4479,35 @@ function renderAmostras(){
 function imprimirEtiquetaAmostra(id){
   const a=amostras.find(x=>x.id===id); if(!a){ alert("Amostra não encontrada."); return; }
   const end=amostraEndTxt(a.endereco);
-  const itensHtml=(a.itens||[]).map(i=>{
+  const itens=(a.itens||[]);
+  const logoSvg=`<svg viewBox="0 0 64 64" width="26" height="26" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="14" width="40" height="40" rx="7" fill="#F2D374"/><rect x="18" y="10" width="40" height="40" rx="7" fill="#161e2a"/><text x="38" y="38" text-anchor="middle" font-family="Archivo,Arial" font-weight="800" font-size="30" fill="#fff">M</text></svg>`;
+  const dataTxt=a.criadoEm?fmtData(a.criadoEm):"";
+  // uma etiqueta 100×150 por medida (cada item = uma página)
+  const paginas=itens.map((i,idx)=>{
     const med=(i.c||0)+"×"+(i.l||0)+(i.a?("×"+i.a):"")+" mm";
     const chapa=(i.chapaLarg&&i.chapaComp)?(i.chapaLarg+" × "+i.chapaComp+" mm"):"";
     const vinc=(i.vincos&&i.vincos.length)?i.vincos.map(v=>+v||0).join(" | "):"";
-    return `<div class="et-item">
+    const ultima=idx===itens.length-1;
+    return `<div class="etiqueta et-page${ultima?"":" et-pb"}">
+    <div class="et-top"><span class="et-brand">${logoSvg}<span class="et-tag">AMOSTRA</span></span><span class="et-date">${dataTxt}</span></div>
+    <div class="et-cli">${esc(a.cliente||"—")}</div>
+    ${a.vendedor?`<div class="et-vend">Vendedor: ${esc(a.vendedor)}</div>`:""}
+    <div class="et-itens"><div class="et-item">
       <div class="et-sku">${esc(i.sku||i.produto||"—")}</div>
       <div class="et-row"><span>Onda</span><b>${esc(i.ondaNome||"—")}</b></div>
       <div class="et-row"><span>Gramatura</span><b>${i.gram?esc(i.gram+" g/m²"):"—"}</b></div>
       <div class="et-row"><span>Caixa</span><b>${esc(med)}</b></div>
       ${chapa?`<div class="et-row"><span>Chapa</span><b>${esc(chapa)}</b></div>`:""}
       ${vinc?`<div class="et-row"><span>Vincos</span><b>${esc(vinc)}</b></div>`:""}
-    </div>`;
+    </div></div>
+    ${end?`<div class="et-end"><span>Entrega</span>${esc(end)}</div>`:""}
+    <div class="et-foot">MALBA Fábrica · Amostra · ${idx+1}/${itens.length}</div>
+  </div>`;
   }).join("");
   const st=document.createElement("style"); st.id="et-size";
-  st.textContent="@media print{@page{size:100mm 150mm;margin:4mm}}";
+  st.textContent="@media print{@page{size:100mm 150mm;margin:4mm}#print .et-pb{page-break-after:always}}";
   document.head.appendChild(st);
-  $("print").innerHTML=`<div class="etiqueta">
-    <div class="et-top"><span class="et-brand"><svg viewBox="0 0 64 64" width="26" height="26" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="14" width="40" height="40" rx="7" fill="#F2D374"/><rect x="18" y="10" width="40" height="40" rx="7" fill="#161e2a"/><text x="38" y="38" text-anchor="middle" font-family="Archivo,Arial" font-weight="800" font-size="30" fill="#fff">M</text></svg><span class="et-tag">AMOSTRA</span></span><span class="et-date">${a.criadoEm?fmtData(a.criadoEm):""}</span></div>
-    <div class="et-cli">${esc(a.cliente||"—")}</div>
-    ${a.vendedor?`<div class="et-vend">Vendedor: ${esc(a.vendedor)}</div>`:""}
-    <div class="et-itens">${itensHtml}</div>
-    ${end?`<div class="et-end"><span>Entrega</span>${esc(end)}</div>`:""}
-    <div class="et-foot">MALBA Fábrica · Amostra</div>
-  </div>`;
+  $("print").innerHTML=paginas||`<div class="etiqueta"><div class="et-cli">${esc(a.cliente||"—")}</div><div class="et-foot">Sem itens</div></div>`;
   window.print();
   setTimeout(()=>{ const s=$("et-size"); if(s) s.remove(); $("print").innerHTML=""; },600);
 }
