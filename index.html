@@ -2548,7 +2548,7 @@ function confirmarCompraMassa(){
   const custoKg=fornCusto(forn); let peso=0, valor=0;
   const itensF=itens.map(i=>{ const p=i.pesoUnit*i.qtd, v=custoKg*p; peso+=p; valor+=v; const o=Object.assign({},i,{peso:p, custoUnit:custoKg*i.pesoUnit, valor:v}); delete o._origemKey; return o; });
   const ipi=valor*0.0325; const id=ocNovoId(data);
-  ordens.push({ id, dataPrevista:data, fornecedor:forn, empresa:($("massa-empresa")?$("massa-empresa").value:"fabrica")||"fabrica", itens:itensF, peso, valor, ipi, valorTotal:valor+ipi, recebida:false });
+  ordens.push({ id, dataPrevista:data, dataCompra:hojeStr(), fornecedor:forn, empresa:($("massa-empresa")?$("massa-empresa").value:"fabrica")||"fabrica", itens:itensF, peso, valor, ipi, valorTotal:valor+ipi, recebida:false });
   salvar(LS.oc,ordens);
   itens.forEach(i=>{ const k=i._origemKey; if(!k || String(k).startsWith("av:")) return; const e=Object.assign({}, devEntry(k)||{}, {status:"comprado"}); desenvStatus[k]=tocaDev(e); });
   salvar(LS.dev,desenvStatus);
@@ -2618,6 +2618,7 @@ function fichaTecnica(key){
 
 // ---------- Ordem de compra ----------
 function ocPrevista(o){ return o.dataPrevista||o.data||""; }
+function ocCompra(o){ return o.dataCompra||""; }
 function ocRecebidoTotal(o){ return (o.itens||[]).reduce((s,i)=>s+(+i.recebido||0),0); }
 function ocStatus(o){ if(o.excluida) return "cancelado"; if(o.recebida && !ocFaltaProd(o)) return "recebido"; if(o.recebida || ocRecebidoTotal(o)>0) return "parcial"; const p=ocPrevista(o); if(p && p<hojeStr()) return "atrasado"; return "pendente"; }
 const OC_ST={recebido:["Recebido","stb-rec"],parcial:["Parcial","stb-parc"],pendente:["Pendente","stb-pend"],atrasado:["Atrasado","stb-atr"],cancelado:["Cancelado","stb-canc"]};
@@ -2702,6 +2703,7 @@ function renderOC(){
   const rows=slice.map(o=>{ const st=OC_ST[ocStatus(o)]; const podeReceber=(!o.recebida || ocFaltaProd(o)); const canc=!!o.excluida;
     return `<tr>
     <td><b>${esc(o.id)}</b></td>
+    <td>${ocCompra(o)?fmtData(ocCompra(o)):"—"}</td>
     <td>${ocPrevista(o)?fmtData(ocPrevista(o)):"—"}</td>
     <td>${esc(o.fornecedor||"—")}<br><small style="color:var(--muted-2)">${esc(empresaOC(o).nome)}</small></td>
     <td><span class="stb ${st[1]}">${st[0]}</span>${o.alteradaEm?` <span class="stb stb-alt" title="Alterada em ${fmtData(o.alteradaEm)} às ${new Date(o.alteradaEm).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}">✎ alterada</span>`:""}</td>
@@ -2717,7 +2719,7 @@ function renderOC(){
       ${ ehGestor() ? `<button class="ic-btn ed" onclick="editarOC('${o.id}')" title="Editar">✏️</button>` : "" }
       ${ ehGestor() ? `<button class="ic-btn rm" onclick="ocExcluir('${o.id}')" title="Cancelar (vai para Canceladas)">×</button>` : "" }`}
     </td></tr>`;}).join("");
-  box.innerHTML=`<div class="tablewrap"><table class="htab"><thead><tr><th>ID</th><th>Previsão</th><th>Fornecedor</th><th>Status</th><th class="num">Peso</th><th class="num">Valor</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+  box.innerHTML=`<div class="tablewrap"><table class="htab"><thead><tr><th>ID</th><th>Comprado em</th><th>Previsão</th><th>Fornecedor</th><th>Status</th><th class="num">Peso</th><th class="num">Valor</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="pager"><button ${ocPage<=1?"disabled":""} onclick="ocPage--;renderOC()">← Anterior</button><span class="pgnum">${ocPage}</span><button ${ocPage>=pages?"disabled":""} onclick="ocPage++;renderOC()">Próximo →</button></div>`;
 }
 
@@ -2736,6 +2738,7 @@ function ocDetalhes(id){
     <h3 class="modal-h">Detalhes da Ordem de Compra</h3>
     <div class="modal-meta">
       <div><div class="ml">FORNECEDOR</div><div class="mv">${esc(o.fornecedor||"—")}</div></div>
+      <div><div class="ml">COMPRADO EM</div><div class="mv">${ocCompra(o)?fmtData(ocCompra(o)):"—"}</div></div>
       <div><div class="ml">PREVISÃO DE ENTREGA</div><div class="mv">${ocPrevista(o)?fmtData(ocPrevista(o)):"—"}</div></div>
       <div><div class="ml">STATUS</div><div class="mv"><span class="stb ${st[1]}">${st[0]}</span></div></div>
     </div>
@@ -2768,7 +2771,7 @@ function ocPDF(id){
     <div class="ph"><div class="phl">
       <svg viewBox="0 0 64 64" width="44" height="44" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="14" width="40" height="40" rx="7" fill="#F2D374"/><rect x="18" y="10" width="40" height="40" rx="7" fill="#161e2a"/><text x="38" y="38" text-anchor="middle" font-family="Archivo,Arial" font-weight="800" font-size="30" fill="#fff">M</text></svg>
       <div><div class="pht">Ordem de compra ${esc(o.id)}</div><div class="phs">${esc(emp.nome)}${emp.cnpj?" · CNPJ "+emp.cnpj:""}</div></div>
-    </div><div class="phr"><div class="phlabel">Previsão de entrega</div><div class="phnum" style="font-size:15px">${ocPrevista(o)?fmtData(ocPrevista(o)):"—"}</div><div class="phs">${OC_ST[ocStatus(o)][0]}</div></div></div>
+    </div><div class="phr"><div class="phlabel">Previsão de entrega</div><div class="phnum" style="font-size:15px">${ocPrevista(o)?fmtData(ocPrevista(o)):"—"}</div><div class="phs">Comprado em ${ocCompra(o)?fmtData(ocCompra(o)):"—"}</div><div class="phs">${OC_ST[ocStatus(o)][0]}</div></div></div>
     <div class="frow" style="border:none;padding-top:6px"><span>Fornecedor</span><b>${esc(o.fornecedor||"—")}</b></div>
     <table class="pordtab"><thead><tr><th>SKU</th><th>Qualidade</th><th>Chapa (L×C)</th><th>Vincos</th><th style="text-align:right">Qtd</th><th style="text-align:right">Valor un.</th><th style="text-align:right">Total</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="ptotais"><div>Peso total: <b>${(+o.peso||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})} kg</b></div><div>Subtotal: <b>${brl(ocTotais(o).sub)}</b></div><div>IPI (3,25%): <b>${brl(ocTotais(o).ipi)}</b></div><div style="font-size:15px">Total: <b>${brl(ocTotais(o).total)}</b></div></div>
@@ -2857,6 +2860,7 @@ function ocMontarDoc(o){
   // previsão (direita)
   doc.setFontSize(8); doc.setTextColor(120,120,120); doc.text("Previsão de entrega", W-M, 12, {align:"right"});
   doc.setFontSize(12); doc.setTextColor(ink[0],ink[1],ink[2]); doc.setFont("helvetica","bold"); doc.text(ocPrevista(o)?fmtData(ocPrevista(o)):"—", W-M, 18, {align:"right"});
+  doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(120,120,120); doc.text("Comprado em "+(ocCompra(o)?fmtData(ocCompra(o)):"—"), W-M, 25, {align:"right"});
   // linha kraft
   doc.setDrawColor(kraft[0],kraft[1],kraft[2]); doc.setLineWidth(0.8); doc.line(M,32,W-M,32);
   // fornecedor
@@ -2911,7 +2915,7 @@ async function enviarOCEmail(id){
     const corpo=`<div style="font-family:Arial,sans-serif;color:#161e2a;max-width:640px">
       <h2 style="margin:0 0 4px">Ordem de compra ${esc(o.id)}</h2>
       <p style="margin:0 0 12px;color:#555">${esc(emp.nome)}${emp.cnpj?" · CNPJ "+esc(emp.cnpj):""}</p>
-      <p>Fornecedor: <b>${esc(o.fornecedor||"—")}</b><br>Previsão de entrega: <b>${ocPrevista(o)?fmtData(ocPrevista(o)):"—"}</b></p>
+      <p>Fornecedor: <b>${esc(o.fornecedor||"—")}</b><br>Previsão de entrega: <b>${ocPrevista(o)?fmtData(ocPrevista(o)):"—"}</b><br>Comprado em: <b>${ocCompra(o)?fmtData(ocCompra(o)):"—"}</b></p>
       <table style="border-collapse:collapse;width:100%;font-size:14px"><thead><tr style="background:#161e2a;color:#fff"><th style="padding:6px;text-align:left">SKU</th><th style="padding:6px;text-align:right">Qtd</th><th style="padding:6px;text-align:right">Total</th></tr></thead><tbody>${linhas}</tbody></table>
       <p style="margin-top:12px">Peso total: <b>${(+o.peso||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})} kg</b><br>Total: <b>${brl(t.total)}</b></p>
       <p style="color:#555">Segue em anexo o PDF da ordem de compra.</p>
@@ -3544,7 +3548,7 @@ function salvarOC(){
     if(o){ o.fornecedor=ocForm.fornecedor; o.empresa=ocForm.empresa||"fabrica"; o.dataPrevista=ocForm.dataPrevista; o.itens=itens; o.peso=peso; o.valor=valor; o.ipi=ipi; o.valorTotal=valor+ipi; o.alteradaEm=Date.now(); o._upd=Date.now(); }
   } else {
     const id=ocNovoId(ocForm.dataPrevista);
-    ordens.push({ id, dataPrevista:ocForm.dataPrevista, fornecedor:ocForm.fornecedor, empresa:ocForm.empresa||"fabrica", itens, peso, valor, ipi, valorTotal:valor+ipi, recebida:false });
+    ordens.push({ id, dataPrevista:ocForm.dataPrevista, dataCompra:hojeStr(), fornecedor:ocForm.fornecedor, empresa:ocForm.empresa||"fabrica", itens, peso, valor, ipi, valorTotal:valor+ipi, recebida:false });
   }
   salvar(LS.oc,ordens);
   show("tela-gestor"); irViewG("prod-ordem");
@@ -5041,7 +5045,7 @@ function seedDemo(){
       return {key:x.key,sku:e.sku||"",produto:it.produto,c:it.c,l:it.l,a:it.a,chapaComp:Math.round(d.comp),chapaLarg:Math.round(d.larg),gram:f.gram,ondaNome:it.ondaNome,vincos:(e.vincos||[]).slice(),qtd,pesoUnit:pu,peso:p,custoUnit:custoKg*pu,valor:v};
     });
     const ipi=valor*0.0325, id=ocNovoId(prevISO);
-    return {id, dataPrevista:prevISO, fornecedor:fornNome, itens, peso, valor, ipi, valorTotal:valor+ipi, recebida:false};
+    return {id, dataPrevista:prevISO, dataCompra:hojeStr(), fornecedor:fornNome, itens, peso, valor, ipi, valorTotal:valor+ipi, recebida:false};
   }
   const d=new Date(); const iso=(off)=>{ const x=new Date(d); x.setDate(d.getDate()+off); return isoOf(x); };
   ordens = [
@@ -5261,7 +5265,7 @@ const OC_DATA=[
 function ocBuildItens(o){ return o.itens.map(r=>{ const [sku,larg,comp,v1,v2,v3,onda,gram,qtd,vt]=r;
   const pesoUnit=(comp*larg/1e6)*gram/1000; const custoUnit= qtd? vt/qtd : 0;
   return { sku, produto:"", c:0,l:0,a:0, chapaComp:comp, chapaLarg:larg, gram, ondaNome:onda, vincos:[v1,v2,v3], qtd, pesoUnit, peso:pesoUnit*qtd, custoUnit, valor:vt }; }); }
-function ocRecord(o){ return { id:o.id, dataPrevista:o.data, fornecedor:o.forn, itens:ocBuildItens(o), peso:o.peso, valor:o.sub, ipi:o.sub*0.0325, valorTotal:o.total, recebida:false }; }
+function ocRecord(o){ return { id:o.id, dataPrevista:o.data, dataCompra:o.data, fornecedor:o.forn, itens:ocBuildItens(o), peso:o.peso, valor:o.sub, ipi:o.sub*0.0325, valorTotal:o.total, recebida:false }; }
 function seedOrdensCompra(){
   if(localStorage.getItem("malba_os_ocs_v1")) return;
   OC_DATA.forEach(o=> ordens.push(ocRecord(o)) );
