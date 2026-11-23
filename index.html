@@ -421,6 +421,13 @@ tbody tr:hover{background:var(--surface-2)}
 .tpm-row:hover{border-color:var(--border-2)}
 .tpm-row small,.tpm-c1 small,.tpm-c2 small,.tpm-c3 small,.tpm-c4 small{display:block;color:var(--muted-2);font-size:11.5px;margin-top:2px}
 .tpm-c6{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.tpm-ult{color:var(--accent)!important}
+.tpm-info{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:var(--surface-2);border-radius:12px;padding:12px}
+.tpm-info small,.tpm-nota small{display:block;color:var(--muted-2);font-size:11.5px;margin-bottom:2px}
+.tpm-info b{font-size:13.5px}
+.tpm-notas{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow:auto}
+.tpm-nota{border:1px solid var(--border);border-radius:12px;padding:9px 12px;font-size:13px}
+.tpm-nota.concl{background:var(--green-soft);border-color:transparent;color:var(--green);font-weight:600}
 .tpm-vazio{background:var(--surface);border:1px dashed var(--border-2);border-radius:14px;padding:28px;text-align:center;color:var(--muted)}
 @media(max-width:760px){
   .tpm-head{display:none}
@@ -1021,7 +1028,7 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
       <div class="scrim" onclick="closeDrawer()"></div>
       <nav class="railbar">
         <button class="rail-btn" onclick="railOpen('producao')" title="Produção"><span class="ri">🏭</span><small>Produção</small></button>
-        <button class="rail-btn only-gestor" onclick="railOpen('tpm')" title="TPM"><span class="ri">🔧</span><small>TPM</small></button>
+        <button class="rail-btn" onclick="railOpen('tpm')" title="TPM"><span class="ri">🔧</span><small>TPM</small></button>
         <button class="rail-btn only-gestor" onclick="railOpen('base')" title="Base de dados"><span class="ri">📁</span><small>Base</small></button>
         <button class="rail-btn" onclick="railOpen('dashboard')" title="Dashboards"><span class="ri">📊</span><small>Dashboards</small></button>
         <button class="rail-btn" onclick="railOpen('amostras')" title="Amostras"><span class="ri">🧪</span><small>Amostras</small></button>
@@ -1037,8 +1044,8 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
           <button class="navitem subitem" data-v="prod-expedicao" onclick="irViewG('prod-expedicao')">Expedição</button>
           <button class="navitem subitem only-gestor" data-v="prod-terceirizado" onclick="irViewG('prod-terceirizado')">Terceirizado</button>
         </div>
-        <button class="navgroup collapsed only-gestor" data-g="tpm" onclick="toggleGroup(this)">🔧 TPM <span class="chev">▾</span></button>
-        <div class="navsub collapsed only-gestor">
+        <button class="navgroup collapsed" data-g="tpm" onclick="toggleGroup(this)">🔧 TPM <span class="chev">▾</span></button>
+        <div class="navsub collapsed">
           <button class="navitem subitem" data-v="tpm-lista" onclick="irViewG('tpm-lista')">Planos de manutenção</button>
         </div>
         <button class="navgroup collapsed only-gestor" data-g="base" onclick="toggleGroup(this)">📁 Base de dados <span class="chev">▾</span></button>
@@ -2889,7 +2896,7 @@ function tpmFiltrados(){
     if(tpmFiltro.setor && t.setor!==tpmFiltro.setor) return false;
     if(tpmFiltro.tipo && t.tipo!==tpmFiltro.tipo) return false;
     if(tpmFiltro.status && tpmStatus(t)!==tpmFiltro.status) return false;
-    if(q && ![t.equip,t.codigo,t.setor,t.tipo,t.atividade,t.freq,t.resp,t.obs].join(" ").toLowerCase().includes(q)) return false;
+    if(q && ![t.equip,t.codigo,t.setor,t.tipo,t.atividade,t.freq,t.resp,t.obs,(t.notas||[]).map(n=>n.txt).join(" ")].join(" ").toLowerCase().includes(q)) return false;
     return true;
   }).sort((a,b)=>(a.proxima||"9999").localeCompare(b.proxima||"9999"));
 }
@@ -2901,7 +2908,7 @@ function renderTPM(){
     <div class="tpm-bar">
       <input class="tpm-search" id="tpm-busca" type="search" placeholder="🔍 Pesquisar equipamento, código, atividade, responsável..." value="${esc(tpmBusca)}" oninput="tpmBuscar(this.value)">
       <button class="btnghost" onclick="tpmToggleFiltro()">⚙️ Filtro<span id="tpm-filtro-n"></span></button>
-      <button class="btnprim" onclick="tpmNova()">+ Adicionar manutenção</button>
+      ${tpmIsProd()?"":`<button class="btnprim" onclick="tpmNova()">+ Adicionar manutenção</button>`}
     </div>
     <div id="tpm-filtros" class="tpm-filtros" style="display:${tpmFiltroAberto?"grid":"none"}">
       ${sel("equip","Tipo de máquina",equips.map(e=>[e,e]))}
@@ -2930,7 +2937,7 @@ function tpmRowHtml(t){
   const st=TPM_STLBL[tpmStatus(t)];
   return `<div class="tpm-row" onclick="tpmEditar('${t.id}')">
     <div class="tpm-c1"><b>${esc(t.codigo||"—")}</b> ${esc(t.equip||"")}<small>${esc(t.setor||"")}</small></div>
-    <div class="tpm-c2">${esc(t.atividade||"—")}${t.obs?`<small>${esc(t.obs)}</small>`:""}</div>
+    <div class="tpm-c2">${esc(t.atividade||"—")}${t.obs?`<small>${esc(t.obs)}</small>`:""}${tpmUltObs(t)?`<small class="tpm-ult">💬 ${esc(tpmUltObs(t))}</small>`:""}</div>
     <div class="tpm-c3">${esc(t.tipo||"—")}<small>${esc(t.freq||"")}</small></div>
     <div class="tpm-c4">${t.proxima?fmtData(t.proxima):"—"}<small>${t.ultima?"Última: "+fmtData(t.ultima):""}</small></div>
     <div class="tpm-c5">${esc(t.resp||"—")}</div>
@@ -2941,8 +2948,47 @@ function tpmBuscar(v){ tpmBusca=v; renderTPMLista(); }
 function tpmSetFiltro(k,v){ tpmFiltro[k]=v; renderTPMLista(); }
 function tpmToggleFiltro(){ tpmFiltroAberto=!tpmFiltroAberto; const f=$("tpm-filtros"); if(f) f.style.display=tpmFiltroAberto?"grid":"none"; }
 function tpmLimparFiltro(){ tpmFiltro={equip:"",setor:"",tipo:"",status:""}; renderTPM(); }
-function tpmNova(){ tpmEditId=null; _tpmModal({}); }
-function tpmEditar(id){ const t=tpm.find(x=>x.id===id); if(!t) return; tpmEditId=id; _tpmModal(t); }
+function tpmIsProd(){ const g=$("tela-gestor"); return !!(g && g.classList.contains("modo-prod")); }
+function tpmNova(){ if(tpmIsProd()) return; tpmEditId=null; _tpmModal({}); }
+function tpmEditar(id){
+  const t=tpm.find(x=>x.id===id); if(!t) return;
+  if(tpmIsProd()) return tpmDetalhe(id);
+  tpmEditId=id; _tpmModal(t);
+}
+function tpmUltObs(t){ const o=(t.notas||[]).filter(n=>n.tipo==="obs"); return o.length?o[o.length-1].txt:""; }
+function tpmDetalhe(id){
+  const t=tpm.find(x=>x.id===id); if(!t) return;
+  tpmEditId=id;
+  const notas=(t.notas||[]).slice().reverse().map(n=>`<div class="tpm-nota ${n.tipo==="concl"?"concl":""}"><small>${new Date(n.data).toLocaleDateString("pt-BR")} · ${n.tipo==="concl"?"Concluída":"Observação"}</small>${n.tipo==="concl"?"":`<div>${esc(n.txt)}</div>`}</div>`).join("")||`<div class="muted">Nenhuma observação ainda.</div>`;
+  $("ocmodal").innerHTML=`<div class="modal-card">
+    <h3 class="modal-h">${esc(t.codigo||"")} ${esc(t.equip||"")}</h3>
+    <div class="tpm-info">
+      <div><small>Atividade</small><b>${esc(t.atividade||"—")}</b></div>
+      <div><small>Frequência</small><b>${esc(t.freq||"—")}</b></div>
+      <div><small>Próxima execução</small><b>${t.proxima?fmtData(t.proxima):"—"}</b></div>
+      <div><small>Responsável</small><b>${esc(t.resp||"—")}</b></div>
+    </div>
+    <div class="modal-sec" style="margin-top:14px">Nova observação</div>
+    <div class="field"><textarea id="tpm-novaobs" placeholder="Ex.: trocou correia, máquina fazendo barulho..."></textarea></div>
+    <div class="modal-sec">Histórico</div>
+    <div class="tpm-notas">${notas}</div>
+    <div class="modal-foot">
+      <button class="btnghost" onclick="closeOcModal()">Fechar</button>
+      <button class="btnghost" onclick="tpmAddObs()">💬 Adicionar observação</button>
+      <button class="btnprim" onclick="tpmConcluirDetalhe()">✓ Concluir manutenção</button>
+    </div></div>`;
+  $("ocmodal").style.display="flex";
+}
+function tpmAddObs(){
+  const txt=val("tpm-novaobs"); if(!txt){ alert("Escreva a observação."); return; }
+  const t=tpm.find(x=>x.id===tpmEditId); if(!t) return;
+  t.notas=t.notas||[]; t.notas.push({data:new Date().toISOString(), txt, tipo:"obs"});
+  tpmSave(); tpmDetalhe(t.id);
+}
+function tpmConcluirDetalhe(){
+  const id=tpmEditId, obs=val("tpm-novaobs");
+  closeOcModal(); tpmConcluir(id, obs);
+}
 function _tpmModal(t){
   const opt=(arr,sel)=>arr.map(x=>`<option ${x===sel?"selected":""}>${esc(x)}</option>`).join("");
   const equips=[...new Set(tpm.map(x=>x.equip).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
@@ -2975,7 +3021,8 @@ function tpmSalvar(){
   const ultima=$("tpm-ultima").value||"";
   let prox=$("tpm-prox").value||"";
   if(!prox && ultima) prox=tpmAddDias(ultima, TPM_FREQ[freq]||30);
-  const rec={ id:tpmEditId||uid(), equip, codigo:val("tpm-cod"), setor:$("tpm-setor").value, tipo:$("tpm-tipo").value,
+  const prev=tpmEditId?tpm.find(x=>x.id===tpmEditId):null;
+  const rec={ id:tpmEditId||uid(), notas:(prev&&prev.notas)||[], equip, codigo:val("tpm-cod"), setor:$("tpm-setor").value, tipo:$("tpm-tipo").value,
     atividade:val("tpm-ativ"), freq, resp:val("tpm-resp"), ultima, proxima:prox, obs:val("tpm-obs") };
   const i=tpmEditId?tpm.findIndex(x=>x.id===tpmEditId):-1;
   if(i>=0) tpm[i]=rec; else tpm.push(rec);
@@ -2985,9 +3032,12 @@ function tpmExcluir(){
   if(!tpmEditId || !confirm("Excluir esta manutenção?")) return;
   tpm=tpm.filter(x=>x.id!==tpmEditId); closeOcModal(); tpmSave();
 }
-function tpmConcluir(id){
+function tpmConcluir(id, obs){
   const t=tpm.find(x=>x.id===id); if(!t) return;
   const h=hojeStr(); t.ultima=h; t.proxima=tpmAddDias(h, TPM_FREQ[t.freq]||30);
+  t.notas=t.notas||[]; const agora=new Date().toISOString();
+  if(obs) t.notas.push({data:agora, txt:obs, tipo:"obs"});
+  t.notas.push({data:agora, txt:"Manutenção concluída", tipo:"concl"});
   tpmSave();
 }
 function tpmCellHtml(t){ const st=TPM_STLBL[tpmStatus(t)];
