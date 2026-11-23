@@ -1359,7 +1359,7 @@ const DEF_ONDAS = [
   { nome:"Onda TT", gramaturas:[470],         comp:compPadrao("Onda TT") },
 ];
 
-const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1", oms:"malba_os_oms_v1", amostras:"malba_os_amostras_v1", pcpsem:"malba_os_pcpsemana_v1", colab:"malba_os_colaboradores_v1", ponto:"malba_os_ponto_v1", pontocfg:"malba_os_pontocfg_v1", feriados:"malba_os_feriados_v1", abonos:"malba_os_abonos_v1", pontodel:"malba_os_pontodel_v1", tpm:"malba_os_tpm_v1" };
+const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1", oms:"malba_os_oms_v1", amostras:"malba_os_amostras_v1", pcpsem:"malba_os_pcpsemana_v1", colab:"malba_os_colaboradores_v1", ponto:"malba_os_ponto_v1", pontocfg:"malba_os_pontocfg_v1", feriados:"malba_os_feriados_v1", abonos:"malba_os_abonos_v1", pontodel:"malba_os_pontodel_v1", tpm:"malba_os_tpm_v1", tpmmeta:"malba_os_tpm_meta_v1" };
 
 // util
 const APP_VER="2026-10-30b"; const RELOAD_KEY="malba_os_reload_v1";
@@ -1410,6 +1410,27 @@ const TPM_SEED=[
   {id:"t08",equip:"Impressora Flexo",codigo:"MQ-01",setor:"Impressão",tipo:"Preventiva",atividade:"Revisão de pintura, lubrificação, limpeza fina e afiação das facas",freq:"Anual",resp:"João e técnicos",ultima:"2026-05-20",proxima:"2027-05-20",obs:""}
 ];
 let tpm = carregar(LS.tpm, TPM_SEED);
+// Tarefas acrescentadas para cartonagem (versão 2 da carga inicial). Entram uma única vez, sem duplicar.
+const TPM_NOVAS=[
+  {id:"n01",equip:"Impressora Flexo",codigo:"MQ-01",setor:"Impressão",tipo:"Autônoma",atividade:"Limpeza do anilox e dos clichês ao fim de cada troca de trabalho",freq:"Diária",resp:"Operador da flexo",obs:""},
+  {id:"n02",equip:"Impressora Flexo",codigo:"MQ-01",setor:"Impressão",tipo:"Preditiva",atividade:"Medição de volume do anilox, verificação de pressão e registro",freq:"Mensal",resp:"João",obs:"Medir o volume do anilox com a ferramenta de medição."},
+  {id:"n03",equip:"Impressora Flexo",codigo:"MQ-01",setor:"Impressão",tipo:"Preditiva",atividade:"Recobrimento de cilindro (anilox)",freq:"Semestral",resp:"João",obs:"Fazer quando a medição indicar desgaste. Contato: Manuel (revestimento de cilindro)."},
+  {id:"n04",equip:"Coladeira",codigo:"MQ-04",setor:"Acabamento",tipo:"Autônoma",atividade:"Limpeza dos bicos e aplicadores de cola",freq:"Diária",resp:"Operador da coladeira",obs:""},
+  {id:"n05",equip:"Coladeira",codigo:"MQ-04",setor:"Acabamento",tipo:"Preventiva",atividade:"Verificação das correias e do sistema de cola",freq:"Mensal",resp:"Luzimar",obs:"Contato: Fernando (manutenção na coladeira)."},
+  {id:"n06",equip:"Arqueadora",codigo:"",setor:"Expedição",tipo:"Preventiva",atividade:"Inspeção do cabeçote e da fita, troca de peças por desgaste",freq:"Semanal",resp:"",obs:"Contato: Julio (arqueadora)."},
+  {id:"n07",equip:"Compressor",codigo:"MQ-02",setor:"Utilidades",tipo:"Preventiva",atividade:"Troca do filtro de ar e do separador",freq:"Semestral",resp:"Ahmet",obs:""},
+  {id:"n08",equip:"Painel elétrico geral",codigo:"",setor:"Utilidades",tipo:"Preventiva",atividade:"Inspeção do painel e aperto de conexões",freq:"Anual",resp:"",obs:"Contato: Renan (elétrica das máquinas) ou Digel (materiais)."},
+  {id:"n09",equip:"Todas as máquinas",codigo:"",setor:"Outro",tipo:"Preventiva",atividade:"Lubrificação dos pontos de graxa",freq:"Mensal",resp:"Manutenção",obs:""}
+];
+const TPM_META_V=2;
+function tpmMigrar(){
+  let meta={}; try{ meta=carregar(LS.tpmmeta,{})||{}; }catch(e){}
+  if((meta.seedV||0)>=TPM_META_V) return;
+  const h=hojeStr(), ids=new Set(tpm.map(t=>t.id));
+  TPM_NOVAS.forEach(n=>{ if(!ids.has(n.id)) tpm.push(Object.assign({ultima:"",proxima:h,notas:[]}, n)); });
+  salvar(LS.tpm, tpm); salvar(LS.tpmmeta, {seedV:TPM_META_V});
+}
+tpmMigrar();
 let tpmBusca="", tpmFiltro={equip:"",setor:"",tipo:"",status:""}, tpmFiltroAberto=false, tpmEditId=null;
 let pcpSemana = carregar(LS.pcpsem, {dias:{},obs:{}});
 let pcpModo = "quadro";
@@ -1576,6 +1597,7 @@ function reloadState(){
   pontoDel = carregar(LS.pontodel, {});
   pontoCfg = carregar(LS.pontocfg, {tolMin:10});
   tpm = carregar(LS.tpm, TPM_SEED);
+  tpmMigrar();
   feriadosCfg = carregar(LS.feriados, {add:[],rem:[]});
 }
 function refreshViewAtual(){
