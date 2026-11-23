@@ -3830,12 +3830,13 @@ function devidaDia(c){ const j=colJorn(c); return Math.max(0,(hm2m(j.almI)-hm2m(
 function pontoColAtivos(){ return colaboradores.filter(c=>!c.excluido && c.ativo!==false); }
 function fmtHora(ts){ const d=new Date(ts); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
 function abonoDe(colId, ds){ const a=abonos[colId+"|"+ds]; return (a && !a.excluido) ? a : null; }
+function diaLocalDe(ts){ const d=new Date(ts); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function batidasDia(colId, ds){
   // junta por minuto (hh:mm local) — colapsa duplicatas de corrupção/aparelhos — e aplica exclusões reais
   const byMin={};
   ponto.forEach(b=>{
     if(!b||b.colId!==colId||!b.ts) return;
-    if((b.ts||"").slice(0,10)!==ds) return;
+    if(diaLocalDe(b.ts)!==ds) return;
     const hm=fmtHora(b.ts);
     const ex=byMin[hm];
     if(!ex || (+b._upd||0)>(+ex._upd||0)) byMin[hm]=b;
@@ -4142,7 +4143,7 @@ function abrirResumoColab(colId){
   const c=colaboradores.find(x=>x.id===colId); if(!c) return;
   const ym=(new Date()).toISOString().slice(0,7); const r=resumoMes(c,ym);
   const mesNome=["","Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][+ym.slice(5)]+"/"+ym.slice(0,4);
-  const devendo=r.faltaMin+r.pend; const extra=r.e50+r.e100;
+  const extra=r.e50+r.e100;
   $("ocmodal").innerHTML=`<div class="modal-card" style="max-width:360px">
     <h3 class="modal-h">${esc(c.nome)}</h3>
     <div class="modal-sec">Resumo de ${mesNome}</div>
@@ -4150,7 +4151,8 @@ function abrirResumoColab(colId){
       <div><span>Trabalhadas</span><b>${m2hm(r.trab)}</b></div>
       <div><span>Devidas</span><b>${m2hm(r.devida)}</b></div>
       <div class="big ex"><span>Hora extra</span><b>+${m2hm(extra)}</b></div>
-      <div class="big pen"><span>Devendo</span><b>${devendo>0?"-"+m2hm(devendo):"0:00"}</b></div>
+      <div class="big pen"><span>Falta</span><b>${r.faltaDias?r.faltaDias+"d · -"+m2hm(r.faltaMin):"0:00"}</b></div>
+      <div class="big pen"><span>Pendente</span><b>${r.pend>0?"-"+m2hm(r.pend):"0:00"}</b></div>
       <div class="big liq" style="grid-column:1/-1"><span>Hora extra líquida (extra 80% − pendentes)</span><b>${(r.e50-r.pend)>=0?"+":""}${m2hm(r.e50-r.pend)}</b></div>
     </div>
     <div class="hint" style="margin-top:8px">Extra 80%: +${m2hm(r.e50)} · feriado: +${m2hm(r.e100)} · faltas: ${r.faltaDias}d</div>
