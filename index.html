@@ -2908,7 +2908,7 @@ function renderTPM(){
     <div class="tpm-bar">
       <input class="tpm-search" id="tpm-busca" type="search" placeholder="🔍 Pesquisar equipamento, código, atividade, responsável..." value="${esc(tpmBusca)}" oninput="tpmBuscar(this.value)">
       <button class="btnghost" onclick="tpmToggleFiltro()">⚙️ Filtro<span id="tpm-filtro-n"></span></button>
-      ${tpmIsProd()?"":`<button class="btnprim" onclick="tpmNova()">+ Adicionar manutenção</button>`}
+      <button class="btnprim" onclick="tpmNova()">+ Adicionar manutenção</button>
     </div>
     <div id="tpm-filtros" class="tpm-filtros" style="display:${tpmFiltroAberto?"grid":"none"}">
       ${sel("equip","Tipo de máquina",equips.map(e=>[e,e]))}
@@ -2949,7 +2949,7 @@ function tpmSetFiltro(k,v){ tpmFiltro[k]=v; renderTPMLista(); }
 function tpmToggleFiltro(){ tpmFiltroAberto=!tpmFiltroAberto; const f=$("tpm-filtros"); if(f) f.style.display=tpmFiltroAberto?"grid":"none"; }
 function tpmLimparFiltro(){ tpmFiltro={equip:"",setor:"",tipo:"",status:""}; renderTPM(); }
 function tpmIsProd(){ const g=$("tela-gestor"); return !!(g && g.classList.contains("modo-prod")); }
-function tpmNova(){ if(tpmIsProd()) return; tpmEditId=null; _tpmModal({}); }
+function tpmNova(){ tpmEditId=null; _tpmModal({}); }
 function tpmEditar(id){
   const t=tpm.find(x=>x.id===id); if(!t) return;
   if(tpmIsProd()) return tpmDetalhe(id);
