@@ -407,6 +407,27 @@ tbody tr:hover{background:var(--surface-2)}
 .calev-a{display:flex;gap:8px;margin-top:5px}
 .calev-a a{font-size:10.5px;color:var(--accent);cursor:pointer;font-weight:600}
 .calev-a a:first-child{color:var(--green)}
+.calev.tpm{border-left:3px solid var(--accent)}
+.tpm-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.tpm-search{flex:1;min-width:220px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);outline:none}
+.tpm-search:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.tpm-filtros{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.tpm-filtros .field{margin:0}
+.tpm-filtros-foot{grid-column:1/-1;display:flex;justify-content:flex-end}
+.tpm-sum{font-size:12.5px;color:var(--muted);margin:4px 2px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tpm-head,.tpm-row{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1.7fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 14px}
+.tpm-head{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted-2);padding-top:0;padding-bottom:6px}
+.tpm-row{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:8px;font-size:13px;cursor:pointer;box-shadow:var(--shadow)}
+.tpm-row:hover{border-color:var(--border-2)}
+.tpm-row small,.tpm-c1 small,.tpm-c2 small,.tpm-c3 small,.tpm-c4 small{display:block;color:var(--muted-2);font-size:11.5px;margin-top:2px}
+.tpm-c6{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.tpm-vazio{background:var(--surface);border:1px dashed var(--border-2);border-radius:14px;padding:28px;text-align:center;color:var(--muted)}
+@media(max-width:760px){
+  .tpm-head{display:none}
+  .tpm-row{grid-template-columns:1fr 1fr;gap:8px 12px}
+  .tpm-c2{grid-column:1/-1}
+  .tpm-c6{align-items:flex-start}
+}
 /* modal */
 .modal-wrap{position:fixed;inset:0;background:rgba(15,20,30,.45);z-index:80;align-items:center;justify-content:center;padding:18px}
 .modal-card{background:var(--surface);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.3);padding:24px;max-width:680px;width:100%;max-height:88vh;overflow:auto}
@@ -1017,7 +1038,9 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
           <button class="navitem subitem only-gestor" data-v="prod-terceirizado" onclick="irViewG('prod-terceirizado')">Terceirizado</button>
         </div>
         <button class="navgroup collapsed only-gestor" data-g="tpm" onclick="toggleGroup(this)">🔧 TPM <span class="chev">▾</span></button>
-        <div class="navsub collapsed only-gestor"><div class="navmini" style="color:var(--muted-2)">Em breve</div></div>
+        <div class="navsub collapsed only-gestor">
+          <button class="navitem subitem" data-v="tpm-lista" onclick="irViewG('tpm-lista')">Planos de manutenção</button>
+        </div>
         <button class="navgroup collapsed only-gestor" data-g="base" onclick="toggleGroup(this)">📁 Base de dados <span class="chev">▾</span></button>
         <div class="navsub collapsed only-gestor">
           <button class="navitem subitem" data-v="bd-historico" onclick="irViewG('bd-historico')">Histórico</button>
@@ -1049,7 +1072,8 @@ tr.dragging{opacity:.55;background:var(--accent-soft)}
         <div class="vview" id="gview-dash-prod" style="display:none"><h2 class="viewtitle">Dashboard · Produção</h2><div id="dashprod-c"></div></div>
         <div class="vview" id="gview-dash-pcp" style="display:none"><h2 class="viewtitle">PCP · Planejamento e Controle</h2><div id="pcp-box"></div></div>
         <div class="vview" id="gview-amostras" style="display:none"><h2 class="viewtitle">Amostras</h2><div id="amostras-box"></div></div>
-        <div class="vview" id="gview-dash-agenda" style="display:none"><h2 class="viewtitle">Agenda de Ordens de Compra</h2><div id="agenda-c"></div></div>
+        <div class="vview" id="gview-tpm-lista" style="display:none"><h2 class="viewtitle">TPM · Manutenção preventiva</h2><div id="tpm-box"></div></div>
+        <div class="vview" id="gview-dash-agenda" style="display:none"><h2 class="viewtitle">Agenda · OCs e TPM</h2><div id="agenda-c"></div></div>
         <div class="vview" id="gview-opc-fornecedores" style="display:none"><h2 class="viewtitle">Opções · Integrações</h2><div id="opcforn-box"></div></div>
 
         <div class="vview" id="gview-dash-vendas" style="display:none">
@@ -1315,7 +1339,7 @@ const DEF_ONDAS = [
   { nome:"Onda TT", gramaturas:[470],         comp:compPadrao("Onda TT") },
 ];
 
-const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1", oms:"malba_os_oms_v1", amostras:"malba_os_amostras_v1", pcpsem:"malba_os_pcpsemana_v1", colab:"malba_os_colaboradores_v1", ponto:"malba_os_ponto_v1", pontocfg:"malba_os_pontocfg_v1", feriados:"malba_os_feriados_v1", abonos:"malba_os_abonos_v1", pontodel:"malba_os_pontodel_v1" };
+const LS = { orc:"malba_os_orcamentos_v1", seq:"malba_os_seq_v1", cli:"malba_os_clientes_v1", vend:"malba_os_vendedores_v1", prod:"malba_os_produtos_v1", ondas:"malba_os_ondas_v1", dev:"malba_os_desenv_v1", forn:"malba_os_fornecedores_v1", hist:"malba_os_historico_v1", devav:"malba_os_devavulsos_v1", meta:"malba_os_metas_v1", oc:"malba_os_ordenscompra_v1", prodflow:"malba_os_producao_v1", records:"malba_os_records_v1", metaprod:"malba_os_metaprod_v1", compras:"malba_os_compras_v1", bling:"malba_os_bling_v1", oms:"malba_os_oms_v1", amostras:"malba_os_amostras_v1", pcpsem:"malba_os_pcpsemana_v1", colab:"malba_os_colaboradores_v1", ponto:"malba_os_ponto_v1", pontocfg:"malba_os_pontocfg_v1", feriados:"malba_os_feriados_v1", abonos:"malba_os_abonos_v1", pontodel:"malba_os_pontodel_v1", tpm:"malba_os_tpm_v1" };
 
 // util
 const APP_VER="2026-10-30b"; const RELOAD_KEY="malba_os_reload_v1";
@@ -1354,6 +1378,19 @@ let ocTab="nao", ocPage=1, ocForm=null;
 let agendaRef=hojeStr(), agendaView="mensal";
 let producao = carregar(LS.prodflow, []);
 let amostras = carregar(LS.amostras, []);
+// ----- TPM (manutenção preventiva) — carga inicial da planilha TPM -----
+const TPM_SEED=[
+  {id:"t01",equip:"Amarradeira IMP",codigo:"MQ-05",setor:"Acabamento",tipo:"Preventiva",atividade:"Limpeza semanal",freq:"Semanal",resp:"Ahmet",ultima:"2026-05-29",proxima:"2026-06-05",obs:""},
+  {id:"t02",equip:"Amarradeira NAC",codigo:"MQ-06",setor:"Acabamento",tipo:"Preventiva",atividade:"Limpeza semanal",freq:"Semanal",resp:"Ahmet",ultima:"2026-05-29",proxima:"2026-06-05",obs:""},
+  {id:"t03",equip:"Coladeira",codigo:"MQ-04",setor:"Acabamento",tipo:"Preventiva",atividade:"Limpeza semanal",freq:"Semanal",resp:"Luzimar",ultima:"2026-05-29",proxima:"2026-06-05",obs:""},
+  {id:"t04",equip:"Coladeira",codigo:"MQ-04",setor:"Acabamento",tipo:"Preventiva",atividade:"Revisão de pintura, lubrificação, limpeza fina e revisão das correias",freq:"Anual",resp:"Luzimar e técnicos",ultima:"2026-05-20",proxima:"2027-05-20",obs:""},
+  {id:"t05",equip:"Compressor",codigo:"MQ-02",setor:"Utilidades",tipo:"Preventiva",atividade:"Drenar água do reservatório",freq:"Diária",resp:"Ahmet",ultima:"2026-05-27",proxima:"2026-05-27",obs:""},
+  {id:"t06",equip:"Compressor",codigo:"MQ-02",setor:"Utilidades",tipo:"Preventiva",atividade:"Drenar água do reservatório diariamente, troca de óleo",freq:"Trimestral",resp:"Ahmet",ultima:"2026-05-05",proxima:"2026-08-03",obs:""},
+  {id:"t07",equip:"Impressora Flexo",codigo:"MQ-01",setor:"Impressão",tipo:"Preventiva",atividade:"Limpeza semanal",freq:"Semanal",resp:"João",ultima:"2026-05-29",proxima:"2026-06-05",obs:""},
+  {id:"t08",equip:"Impressora Flexo",codigo:"MQ-01",setor:"Impressão",tipo:"Preventiva",atividade:"Revisão de pintura, lubrificação, limpeza fina e afiação das facas",freq:"Anual",resp:"João e técnicos",ultima:"2026-05-20",proxima:"2027-05-20",obs:""}
+];
+let tpm = carregar(LS.tpm, TPM_SEED);
+let tpmBusca="", tpmFiltro={equip:"",setor:"",tipo:"",status:""}, tpmFiltroAberto=false, tpmEditId=null;
 let pcpSemana = carregar(LS.pcpsem, {dias:{},obs:{}});
 let pcpModo = "quadro";
 let colaboradores = carregar(LS.colab, []);
@@ -1518,6 +1555,7 @@ function reloadState(){
   abonos = carregar(LS.abonos, {});
   pontoDel = carregar(LS.pontodel, {});
   pontoCfg = carregar(LS.pontocfg, {tolMin:10});
+  tpm = carregar(LS.tpm, TPM_SEED);
   feriadosCfg = carregar(LS.feriados, {add:[],rem:[]});
 }
 function refreshViewAtual(){
@@ -1530,6 +1568,7 @@ function refreshViewAtual(){
       if(v==="dash-vendas") renderDashVendas("g");
       else if(v==="dash-prod") renderDashProd();
       else if(v==="dash-agenda") renderAgenda();
+      else if(v==="tpm-lista") renderTPM();
       else if(v==="prod-ordem") renderOC();
       else if(v==="prod-impressao") renderProc("imp");
       else if(v==="prod-acabamento") renderProc("acab");
@@ -2197,6 +2236,7 @@ function irViewG(v){
   else if(v==="cad-ondas") renderOndas("g");
   else if(v==="dash-pcp") renderPCP();
   else if(v==="amostras") renderAmostras();
+  else if(v==="tpm-lista") renderTPM();
   else if(v==="folha-ponto") renderFolhaPonto();
   window.scrollTo(0,0);
 }
@@ -2791,7 +2831,7 @@ function setAgendaView(v){ agendaView=v; renderAgenda(); }
 function agendaPrint(){
   const el=document.querySelector("#agenda-c .calgrid"); if(!el){ return; }
   const head=document.querySelector("#agenda-c .caltitle").textContent;
-  $("print").innerHTML=`<div class="calprint"><div class="dashprint-h">Agenda de Ordens de Compra · ${head}</div>${document.querySelector("#agenda-c .calwrap").outerHTML}</div>`;
+  $("print").innerHTML=`<div class="calprint"><div class="dashprint-h">Agenda · OCs e TPM · ${head}</div>${document.querySelector("#agenda-c .calwrap").outerHTML}</div>`;
   const st=document.createElement("style"); st.id="ll-land"; st.textContent="@media print{@page{size:A4 landscape;margin:8mm}}"; document.head.appendChild(st);
   window.print();
   setTimeout(()=>{ const s=$("ll-land"); if(s) s.remove(); $("print").innerHTML=""; },600);
@@ -2816,9 +2856,9 @@ function renderAgenda(){
     title=start.getDate()+" "+nomesMes[start.getMonth()].slice(0,3)+" – "+end.getDate()+" "+nomesMes[end.getMonth()].slice(0,3)+" "+y;
   }
   const hj=hojeStr();
-  const cellHtml=cells.map(d=>{ const ds=isoOf(d); const evs=ordens.filter(o=>!o.excluida && ocPrevista(o)===ds);
+  const cellHtml=cells.map(d=>{ const ds=isoOf(d); const evs=ordens.filter(o=>!o.excluida && ocPrevista(o)===ds); const evT=tpm.filter(t=>t.proxima===ds);
     const other=d.getMonth()!==mo && agendaView==="mensal";
-    return `<div class="calcell${other?" other":""}${ds===hj?" today":""}"><div class="caldate">${ds===hj?`<span class="todaynum">${d.getDate()}</span>`:d.getDate()}</div>${evs.map(ocCellHtml).join("")}</div>`;
+    return `<div class="calcell${other?" other":""}${ds===hj?" today":""}"><div class="caldate">${ds===hj?`<span class="todaynum">${d.getDate()}</span>`:d.getDate()}</div>${evs.map(ocCellHtml).join("")}${evT.map(tpmCellHtml).join("")}</div>`;
   }).join("");
   $("agenda-c").innerHTML=`
     <div class="calhead">
@@ -2827,6 +2867,132 @@ function renderAgenda(){
         <div class="seg"><button class="${agendaView==="mensal"?"on":""}" onclick="setAgendaView('mensal')">Mensal</button><button class="${agendaView==="semana"?"on":""}" onclick="setAgendaView('semana')">Semana</button></div></div>
     </div>
     <div class="calwrap"><div class="caldow">${dows.map(d=>`<div>${d}</div>`).join("")}</div><div class="calgrid ${agendaView}">${cellHtml}</div></div>`;
+}
+
+// ----- TPM (manutenção preventiva) -----
+const TPM_FREQ={"Diária":1,"Semanal":7,"Quinzenal":15,"Mensal":30,"Trimestral":90,"Semestral":180,"Anual":365};
+const TPM_TIPOS=["Preventiva","Corretiva","Preditiva","Autônoma"];
+const TPM_SETORES=["Acabamento","Impressão","Utilidades","Expedição","Escritório","Outro"];
+const TPM_STLBL={atr:["Atrasada","stb-atr"], breve:["Vence em 7 dias","stb-pend"], dia:["Em dia","stb-rec"], sem:["Sem data","stb-canc"]};
+function tpmAddDias(iso,n){ const d=parseISO(iso); d.setDate(d.getDate()+n); return isoOf(d); }
+function tpmStatus(t){
+  const p=t.proxima||""; if(!p) return "sem";
+  if(p<hojeStr()) return "atr";
+  const lim=new Date(); lim.setDate(lim.getDate()+7);
+  return p<=isoOf(lim) ? "breve" : "dia";
+}
+function tpmSave(){ salvar(LS.tpm, tpm); renderTPM(); if(gviewAtual==="dash-agenda") renderAgenda(); }
+function tpmFiltrados(){
+  const q=tpmBusca.trim().toLowerCase();
+  return tpm.filter(t=>{
+    if(tpmFiltro.equip && t.equip!==tpmFiltro.equip) return false;
+    if(tpmFiltro.setor && t.setor!==tpmFiltro.setor) return false;
+    if(tpmFiltro.tipo && t.tipo!==tpmFiltro.tipo) return false;
+    if(tpmFiltro.status && tpmStatus(t)!==tpmFiltro.status) return false;
+    if(q && ![t.equip,t.codigo,t.setor,t.tipo,t.atividade,t.freq,t.resp,t.obs].join(" ").toLowerCase().includes(q)) return false;
+    return true;
+  }).sort((a,b)=>(a.proxima||"9999").localeCompare(b.proxima||"9999"));
+}
+function renderTPM(){
+  const box=$("tpm-box"); if(!box) return;
+  const equips=[...new Set(tpm.map(t=>t.equip).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  const sel=(k,label,opts)=>`<div class="field"><label>${label}</label><select onchange="tpmSetFiltro('${k}',this.value)"><option value="">Todos</option>${opts.map(([v,l])=>`<option value="${esc(v)}" ${tpmFiltro[k]===v?"selected":""}>${esc(l||v)}</option>`).join("")}</select></div>`;
+  box.innerHTML=`
+    <div class="tpm-bar">
+      <input class="tpm-search" id="tpm-busca" type="search" placeholder="🔍 Pesquisar equipamento, código, atividade, responsável..." value="${esc(tpmBusca)}" oninput="tpmBuscar(this.value)">
+      <button class="btnghost" onclick="tpmToggleFiltro()">⚙️ Filtro<span id="tpm-filtro-n"></span></button>
+      <button class="btnprim" onclick="tpmNova()">+ Adicionar manutenção</button>
+    </div>
+    <div id="tpm-filtros" class="tpm-filtros" style="display:${tpmFiltroAberto?"grid":"none"}">
+      ${sel("equip","Tipo de máquina",equips.map(e=>[e,e]))}
+      ${sel("setor","Setor",TPM_SETORES.map(s=>[s,s]))}
+      ${sel("tipo","Tipo de manutenção",TPM_TIPOS.map(s=>[s,s]))}
+      ${sel("status","Status",[["atr","Atrasadas"],["breve","Vence em 7 dias"],["dia","Em dia"]])}
+      <div class="tpm-filtros-foot"><button class="btnlink" onclick="tpmLimparFiltro()">Limpar filtros</button></div>
+    </div>
+    <div class="tpm-sum" id="tpm-sum"></div>
+    <div id="tpm-lista-c"></div>`;
+  renderTPMLista();
+}
+function renderTPMLista(){
+  const c=$("tpm-lista-c"); if(!c) return;
+  const lista=tpmFiltrados();
+  const ativos=Object.values(tpmFiltro).filter(Boolean).length;
+  const n=$("tpm-filtro-n"); if(n) n.textContent=ativos?` (${ativos})`:"";
+  const atr=tpm.filter(t=>tpmStatus(t)==="atr").length, breve=tpm.filter(t=>tpmStatus(t)==="breve").length;
+  const sum=$("tpm-sum");
+  if(sum) sum.innerHTML=`<span>Mostrando <b>${lista.length}</b> de ${tpm.length}</span><span class="stb stb-atr">${atr} atrasada(s)</span><span class="stb stb-pend">${breve} vence(m) em 7 dias</span>`;
+  if(!tpm.length){ c.innerHTML=`<div class="tpm-vazio">Nenhuma manutenção cadastrada. Use <b>+ Adicionar manutenção</b>.</div>`; return; }
+  if(!lista.length){ c.innerHTML=`<div class="tpm-vazio">Nenhuma manutenção com esse filtro ou pesquisa.</div>`; return; }
+  c.innerHTML=`<div class="tpm-head"><span>Equipamento</span><span>Atividade</span><span>Tipo · frequência</span><span>Próxima</span><span>Responsável</span><span>Status</span></div>${lista.map(tpmRowHtml).join("")}`;
+}
+function tpmRowHtml(t){
+  const st=TPM_STLBL[tpmStatus(t)];
+  return `<div class="tpm-row" onclick="tpmEditar('${t.id}')">
+    <div class="tpm-c1"><b>${esc(t.codigo||"—")}</b> ${esc(t.equip||"")}<small>${esc(t.setor||"")}</small></div>
+    <div class="tpm-c2">${esc(t.atividade||"—")}${t.obs?`<small>${esc(t.obs)}</small>`:""}</div>
+    <div class="tpm-c3">${esc(t.tipo||"—")}<small>${esc(t.freq||"")}</small></div>
+    <div class="tpm-c4">${t.proxima?fmtData(t.proxima):"—"}<small>${t.ultima?"Última: "+fmtData(t.ultima):""}</small></div>
+    <div class="tpm-c5">${esc(t.resp||"—")}</div>
+    <div class="tpm-c6"><span class="stb ${st[1]}">${st[0]}</span><button class="btnlink" style="padding:4px 0;color:var(--green)" onclick="event.stopPropagation();tpmConcluir('${t.id}')">✓ Feita hoje</button></div>
+  </div>`;
+}
+function tpmBuscar(v){ tpmBusca=v; renderTPMLista(); }
+function tpmSetFiltro(k,v){ tpmFiltro[k]=v; renderTPMLista(); }
+function tpmToggleFiltro(){ tpmFiltroAberto=!tpmFiltroAberto; const f=$("tpm-filtros"); if(f) f.style.display=tpmFiltroAberto?"grid":"none"; }
+function tpmLimparFiltro(){ tpmFiltro={equip:"",setor:"",tipo:"",status:""}; renderTPM(); }
+function tpmNova(){ tpmEditId=null; _tpmModal({}); }
+function tpmEditar(id){ const t=tpm.find(x=>x.id===id); if(!t) return; tpmEditId=id; _tpmModal(t); }
+function _tpmModal(t){
+  const opt=(arr,sel)=>arr.map(x=>`<option ${x===sel?"selected":""}>${esc(x)}</option>`).join("");
+  const equips=[...new Set(tpm.map(x=>x.equip).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  $("ocmodal").innerHTML=`<div class="modal-card">
+    <h3 class="modal-h">${tpmEditId?"Editar manutenção":"Nova manutenção"}</h3>
+    <div class="grid g2">
+      <div class="field"><label>Tipo de máquina</label><input id="tpm-equip" list="tpm-equips" value="${esc(t.equip||"")}" placeholder="Ex.: Coladeira"><datalist id="tpm-equips">${equips.map(e=>`<option value="${esc(e)}">`).join("")}</datalist></div>
+      <div class="field"><label>Código</label><input id="tpm-cod" value="${esc(t.codigo||"")}" placeholder="Ex.: MQ-01"></div>
+      <div class="field"><label>Setor</label><select id="tpm-setor">${opt(TPM_SETORES,t.setor||"Acabamento")}</select></div>
+      <div class="field"><label>Tipo de manutenção</label><select id="tpm-tipo">${opt(TPM_TIPOS,t.tipo||"Preventiva")}</select></div>
+      <div class="field" style="grid-column:1/-1"><label>Descrição da atividade</label><input id="tpm-ativ" value="${esc(t.atividade||"")}" placeholder="Ex.: Limpeza semanal"></div>
+      <div class="field"><label>Frequência</label><select id="tpm-freq">${opt(Object.keys(TPM_FREQ),t.freq||"Mensal")}</select></div>
+      <div class="field"><label>Responsável</label><input id="tpm-resp" value="${esc(t.resp||"")}" placeholder="Nome"></div>
+      <div class="field"><label>Última execução</label><input type="date" id="tpm-ultima" value="${t.ultima||""}"></div>
+      <div class="field"><label>Próxima execução</label><input type="date" id="tpm-prox" value="${t.proxima||""}"><small class="muted" style="font-size:11.5px">Em branco: calcula pela frequência.</small></div>
+      <div class="field" style="grid-column:1/-1"><label>Observações</label><textarea id="tpm-obs" placeholder="Opcional">${esc(t.obs||"")}</textarea></div>
+    </div>
+    <div class="modal-foot">
+      ${tpmEditId?`<button class="btnlink" onclick="tpmExcluir()">🗑️ Excluir</button>`:""}
+      <span style="flex:1"></span>
+      <button class="btnghost" onclick="closeOcModal()">Cancelar</button>
+      <button class="btnprim" onclick="tpmSalvar()">Salvar</button>
+    </div></div>`;
+  $("ocmodal").style.display="flex";
+}
+function tpmSalvar(){
+  const equip=val("tpm-equip");
+  if(!equip){ alert("Informe o tipo de máquina."); return; }
+  const freq=$("tpm-freq").value||"Mensal";
+  const ultima=$("tpm-ultima").value||"";
+  let prox=$("tpm-prox").value||"";
+  if(!prox && ultima) prox=tpmAddDias(ultima, TPM_FREQ[freq]||30);
+  const rec={ id:tpmEditId||uid(), equip, codigo:val("tpm-cod"), setor:$("tpm-setor").value, tipo:$("tpm-tipo").value,
+    atividade:val("tpm-ativ"), freq, resp:val("tpm-resp"), ultima, proxima:prox, obs:val("tpm-obs") };
+  const i=tpmEditId?tpm.findIndex(x=>x.id===tpmEditId):-1;
+  if(i>=0) tpm[i]=rec; else tpm.push(rec);
+  closeOcModal(); tpmSave();
+}
+function tpmExcluir(){
+  if(!tpmEditId || !confirm("Excluir esta manutenção?")) return;
+  tpm=tpm.filter(x=>x.id!==tpmEditId); closeOcModal(); tpmSave();
+}
+function tpmConcluir(id){
+  const t=tpm.find(x=>x.id===id); if(!t) return;
+  const h=hojeStr(); t.ultima=h; t.proxima=tpmAddDias(h, TPM_FREQ[t.freq]||30);
+  tpmSave();
+}
+function tpmCellHtml(t){ const st=TPM_STLBL[tpmStatus(t)];
+  return `<div class="calev tpm"><div class="calev-f">🔧 ${esc(t.codigo||t.equip||"")} · ${esc((t.atividade||"").slice(0,24))}</div><span class="stb ${st[1]}">${st[0]}</span>
+    <div class="calev-a"><a onclick="tpmConcluir('${t.id}')">✓ Feita</a><a onclick="tpmEditar('${t.id}')">✎ Editar</a></div></div>`;
 }
 
 // ----- criação -----
