@@ -428,6 +428,19 @@ tbody tr:hover{background:var(--surface-2)}
 .tpm-notas{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow:auto}
 .tpm-nota{border:1px solid var(--border);border-radius:12px;padding:9px 12px;font-size:13px}
 .tpm-nota.concl{background:var(--green-soft);border-color:transparent;color:var(--green);font-weight:600}
+.aviso-card{max-width:440px}
+.aviso-h{font-size:20px;font-weight:800}
+.aviso-data{font-size:13px;color:var(--muted);margin-top:2px}
+.aviso-mais{font-size:12.5px;color:var(--muted);padding:4px 2px 0}
+.aviso-sub{font-size:13px;color:var(--muted);margin:2px 0 14px}
+.aviso-sec{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-2);margin:12px 0 6px}
+.aviso-linha{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 11px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border);margin-bottom:6px;font-size:13px}
+.aviso-linha.atr{border-left:3px solid var(--red)}
+.aviso-linha.hoje{border-left:3px solid var(--amber)}
+.aviso-tag{font-size:11px;font-weight:700;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:2px 6px}
+.aviso-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.aviso-dt{font-size:12px;color:var(--muted-2);white-space:nowrap}
+.aviso-vazio{text-align:center;color:var(--muted);padding:18px 0;font-size:14px}
 .tpm-vazio{background:var(--surface);border:1px dashed var(--border-2);border-radius:14px;padding:28px;text-align:center;color:var(--muted)}
 @media(max-width:760px){
   .tpm-head{display:none}
@@ -2218,8 +2231,9 @@ function abrirGestor(){
     sessionStorage.setItem("malba_gestor_ok","1");
   }
   const g=document.getElementById("tela-gestor"); g.classList.remove("modo-prod"); const t=document.getElementById("gestor-drawer-title"); if(t)t.textContent="Gestor"; show("tela-gestor"); irViewG("dash-prod");
+  avisoDiaAbrir();
 }
-function abrirProducao(){ const g=document.getElementById("tela-gestor"); g.classList.add("modo-prod"); const t=document.getElementById("gestor-drawer-title"); if(t)t.textContent="Produção"; show("tela-gestor"); irViewG("dash-prod"); }
+function abrirProducao(){ const g=document.getElementById("tela-gestor"); g.classList.add("modo-prod"); const t=document.getElementById("gestor-drawer-title"); if(t)t.textContent="Produção"; show("tela-gestor"); irViewG("dash-prod"); avisoDiaAbrir(); }
 function irViewG(v){
   gviewAtual=v; closeDrawer();
   document.querySelectorAll("#tela-gestor .navitem").forEach(b=>b.classList.toggle("on", b.dataset.v===v));
@@ -3044,6 +3058,40 @@ function tpmCellHtml(t){ const st=TPM_STLBL[tpmStatus(t)];
   return `<div class="calev tpm"><div class="calev-f">🔧 ${esc(t.codigo||t.equip||"")} · ${esc((t.atividade||"").slice(0,24))}</div><span class="stb ${st[1]}">${st[0]}</span>
     <div class="calev-a"><a onclick="tpmConcluir('${t.id}')">✓ Feita</a><a onclick="tpmEditar('${t.id}')">✎ Editar</a></div></div>`;
 }
+
+// ----- Aviso do dia (ao entrar no Gestor ou na Produção) -----
+function avisoDiaItens(){
+  const h=hojeStr();
+  const tpmItens=tpm.map(t=>({tag:"TPM", txt:[t.codigo,t.equip,t.atividade].filter(Boolean).join(" · "), data:t.proxima, st:tpmStatus(t)}));
+  const ocItens=ordens.filter(o=>!o.excluida && !o.recebida && ocPrevista(o)).map(o=>({tag:"OC", txt:o.fornecedor||"—", data:ocPrevista(o), st:ocPrevista(o)<h?"atr":(ocPrevista(o)===h?"hoje":"")}));
+  const todos=[...tpmItens, ...ocItens].filter(i=>i.data);
+  return {
+    atr: todos.filter(i=> i.data<h),
+    hoje: todos.filter(i=> i.data===h)
+  };
+}
+function avisoDiaAbrir(){
+  const h=hojeStr(), hr=new Date().getHours();
+  const saud=hr<12?"Bom dia":(hr<18?"Boa tarde":"Boa noite");
+  const dataRaw=new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
+  const dataTxt=dataRaw.charAt(0).toUpperCase()+dataRaw.slice(1);
+  const {atr,hoje}=avisoDiaItens();
+  const linha=i=>`<div class="aviso-linha ${i.st==="atr"||i.data<h?"atr":"hoje"}"><span class="aviso-tag">${i.tag}</span><span class="aviso-txt">${esc(i.txt)}</span><span class="aviso-dt">${fmtData(i.data)}</span></div>`;
+  const LIM=6, atrOrd=atr.slice().sort((a,b)=>a.data.localeCompare(b.data)), hojeOrd=hoje.slice().sort((a,b)=>a.tag.localeCompare(b.tag));
+  const mais=atrOrd.length>LIM?`<div class="aviso-mais">e mais ${atrOrd.length-LIM} atrasada(s). Veja na agenda.</div>`:"";
+  const corpo=(atr.length||hoje.length)
+    ? (atr.length?`<div class="aviso-sec">Atrasadas (${atr.length})</div>${atrOrd.slice(0,LIM).map(linha).join("")}${mais}`:"")+(hoje.length?`<div class="aviso-sec">Hoje</div>${hojeOrd.map(linha).join("")}`:"")
+    : `<div class="aviso-vazio">Nada agendado para hoje.</div>`;
+  $("ocmodal").innerHTML=`<div class="modal-card aviso-card">
+    <div class="aviso-h">${saud}</div>
+    <div class="aviso-data">${esc(dataTxt)}</div>
+    <div class="aviso-sub">Veja o que está no calendário de hoje</div>
+    <div class="aviso-lista">${corpo}</div>
+    <div class="modal-foot"><button class="btnghost" onclick="avisoDiaVerAgenda()">Ver agenda</button><button class="btnprim" onclick="closeOcModal()">Entendi</button></div>
+  </div>`;
+  $("ocmodal").style.display="flex";
+}
+function avisoDiaVerAgenda(){ closeOcModal(); irViewG("dash-agenda"); }
 
 // ----- criação -----
 function ocTotais(o){ const sub=+o.valor||0; const ipi=sub*0.0325; return {peso:+o.peso||0, sub, ipi, total:sub+ipi}; }
