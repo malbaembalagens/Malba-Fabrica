@@ -4874,7 +4874,7 @@ function recalcPeso(){ devForm.pesoManual=false; renderWizard(); }
 function recalcCusto(){ devForm.custoManual=false; renderWizard(); }
 function addVinco(){ if(!Array.isArray(devForm.vincos)) devForm.vincos=vincosPadrao(devForm); devForm.vincos.push(0); renderWizard(); }
 function vincoChange(i,val){ devForm.vincos[i]=parseFloat(String(val).replace(",","."))||0; renderWizard(); }
-function anexarPdf(input){ const file=input.files[0]; if(!file)return; if(file.size>5*1024*1024){ alert("PDF acima de 5Mb."); input.value=""; return; } devForm.pdfNome=file.name; const r=new FileReader(); r.onload=e=>{ devForm.pdfData=e.target.result; const el=$("cliche-pdfname"); if(el) el.textContent="📎 "+file.name; }; r.readAsDataURL(file); }
+function anexarPdf(input){ const file=input.files[0]; if(!file)return; if(file.size>5*1024*1024){ alert("PDF acima de 5Mb."); input.value=""; return; } devForm.pdfNome=file.name; const r=new FileReader(); r.onload=e=>{ devForm.pdfData=e.target.result; const el=$("cliche-pdfname"); if(el){ el.textContent="📎 "+file.name; if(String(devForm.pdfData).startsWith("data:image")){ const im=document.createElement("img"); im.src=devForm.pdfData; im.alt="prévia da arte"; im.style.cssText="display:block;max-height:140px;max-width:100%;margin:8px auto 0;border-radius:8px"; el.appendChild(im); } } }; r.readAsDataURL(file); }
 function persistDev(form,status){
   const obj=Object.assign({},form,{status});
   const grava=(o)=>{ if(String(form.key).startsWith("av:")){ const i=devAvulsos.findIndex(a=>a.key===form.key); if(i>=0){ devAvulsos[i]=tocaDev(Object.assign({},devAvulsos[i],o)); } else { devAvulsos.push(tocaDev(o)); } salvar(LS.devav,devAvulsos); } else { desenvStatus[form.key]=tocaDev(o); salvar(LS.dev,desenvStatus); } };
@@ -5026,14 +5026,14 @@ function renderWizard(){
         <div class="compf"><label>Cor 2</label><input value="${esc(f.cor2||"")}" placeholder="Digite a cor 2" oninput="devForm.cor2=this.value"></div>
       </div>
       <label class="chkrow"><input type="checkbox" ${f.logoMalba?"checked":""} onchange="devForm.logoMalba=this.checked"> <b>Logo Malba</b></label>
-      <label class="flbl" style="margin-top:6px">Anexar PDF</label>
+      <label class="flbl" style="margin-top:6px">Anexar arte (PDF ou imagem)</label>
       <div class="pdfdrop" onclick="document.getElementById('cliche-pdf').click()">
         <div class="pdfico">☁️</div>
-        <div>Clique para efetuar o upload do arquivo!</div>
-        <small>PDF · até 5Mb</small>
+        <div>Clique para enviar o PDF ou a imagem!</div>
+        <small>PDF, JPG, PNG ou WEBP · até 5Mb</small>
         <div class="pdfname" id="cliche-pdfname">${f.pdfNome?("📎 "+esc(f.pdfNome)):""}</div>
       </div>
-      <input type="file" id="cliche-pdf" accept="application/pdf" style="display:none" onchange="anexarPdf(this)">
+      <input type="file" id="cliche-pdf" accept="application/pdf,image/jpeg,image/png,image/webp" style="display:none" onchange="anexarPdf(this)">
     </div>`;
   } else {
     content=`<div class="formcard"><div class="constr" style="padding:40px 10px"><span class="em">🧩</span><h2>Etapa ${devStep}</h2><p>Você vai me explicar esta etapa em breve.</p></div></div>`;
